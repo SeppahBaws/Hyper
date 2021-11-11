@@ -1,0 +1,10 @@
+[submodule "Hyper/dependencies/glfw"]
+	path = Hyper/dependencies/glfw
+	url = git@github.com:SeppahBaws/glfw.git
+    branch = 3.3-stable
+[submodule "Hyper/dependencies/spdlog"]
+	path = Hyper/dependencies/spdlog
+	url = git@github.com:gabime/spdlog.git
+[submodule "Hyper/dependencies/GLFW"]
+	path = Hyper/dependencies/GLFW
+	url = git@github.com:SeppahBaws/GLFW.git

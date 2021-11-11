@@ -1,0 +1,15 @@
+# IDE files and folders
+.vs/
+.idea/
+*.sln
+*.vcxproj*
+
+# Build folders
+bin/
+bin-int/
+
+# Don't exclude premake
+!vendor/bin
+
+# Log files
+*.log

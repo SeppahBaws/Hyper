@@ -23,11 +23,18 @@ project "Hyper"
 
         "%{IncludeDir.GLFW}",
         "%{IncludeDir.spdlog}",
+        "%{IncludeDir.Vulkan}"
+    }
+
+    libdirs
+    {
+        "%{LibDir.Vulkan}"
     }
 
     links
     {
-        "GLFW"
+        "GLFW",
+        "%{Library.Vulkan}"
     }
 
     filter "system:windows"

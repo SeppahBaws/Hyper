@@ -3,7 +3,7 @@
 
 namespace Hyper
 {
-	class VulkanRenderContext;
+	class VulkanRenderDevice;
 
 	class VulkanRendererAPI final : public RendererAPI
 	{
@@ -19,6 +19,6 @@ namespace Hyper
 		void DrawIndexed() override;
 
 	private:
-		std::shared_ptr<VulkanRenderContext> m_Context;
+		std::shared_ptr<VulkanRenderDevice> m_Device;
 	};
 }

@@ -28,7 +28,7 @@ end
 include "Dependencies.lua"
 
 group "Dependencies"
-include "Hyper/dependencies/GLFW"
+include "Hyper/dependencies/glfw"
 group ""
 
 group "Core"

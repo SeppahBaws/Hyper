@@ -23,7 +23,8 @@ project "Hyper"
 
         "%{IncludeDir.GLFW}",
         "%{IncludeDir.spdlog}",
-        "%{IncludeDir.Vulkan}"
+        "%{IncludeDir.Vulkan}",
+        "%{IncludeDir.magic_enum}"
     }
 
     libdirs

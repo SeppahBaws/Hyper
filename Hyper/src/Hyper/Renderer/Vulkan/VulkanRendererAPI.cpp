@@ -1,13 +1,13 @@
 #include "HyperPCH.h"
 #include "VulkanRendererAPI.h"
 
-#include "VulkanRenderContext.h"
+#include "VulkanRenderDevice.h"
 
 namespace Hyper
 {
 	void VulkanRendererAPI::Init()
 	{
-		m_Context = std::make_unique<VulkanRenderContext>();
+		m_Device = std::make_unique<VulkanRenderDevice>();
 	}
 
 	void VulkanRendererAPI::BeginScene()

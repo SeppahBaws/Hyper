@@ -15,7 +15,7 @@ namespace Hyper
 		template<typename T>
 		void AddSubsystem()
 		{
-			m_Subsystems.emplace_back(std::make_shared<T>());
+			m_Subsystems.emplace_back(std::make_shared<T>(this));
 		}
 
 		template<typename T>

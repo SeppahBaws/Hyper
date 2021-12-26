@@ -1,10 +1,10 @@
 #pragma once
 #include "Hyper/Renderer/Base/RendererAPI.h"
 
+#include "VulkanRenderDevice.h"
+
 namespace Hyper
 {
-	class VulkanRenderDevice;
-
 	class VulkanRendererAPI final : public RendererAPI
 	{
 	public:
@@ -19,6 +19,6 @@ namespace Hyper
 		void DrawIndexed() override;
 
 	private:
-		std::shared_ptr<VulkanRenderDevice> m_Device;
+		std::unique_ptr<VulkanRenderDevice> m_Device;
 	};
 }

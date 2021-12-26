@@ -1,8 +1,6 @@
 #include "HyperPCH.h"
 #include "VulkanRendererAPI.h"
 
-#include "VulkanRenderDevice.h"
-
 namespace Hyper
 {
 	void VulkanRendererAPI::Init()

@@ -8,7 +8,7 @@ namespace Hyper
 	class Window final : public Subsystem
 	{
 	public:
-		Window() = default;
+		Window(Context* pContext);
 		virtual ~Window() override = default;
 
 		bool OnInitialize() override;

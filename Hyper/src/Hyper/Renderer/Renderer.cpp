@@ -6,6 +6,10 @@
 
 namespace Hyper
 {
+	Renderer::Renderer(Context* pContext) : Subsystem(pContext)
+	{
+	}
+
 	bool Renderer::OnInitialize()
 	{
 		switch (m_API)

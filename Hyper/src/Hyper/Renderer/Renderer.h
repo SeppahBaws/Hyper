@@ -14,6 +14,9 @@ namespace Hyper
 	class Renderer final : public Subsystem
 	{
 	public:
+		Renderer(Context* pContext);
+		~Renderer() override = default;
+
 		bool OnInitialize() override;
 		void OnTick() override;
 		void OnShutdown() override;

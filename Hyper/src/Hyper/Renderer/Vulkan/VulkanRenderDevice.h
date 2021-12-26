@@ -9,21 +9,25 @@ namespace Hyper
 	{
 	public:
 		VulkanRenderDevice();
-		~VulkanRenderDevice();
+		~VulkanRenderDevice() override;
 
 	private:
 		void CreateInstance();
-		bool CheckValidationLayerSupport() const;
-		void PickDevice();
+		[[nodiscard]] bool CheckExtensionsAndLayersSupport() const;
+		void CreateDevice();
+		void CreateCommandPool();
 
 	private:
 		const bool HYPER_VALIDATE = true;
-		const std::vector<const char*> m_ValidationLayers = {
-			"VK_LAYER_KHRONOS_validation"
-		};
+		std::vector<const char*> m_RequiredExtensionNames = {};
+		std::vector<const char*> m_RequiredLayerNames = {};
 
 		vk::Instance m_Instance;
 		vk::Device m_Device;
 		vk::PhysicalDevice m_PhysicalDevice;
+		u32 m_GraphicsQueueFamilyIndex;
+		vk::Queue m_GraphicsQueue;
+
+		vk::CommandPool m_CommandPool;
 	};
 }

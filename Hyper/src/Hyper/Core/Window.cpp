@@ -6,6 +6,10 @@
 
 namespace Hyper
 {
+	Window::Window(Context* pContext) : Subsystem(pContext)
+	{
+	}
+
 	bool Window::OnInitialize()
 	{
 		if (!glfwInit())

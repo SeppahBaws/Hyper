@@ -1,10 +1,10 @@
-[submodule "Hyper/dependencies/glfw"]
-	path = Hyper/dependencies/glfw
-	url = git@github.com:SeppahBaws/glfw.git
-    branch = 3.3-stable
 [submodule "Hyper/dependencies/spdlog"]
 	path = Hyper/dependencies/spdlog
 	url = git@github.com:gabime/spdlog.git
 [submodule "Hyper/dependencies/magic_enum"]
 	path = Hyper/dependencies/magic_enum
 	url = git@github.com:Neargye/magic_enum.git
+[submodule "Hyper/dependencies/glfw"]
+	path = Hyper/dependencies/glfw
+	url = git@github.com:SeppahBaws/glfw
+	branch = 3.3-stable

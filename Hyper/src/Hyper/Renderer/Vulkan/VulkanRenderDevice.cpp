@@ -45,7 +45,7 @@ namespace Hyper
 		vk::ApplicationInfo appInfo{
 			"Hyper Application", VK_MAKE_VERSION(1, 0, 0),
 			"Hyper Engine", VK_MAKE_VERSION(1, 0, 0),
-			VK_API_VERSION_1_2
+			VK_API_VERSION_1_3
 		};
 
 		constexpr const char* VK_KHR_WIN32_SURFACE_EXTENSION_NAME = "VK_KHR_win32_surface";

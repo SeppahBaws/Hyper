@@ -1,16 +1,10 @@
 ﻿#pragma once
 #include "Hyper/Core/Subsystem.h"
 
+#include "Hyper/Renderer/Vulkan/VulkanRenderDevice.h"
+
 namespace Hyper
 {
-	class RendererAPI;
-
-	enum class RendererAPIType
-	{
-		None,
-		Vulkan
-	};
-
 	class Renderer final : public Subsystem
 	{
 	public:
@@ -22,7 +16,6 @@ namespace Hyper
 		void OnShutdown() override;
 
 	private:
-		RendererAPIType m_API = RendererAPIType::Vulkan;
-		RendererAPI* m_pCurrentAPI = nullptr;
+		std::unique_ptr<VulkanRenderDevice> m_Device;
 	};
 }

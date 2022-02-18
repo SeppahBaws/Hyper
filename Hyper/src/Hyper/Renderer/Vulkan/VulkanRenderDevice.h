@@ -1,15 +1,13 @@
 #pragma once
-#include "Hyper/Renderer/Base/RenderDevice.h"
-
 #include <vulkan/vulkan.hpp>
 
 namespace Hyper
 {
-	class VulkanRenderDevice final : public RenderDevice
+	class VulkanRenderDevice final
 	{
 	public:
 		VulkanRenderDevice();
-		~VulkanRenderDevice() override;
+		~VulkanRenderDevice();
 
 	private:
 		void CreateInstance();

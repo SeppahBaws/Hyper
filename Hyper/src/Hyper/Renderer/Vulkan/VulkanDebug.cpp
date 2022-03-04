@@ -10,22 +10,29 @@ namespace Hyper
 		PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerExt;
 		vk::DebugUtilsMessengerEXT debugUtilsMessenger;
 
-		VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger)
+		VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(VkInstance instance,
+			const VkDebugUtilsMessengerCreateInfoEXT*
+			pCreateInfo,
+			const VkAllocationCallbacks* pAllocator,
+			VkDebugUtilsMessengerEXT* pMessenger)
 		{
 			return pfnVkCreateDebugUtilsMessengerExt(instance, pCreateInfo, pAllocator, pMessenger);
 		}
 
-		VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VkAllocationCallbacks const* pAllocator)
+		VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessengerEXT messenger,
+			VkAllocationCallbacks const* pAllocator)
 		{
 			return pfnVkDestroyDebugUtilsMessengerExt(instance, messenger, pAllocator);
 		}
 
 		VkBool32 DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-			VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
+			VkDebugUtilsMessageTypeFlagsEXT messageType,
+			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
 		{
 			std::string debugMessage{};
 
-			const std::string severity = vk::to_string(static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(messageSeverity));
+			const std::string severity = vk::to_string(
+				static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(messageSeverity));
 			const std::string type = vk::to_string(static_cast<vk::DebugUtilsMessageTypeFlagsEXT>(messageType));
 			debugMessage += fmt::format("{}: {}:\n", severity, type);
 
@@ -60,14 +67,16 @@ namespace Hyper
 
 				for (u32 i = 0; i < pCallbackData->objectCount; i++)
 				{
-					const std::string objectType = vk::to_string(static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType));
+					const std::string objectType = vk::to_string(
+						static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType));
 
 					debugMessage += fmt::format("\t\tObject {}\n", i);
 					debugMessage += fmt::format("\t\t\tobjectType   = {}\n", objectType);
 					debugMessage += fmt::format("\t\t\tobjectHandle = {}\n", pCallbackData->pObjects[i].objectHandle);
 					if (pCallbackData->pObjects[i].pObjectName)
 					{
-						debugMessage += fmt::format("\t\t\tobjectName = <{}>\n", pCallbackData->pObjects[i].pObjectName);
+						debugMessage += fmt::format("\t\t\tobjectName = <{}>\n",
+							pCallbackData->pObjects[i].pObjectName);
 					}
 				}
 			}
@@ -86,22 +95,24 @@ namespace Hyper
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
 				HPR_VKLOG_ERROR(debugMessage);
 				break;
-			default: ;
+			default:;
 			}
 
 			return false;
 		}
 
-		void Setup(vk::Instance instance)
+		void Setup(std::shared_ptr<RenderContext> renderContext)
 		{
-			pfnVkCreateDebugUtilsMessengerExt = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(instance.getProcAddr("vkCreateDebugUtilsMessengerEXT"));
+			pfnVkCreateDebugUtilsMessengerExt = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(renderContext->
+				instance.getProcAddr("vkCreateDebugUtilsMessengerEXT"));
 			if (!pfnVkCreateDebugUtilsMessengerExt)
 			{
 				HPR_VKLOG_ERROR("GetInstanceProcAdd: Unable to find PfnVkCreateDebugUtilsMessengerExt function.");
 				return;
 			}
 
-			pfnVkDestroyDebugUtilsMessengerExt = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(instance.getProcAddr("vkDestroyDebugUtilsMessengerEXT"));
+			pfnVkDestroyDebugUtilsMessengerExt = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(renderContext->
+				instance.getProcAddr("vkDestroyDebugUtilsMessengerEXT"));
 			if (!pfnVkDestroyDebugUtilsMessengerExt)
 			{
 				HPR_VKLOG_ERROR("GetInstanceProcAdd: Unable to find PfnVkDestroyDebugUtilsMessengerExt function.");
@@ -120,9 +131,12 @@ namespace Hyper
 				vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
 			};
 
-			const vk::DebugUtilsMessengerCreateInfoEXT createInfo{ {}, severityFlags, messageTypeFlags, &DebugCallback };
-			pfnVkCreateDebugUtilsMessengerExt(
-				instance, reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>(&createInfo), nullptr,
+			const vk::DebugUtilsMessengerCreateInfoEXT createInfo{
+				{}, severityFlags, messageTypeFlags, &DebugCallback
+			};
+			pfnVkCreateDebugUtilsMessengerExt(renderContext->instance,
+				reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>(&createInfo),
+				nullptr,
 				reinterpret_cast<VkDebugUtilsMessengerEXT*>(&debugUtilsMessenger));
 		}
 

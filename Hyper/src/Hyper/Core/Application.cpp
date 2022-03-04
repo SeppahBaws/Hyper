@@ -44,6 +44,7 @@ namespace Hyper
 
 		while (!pWindow->ShouldClose())
 		{
+			// TODO: cap at 60fps
 			m_pContext->OnTick();
 		}
 	}

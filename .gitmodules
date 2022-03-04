@@ -8,3 +8,6 @@
 	path = Hyper/dependencies/glfw
 	url = git@github.com:SeppahBaws/glfw
 	branch = 3.3-stable
+[submodule "Hyper/dependencies/VulkanMemoryAllocator"]
+	path = Hyper/dependencies/VulkanMemoryAllocator
+	url = git@github.com:GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

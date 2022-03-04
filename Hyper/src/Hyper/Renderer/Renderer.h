@@ -1,7 +1,8 @@
 ﻿#pragma once
 #include "Hyper/Core/Subsystem.h"
 
-#include "Hyper/Renderer/Vulkan/VulkanRenderDevice.h"
+#include "Hyper/Renderer/Vulkan/VulkanDevice.h"
+#include "Vulkan/VulkanSwapChain.h"
 
 namespace Hyper
 {
@@ -15,7 +16,13 @@ namespace Hyper
 		void OnTick() override;
 		void OnShutdown() override;
 
+		[[nodiscard]] std::shared_ptr<VulkanDevice> GetDevice() const { return m_Device; };
+
 	private:
-		std::unique_ptr<VulkanRenderDevice> m_Device;
+		std::shared_ptr<RenderContext> m_pRenderContext;
+		std::shared_ptr<VulkanDevice> m_Device;
+		std::shared_ptr<VulkanSwapChain> m_SwapChain;
+
+		u64 m_FrameCount{};
 	};
 }

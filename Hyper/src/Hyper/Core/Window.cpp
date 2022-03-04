@@ -4,9 +4,15 @@
 #include <iostream>
 #include <GLFW/glfw3.h>
 
+#include "Context.h"
+
 namespace Hyper
 {
-	Window::Window(Context* pContext) : Subsystem(pContext)
+	Window::Window(Context* pContext)
+		: Subsystem(pContext)
+		, m_Width(1600)
+		, m_Height(900)
+		, m_Title("Hyper Engine")
 	{
 	}
 
@@ -18,7 +24,8 @@ namespace Hyper
 			return false;
 		}
 
-		m_pWindow = glfwCreateWindow(1600, 900, "Hyper Engine", nullptr, nullptr);
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		m_pWindow = glfwCreateWindow(static_cast<i32>(m_Width), static_cast<i32>(m_Height), m_Title.c_str(), nullptr, nullptr);
 		if (!m_pWindow)
 		{
 			HPR_CORE_LOG_CRITICAL("Failed to create GLFW window!");

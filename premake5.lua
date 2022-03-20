@@ -11,7 +11,7 @@ workspace "HyperEngine"
     flags
     {
         "MultiProcessorCompile",
-        "FatalWarnings"
+        -- "FatalWarnings"
     }
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"

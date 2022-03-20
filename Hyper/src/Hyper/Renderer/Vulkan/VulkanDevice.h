@@ -11,8 +11,11 @@ namespace Hyper
 	class VulkanDevice final
 	{
 	public:
-		VulkanDevice(std::shared_ptr<RenderContext> pRenderCtx);
+		VulkanDevice(RenderContext* pRenderCtx);
 		~VulkanDevice();
+
+		[[nodiscard]] std::vector<vk::CommandBuffer> GetCommandBuffers(u32 count);
+		[[nodiscard]] vk::Queue GetGraphicsQueue() const { return m_GraphicsQueue; }
 
 	private:
 		[[nodiscard]] bool CheckExtensionsAndLayersSupport() const;
@@ -22,9 +25,11 @@ namespace Hyper
 		std::vector<const char*> m_RequiredInstanceLayerNames = {};
 		std::vector<const char*> m_RequiredInstanceExtensionNames = {};
 		std::vector<const char*> m_RequiredDeviceLayerNames = {};
-		std::vector<const char*> m_RequiredDeviceExtensionNames = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+		std::vector<const char*> m_RequiredDeviceExtensionNames = {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
+		};
 
-		std::shared_ptr<RenderContext> m_pRenderCtx;
+		RenderContext* m_pRenderCtx;
 
 		u32 m_GraphicsQueueFamilyIndex;
 		vk::Queue m_GraphicsQueue;

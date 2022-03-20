@@ -25,7 +25,7 @@ namespace Hyper
 		}
 		else
 		{
-			HPR_CORE_LOG_INFO("Initialized all subsystems!");
+			HPR_CORE_LOG_INFO("Successfully initialized all subsystems!");
 		}
 	}
 
@@ -41,7 +41,7 @@ namespace Hyper
 		{
 			return;
 		}
-
+		
 		while (!pWindow->ShouldClose())
 		{
 			// TODO: cap at 60fps

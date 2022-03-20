@@ -10,5 +10,8 @@ namespace Hyper
 		vk::PhysicalDevice physicalDevice;
 		vk::Device device;
 		VmaAllocator allocator;
+
+		vk::Format imageFormat;
+		vk::Extent2D imageExtent;
 	};
 }

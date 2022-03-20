@@ -11,3 +11,6 @@
 [submodule "Hyper/dependencies/VulkanMemoryAllocator"]
 	path = Hyper/dependencies/VulkanMemoryAllocator
 	url = git@github.com:GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "Hyper/dependencies/glm"]
+	path = Hyper/dependencies/glm
+	url = git@github.com:g-truc/glm.git

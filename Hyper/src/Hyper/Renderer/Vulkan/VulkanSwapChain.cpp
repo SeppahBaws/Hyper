@@ -9,11 +9,9 @@
 
 namespace Hyper
 {
-	VulkanSwapChain::VulkanSwapChain(const Window* pWindow, std::shared_ptr<RenderContext> pRenderCtx,
-		std::shared_ptr<VulkanDevice> /*pDevice*/, u32 width, u32 height)
+	VulkanSwapChain::VulkanSwapChain(const Window* pWindow, RenderContext* pRenderCtx, u32 width, u32 height)
+		: m_pRenderCtx(pRenderCtx)
 	{
-		m_pRenderCtx = pRenderCtx;
-
 		// Create surface.
 		{
 			VkSurfaceKHR surface;
@@ -41,11 +39,14 @@ namespace Hyper
 
 			m_ImageFormat = availableFormats[0].format;
 			m_ColorSpace = availableFormats[0].colorSpace;
+
+			pRenderCtx->imageFormat = m_ImageFormat;
 		}
 
 		width = std::max(surfaceCapabilities.maxImageExtent.width, std::min(surfaceCapabilities.minImageExtent.width, width));
 		height = std::max(surfaceCapabilities.maxImageExtent.height, std::min(surfaceCapabilities.minImageExtent.height, height));
 		vk::Extent2D extent = { width, height };
+		pRenderCtx->imageExtent = extent;
 
 		// TODO: make this a parameter?
 		const u32 imageCount = surfaceCapabilities.minImageCount + 1;
@@ -93,10 +94,10 @@ namespace Hyper
 			}
 			catch (vk::SystemError& e)
 			{
-				throw std::runtime_error("Failed to create the swapchain images: "s + e.what());
+				throw std::runtime_error("Failed to acquire the swapchain images: "s + e.what());
 			}
 
-			HPR_VKLOG_INFO("Acquired swap chain images");
+			HPR_VKLOG_INFO("Acquired swap chain images ({})", m_Images.size());
 
 			// Create image views
 			for (const auto& image : m_Images)
@@ -119,8 +120,8 @@ namespace Hyper
 				}
 				m_ImageViews.push_back(imageView);
 
-				HPR_VKLOG_INFO("Created swap chain image views");
 			}
+			HPR_VKLOG_INFO("Created swap chain image views ({})", m_ImageViews.size());
 		}
 	}
 

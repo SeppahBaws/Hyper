@@ -6,7 +6,7 @@
 
 namespace Hyper
 {
-	VulkanDevice::VulkanDevice(std::shared_ptr<RenderContext> pRenderCtx)
+	VulkanDevice::VulkanDevice(RenderContext* pRenderCtx)
 		: m_pRenderCtx(pRenderCtx)
 	{
 		if (HYPER_VALIDATE)
@@ -103,9 +103,13 @@ namespace Hyper
 				{}, m_GraphicsQueueFamilyIndex, 1, &queuePriority
 			};
 
+			vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{};
+			dynamicRenderingFeatures.dynamicRendering = true;
+
 			vk::DeviceCreateInfo deviceCreateInfo = vk::DeviceCreateInfo{
 				{}, deviceQueueCreateInfo, m_RequiredDeviceLayerNames, m_RequiredDeviceExtensionNames, {}
 			};
+			deviceCreateInfo.pNext = &dynamicRenderingFeatures;
 			pRenderCtx->device = pRenderCtx->physicalDevice.createDevice(deviceCreateInfo);
 
 			HPR_VKLOG_INFO("Created the logical device");
@@ -126,9 +130,9 @@ namespace Hyper
 
 		// Create command pool
 		{
-			vk::CommandPoolCreateInfo info{
-				{}, m_GraphicsQueueFamilyIndex
-			};
+			vk::CommandPoolCreateInfo info{};
+			info.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+			info.queueFamilyIndex = m_GraphicsQueueFamilyIndex;
 
 			try
 			{
@@ -145,6 +149,7 @@ namespace Hyper
 
 	VulkanDevice::~VulkanDevice()
 	{
+		// TODO: keep track of allocated command buffers and destroy them all.
 		m_pRenderCtx->device.destroy(m_CommandPool);
 
 		vmaDestroyAllocator(m_Allocator);
@@ -152,6 +157,26 @@ namespace Hyper
 		m_pRenderCtx->device.destroy();
 		VkDebug::FreeDebugCallback(m_pRenderCtx->instance);
 		m_pRenderCtx->instance.destroy();
+	}
+
+	std::vector<vk::CommandBuffer> VulkanDevice::GetCommandBuffers(u32 count)
+	{
+		vk::CommandBufferAllocateInfo allocInfo{};
+		allocInfo.commandPool = m_CommandPool;
+		allocInfo.level = vk::CommandBufferLevel::ePrimary;
+		allocInfo.commandBufferCount = count;
+
+		std::vector<vk::CommandBuffer> buffers;
+		try
+		{
+			buffers = m_pRenderCtx->device.allocateCommandBuffers(allocInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to allocate command buffer: "s + e.what());
+		}
+
+		return buffers;
 	}
 
 	bool VulkanDevice::CheckExtensionsAndLayersSupport() const

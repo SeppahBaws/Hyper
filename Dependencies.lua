@@ -3,6 +3,7 @@ VLDLocation = os.getenv("VLD_DIR")
 
 IncludeDir = {}
 IncludeDir["GLFW"] = "%{wks.location}/Hyper/dependencies/glfw/include"
+IncludeDir["glm"] = "%{wks.location}/Hyper/dependencies/glm"
 IncludeDir["spdlog"] = "%{wks.location}/Hyper/dependencies/spdlog/include"
 IncludeDir["Vulkan"] = "%{VULKAN_SDK}/Include"
 IncludeDir["magic_enum"] = "%{wks.location}/Hyper/dependencies/magic_enum/include"

@@ -1,15 +1,10 @@
-project "Hyper"
-    kind "StaticLib"
+project "ShaderTest"
+    kind "ConsoleApp"
     language "C++"
     cppdialect "C++20"
-    staticruntime "on"
-    warnings "extra"
 
     targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
     objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
-
-    pchheader "HyperPCH.h"
-    pchsource "src/HyperPCH.cpp"
 
     files
     {
@@ -19,14 +14,7 @@ project "Hyper"
 
     includedirs
     {
-        "src",
-
-        "%{IncludeDir.GLFW}",
-        "%{IncludeDir.glm}",
-        "%{IncludeDir.spdlog}",
         "%{IncludeDir.Vulkan}",
-        "%{IncludeDir.magic_enum}",
-        "%{IncludeDir.VkMemAlloc}"
     }
 
     libdirs
@@ -34,31 +22,13 @@ project "Hyper"
         "%{LibDir.Vulkan}"
     }
 
-    links
-    {
-        "GLFW",
-        "%{Library.Vulkan}"
-    }
-
     filter "system:windows"
         systemversion "latest"
-        system "Windows"
-
-        defines
-        {
-            "HYPER_WINDOWS"
-        }
 
     filter "configurations:Debug"
         runtime "Debug"
         symbols "on"
 
-        defines
-        {
-            "HYPER_DEBUG"
-        }
-
-        -- Shaderc debug libraries
         links
         {
             "%{LibDir.Vulkan}/shaderc_sharedd.lib",
@@ -72,12 +42,6 @@ project "Hyper"
         runtime "Release"
         optimize "on"
 
-        defines
-        {
-            "HYPER_RELEASE"
-        }
-
-        -- Shaderc release libraries
         links
         {
             "%{LibDir.Vulkan}/shaderc_shared.lib",

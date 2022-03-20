@@ -6,16 +6,20 @@ namespace Hyper
 	struct RenderContext;
 	class VulkanDevice;
 	class Window;
-	
+
 	class VulkanSwapChain
 	{
 	public:
-		VulkanSwapChain(const Window* pWindow, std::shared_ptr<RenderContext> pRenderCtx,
-		                std::shared_ptr<VulkanDevice> pDevice, u32 width, u32 height);
+		VulkanSwapChain(const Window* pWindow, RenderContext* pRenderCtx, u32 width, u32 height);
 		~VulkanSwapChain();
-	
+
+		[[nodiscard]] vk::Image GetImage(size_t frameIdx) const { return m_Images[frameIdx]; }
+		[[nodiscard]] vk::ImageView GetImageView(size_t frameIdx) const { return m_ImageViews[frameIdx]; }
+		[[nodiscard]] vk::SwapchainKHR GetSwapchain() const { return m_SwapChain; }
+		[[nodiscard]] u32 GetNumFrames() const { return m_Images.size(); }
+
 	private:
-		std::shared_ptr<RenderContext> m_pRenderCtx;
+		RenderContext* m_pRenderCtx;
 
 		vk::SurfaceKHR m_Surface{};
 		vk::SwapchainKHR m_SwapChain{};
@@ -25,6 +29,6 @@ namespace Hyper
 
 		vk::Format m_ImageFormat;
 		vk::ColorSpaceKHR m_ColorSpace;
-		vk::Extent2D m_Extent;
+		// vk::Extent2D m_Extent;
 	};
 }

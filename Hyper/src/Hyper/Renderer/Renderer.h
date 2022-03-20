@@ -2,6 +2,7 @@
 #include "Hyper/Core/Subsystem.h"
 
 #include "Hyper/Renderer/Vulkan/VulkanDevice.h"
+#include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanSwapChain.h"
 
 namespace Hyper
@@ -16,13 +17,20 @@ namespace Hyper
 		void OnTick() override;
 		void OnShutdown() override;
 
-		[[nodiscard]] std::shared_ptr<VulkanDevice> GetDevice() const { return m_Device; };
-
 	private:
-		std::shared_ptr<RenderContext> m_pRenderContext;
-		std::shared_ptr<VulkanDevice> m_Device;
-		std::shared_ptr<VulkanSwapChain> m_SwapChain;
+		std::unique_ptr<RenderContext> m_pRenderContext;
+		std::unique_ptr<VulkanDevice> m_Device;
+		std::unique_ptr<VulkanSwapChain> m_SwapChain;
+		std::unique_ptr<VulkanPipeline> m_Pipeline;
 
-		u64 m_FrameCount{};
+		const u32 MAX_FRAMES_IN_FLIGHT = 2;
+		u32 m_CurrentFrame = 0;
+		u32 m_CurrentBuffer;
+
+		std::vector<vk::CommandBuffer> m_CommandBuffers;
+		std::vector<vk::Semaphore> m_ImageAvailableSemaphores;
+		std::vector<vk::Semaphore> m_RenderFinishedSemaphores;
+		std::vector<vk::Fence> m_InFlightFences;
+		vk::RenderPass m_RenderPass;
 	};
 }

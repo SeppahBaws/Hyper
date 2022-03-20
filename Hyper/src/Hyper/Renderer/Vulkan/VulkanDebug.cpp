@@ -101,9 +101,9 @@ namespace Hyper
 			return false;
 		}
 
-		void Setup(std::shared_ptr<RenderContext> renderContext)
+		void Setup(RenderContext* pRenderContext)
 		{
-			pfnVkCreateDebugUtilsMessengerExt = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(renderContext->
+			pfnVkCreateDebugUtilsMessengerExt = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(pRenderContext->
 				instance.getProcAddr("vkCreateDebugUtilsMessengerEXT"));
 			if (!pfnVkCreateDebugUtilsMessengerExt)
 			{
@@ -111,7 +111,7 @@ namespace Hyper
 				return;
 			}
 
-			pfnVkDestroyDebugUtilsMessengerExt = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(renderContext->
+			pfnVkDestroyDebugUtilsMessengerExt = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(pRenderContext->
 				instance.getProcAddr("vkDestroyDebugUtilsMessengerEXT"));
 			if (!pfnVkDestroyDebugUtilsMessengerExt)
 			{
@@ -134,7 +134,7 @@ namespace Hyper
 			const vk::DebugUtilsMessengerCreateInfoEXT createInfo{
 				{}, severityFlags, messageTypeFlags, &DebugCallback
 			};
-			pfnVkCreateDebugUtilsMessengerExt(renderContext->instance,
+			pfnVkCreateDebugUtilsMessengerExt(pRenderContext->instance,
 				reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>(&createInfo),
 				nullptr,
 				reinterpret_cast<VkDebugUtilsMessengerEXT*>(&debugUtilsMessenger));

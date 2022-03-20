@@ -9,7 +9,7 @@ namespace Hyper
 	{
 		VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
 
-		void Setup(std::shared_ptr<RenderContext> renderContext);
+		void Setup(RenderContext* renderContext);
 
 		void FreeDebugCallback(vk::Instance instance);
 	}

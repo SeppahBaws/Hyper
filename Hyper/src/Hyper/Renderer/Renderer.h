@@ -19,9 +19,9 @@ namespace Hyper
 
 	private:
 		std::unique_ptr<RenderContext> m_pRenderContext;
-		std::unique_ptr<VulkanDevice> m_Device;
-		std::unique_ptr<VulkanSwapChain> m_SwapChain;
-		std::unique_ptr<VulkanPipeline> m_Pipeline;
+		std::unique_ptr<VulkanDevice> m_pDevice;
+		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
+		std::unique_ptr<VulkanPipeline> m_pPipeline;
 
 		const u32 MAX_FRAMES_IN_FLIGHT = 2;
 		u32 m_CurrentFrame = 0;

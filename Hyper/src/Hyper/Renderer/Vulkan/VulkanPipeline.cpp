@@ -17,9 +17,41 @@ namespace Hyper
 
 	VulkanPipeline::~VulkanPipeline()
 	{
-		m_pRenderCtx->device.destroyPipeline(m_Pipeline);
-		m_pRenderCtx->device.destroyPipelineCache(m_Cache);
-		m_pRenderCtx->device.destroyPipelineLayout(m_Layout);
+		if (m_Pipeline)
+			m_pRenderCtx->device.destroyPipeline(m_Pipeline);
+		if (m_Cache)
+			m_pRenderCtx->device.destroyPipelineCache(m_Cache);
+		if (m_Layout)
+			m_pRenderCtx->device.destroyPipelineLayout(m_Layout);
+	}
+
+	VulkanPipeline::VulkanPipeline(VulkanPipeline&& other) noexcept
+		: m_pRenderCtx(other.m_pRenderCtx)
+		, m_Pipeline(other.m_Pipeline)
+		, m_Cache(other.m_Cache)
+		, m_Layout(other.m_Layout)
+	{
+		// Invalidate other object
+		other.m_pRenderCtx = nullptr;
+		other.m_Pipeline = nullptr;
+		other.m_Cache = nullptr;
+		other.m_Layout = nullptr;
+	}
+
+	VulkanPipeline& VulkanPipeline::operator=(VulkanPipeline&& other) noexcept
+	{
+		// Invalidate other object
+		m_pRenderCtx = other.m_pRenderCtx;
+		m_Pipeline = other.m_Pipeline;
+		m_Cache = other.m_Cache;
+		m_Layout = other.m_Layout;
+
+		other.m_pRenderCtx = nullptr;
+		other.m_Pipeline = nullptr;
+		other.m_Cache = nullptr;
+		other.m_Layout = nullptr;
+
+		return *this;
 	}
 
 	PipelineBuilder::PipelineBuilder(RenderContext* pRenderCtx)
@@ -34,30 +66,31 @@ namespace Hyper
 
 	void PipelineBuilder::SetInputAssembly(vk::PrimitiveTopology topology, bool primitiveRestartEnable)
 	{
-		m_InputAssembly = vk::PipelineInputAssemblyStateCreateInfo{};
-		m_InputAssembly.topology = topology;
-		m_InputAssembly.primitiveRestartEnable = primitiveRestartEnable;
+		m_InputAssembly = vk::PipelineInputAssemblyStateCreateInfo{
+			{},
+			topology,
+			primitiveRestartEnable
+		};
 	}
 
 	void PipelineBuilder::SetViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
 	{
-		m_Viewport = vk::Viewport{};
-		m_Viewport.x = x;
-		m_Viewport.y = y;
-		m_Viewport.width = width;
-		m_Viewport.height = height;
-		m_Viewport.minDepth = minDepth;
-		m_Viewport.maxDepth = maxDepth;
+		m_Viewport = vk::Viewport{
+			x, y,
+			width, height,
+			minDepth, maxDepth
+		};
 	}
 
 	void PipelineBuilder::SetScissor(const vk::Offset2D& offset, const vk::Extent2D& extent)
 	{
-		m_Scissor = vk::Rect2D{};
-		m_Scissor.offset = offset;
-		m_Scissor.extent = extent;
+		m_Scissor = vk::Rect2D{
+			offset,
+			extent
+		};
 	}
 
-	void PipelineBuilder::SetRasterizer(vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode)
+	void PipelineBuilder::SetRasterizer(vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode, vk::FrontFace frontFace)
 	{
 		m_Rasterizer = vk::PipelineRasterizationStateCreateInfo{};
 		m_Rasterizer.depthClampEnable = false;
@@ -65,7 +98,7 @@ namespace Hyper
 		m_Rasterizer.polygonMode = polygonMode;
 		m_Rasterizer.lineWidth = 1.0f;
 		m_Rasterizer.cullMode = cullMode;
-		m_Rasterizer.frontFace = vk::FrontFace::eCounterClockwise;
+		m_Rasterizer.frontFace = frontFace;
 		m_Rasterizer.depthBiasEnable = false;
 		m_Rasterizer.depthBiasConstantFactor = 0.0f;
 		m_Rasterizer.depthBiasClamp = 0.0f;
@@ -119,10 +152,10 @@ namespace Hyper
 		const std::vector<vk::PushConstantRange>& pushConstants)
 	{
 		m_PipelineLayoutInfo = vk::PipelineLayoutCreateInfo{};
-		m_PipelineLayoutInfo.setLayoutCount = layouts.size();
+		m_PipelineLayoutInfo.setLayoutCount = static_cast<u32>(layouts.size());
 		m_PipelineLayoutInfo.pSetLayouts = layouts.data();
 
-		m_PipelineLayoutInfo.pushConstantRangeCount = pushConstants.size();
+		m_PipelineLayoutInfo.pushConstantRangeCount = static_cast<u32>(pushConstants.size());
 		m_PipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
 	}
 
@@ -132,8 +165,10 @@ namespace Hyper
 		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
 
 		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.setVertexBindingDescriptions(bindingDescription);
-		vertexInputInfo.setVertexAttributeDescriptions(attributeDescriptions);
+		// vertexInputInfo.setVertexBindingDescriptions(bindingDescription);
+		// vertexInputInfo.setVertexAttributeDescriptions(attributeDescriptions);
+		vertexInputInfo.setVertexBindingDescriptions({});
+		vertexInputInfo.setVertexAttributeDescriptions({});
 
 		vk::PipelineViewportStateCreateInfo viewportState{};
 		viewportState.setViewports(m_Viewport);
@@ -161,7 +196,7 @@ namespace Hyper
 		vk::GraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.pNext = &pipelineRendering;
 		pipelineInfo.setStages(shaderStages);
-
+		
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &m_InputAssembly;
 		pipelineInfo.pViewportState = &viewportState;

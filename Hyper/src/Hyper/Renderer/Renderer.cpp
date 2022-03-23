@@ -22,10 +22,10 @@ namespace Hyper
 	{
 		m_pRenderContext = std::make_unique<RenderContext>();
 
-		m_Device = std::make_unique<VulkanDevice>(m_pRenderContext.get());
+		m_pDevice = std::make_unique<VulkanDevice>(m_pRenderContext.get());
 
 		Window* pWindow = m_pContext->GetSubsystem<Window>();
-		m_SwapChain = std::make_unique<VulkanSwapChain>(pWindow, m_pRenderContext.get(), pWindow->GetWidth(), pWindow->GetHeight());
+		m_pSwapChain = std::make_unique<VulkanSwapChain>(pWindow, m_pRenderContext.get(), pWindow->GetWidth(), pWindow->GetHeight());
 
 
 		// Shader test
@@ -44,16 +44,16 @@ namespace Hyper
 		builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
 		builder.SetDescriptorSetLayout({}, {});
 
-		m_Pipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphicsDynamicRendering());
+		m_pPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphicsDynamicRendering());
 
 		// Get command buffers. 1 for each frame in flight.
 		{
-			m_CommandBuffers = m_Device->GetCommandBuffers(m_SwapChain->GetNumFrames());
+			m_CommandBuffers = m_pDevice->GetCommandBuffers(m_pSwapChain->GetNumFrames());
 		}
 
 		// Create sync objects
 		{
-			const u32 numFrames = m_SwapChain->GetNumFrames();
+			const u32 numFrames = m_pSwapChain->GetNumFrames();
 			m_ImageAvailableSemaphores.resize(numFrames);
 			m_RenderFinishedSemaphores.resize(numFrames);
 			m_InFlightFences.resize(numFrames);
@@ -90,7 +90,7 @@ namespace Hyper
 		m_pRenderContext->device.resetFences(m_InFlightFences[m_CurrentFrame]);
 
 		result = m_pRenderContext->device.acquireNextImageKHR(
-			m_SwapChain->GetSwapchain(),
+			m_pSwapChain->GetSwapchain(),
 			1'000'000'000,
 			m_ImageAvailableSemaphores[m_CurrentFrame],
 			nullptr,
@@ -117,7 +117,7 @@ namespace Hyper
 		
 		InsertImageMemoryBarrier(
 			cmd,
-			m_SwapChain->GetImage(m_CurrentFrame),
+			m_pSwapChain->GetImage(m_CurrentFrame),
 			{}, // srcAccessMask
 			vk::AccessFlagBits::eColorAttachmentWrite, // dstAccessMask
 			vk::ImageLayout::eUndefined, // oldLayout
@@ -132,7 +132,7 @@ namespace Hyper
 
 
 		vk::RenderingAttachmentInfo attachmentInfo = {};
-		attachmentInfo.imageView = m_SwapChain->GetImageView(m_CurrentFrame);
+		attachmentInfo.imageView = m_pSwapChain->GetImageView(m_CurrentFrame);
 		attachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		attachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
 		attachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
@@ -148,17 +148,19 @@ namespace Hyper
 
 		cmd.beginRendering(renderingInfo);
 
-		// draw stuff
-		// cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_Pipeline->GetPipeline());
-		// cmd.
-		// cmd.draw(3, 1, 0, 0);
+		// draw stuff here
+
+
+		// Draw test triangle with basic shader
+		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
+		cmd.draw(3, 1, 0, 0);
 
 
 		cmd.endRendering();
 		
 		InsertImageMemoryBarrier(
 			cmd,
-			m_SwapChain->GetImage(m_CurrentFrame),
+			m_pSwapChain->GetImage(m_CurrentFrame),
 			vk::AccessFlagBits::eColorAttachmentWrite,
 			{},
 			vk::ImageLayout::eColorAttachmentOptimal,
@@ -168,8 +170,9 @@ namespace Hyper
 			vk::ImageSubresourceRange({
 				vk::ImageAspectFlagBits::eColor,
 				0, 1,
-				0, 1 })
-				);
+				0, 1
+			})
+		);
 
 		try
 		{
@@ -193,7 +196,7 @@ namespace Hyper
 
 		try
 		{
-			m_Device->GetGraphicsQueue().submit(submitInfo, m_InFlightFences[m_CurrentFrame]);
+			m_pDevice->GetGraphicsQueue().submit(submitInfo, m_InFlightFences[m_CurrentFrame]);
 		}
 		catch (vk::SystemError& e)
 		{
@@ -202,7 +205,7 @@ namespace Hyper
 
 
 		// Present
-		std::array<vk::SwapchainKHR, 1> swapchains = { m_SwapChain->GetSwapchain() };
+		std::array<vk::SwapchainKHR, 1> swapchains = { m_pSwapChain->GetSwapchain() };
 		vk::PresentInfoKHR presentInfo = {};
 		presentInfo.setWaitSemaphores(m_RenderFinishedSemaphores[m_CurrentFrame]);
 		presentInfo.setResults(nullptr);
@@ -211,7 +214,7 @@ namespace Hyper
 
 		try
 		{
-			result = m_Device->GetGraphicsQueue().presentKHR(presentInfo);
+			result = m_pDevice->GetGraphicsQueue().presentKHR(presentInfo);
 		}
 		catch (vk::SystemError& e)
 		{
@@ -235,8 +238,8 @@ namespace Hyper
 			m_pRenderContext->device.destroySemaphore(m_ImageAvailableSemaphores[i]);
 		}
 
-		m_Pipeline.reset();
-		m_SwapChain.reset();
-		m_Device.reset();
+		m_pPipeline.reset();
+		m_pSwapChain.reset();
+		m_pDevice.reset();
 	}
 }

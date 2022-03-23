@@ -12,6 +12,9 @@ namespace Hyper
 	public:
 		VulkanPipeline(RenderContext* pRenderCtx, const vk::Pipeline& pipeline, const vk::PipelineCache& cache, const vk::PipelineLayout& layout);
 		~VulkanPipeline();
+		VulkanPipeline(const VulkanPipeline& other) = delete;
+		VulkanPipeline(VulkanPipeline&& other) noexcept;
+		VulkanPipeline& operator=(VulkanPipeline&& other) noexcept;
 
 		[[nodiscard]] const vk::Pipeline& GetPipeline() const { return m_Pipeline; }
 		[[nodiscard]] const vk::PipelineCache& GetCache() const { return m_Cache; }
@@ -33,7 +36,7 @@ namespace Hyper
 		void SetInputAssembly(vk::PrimitiveTopology topology, bool primitiveRestartEnable);
 		void SetViewport(float x, float y, float width, float height, float minDepth, float maxDepth);
 		void SetScissor(const vk::Offset2D& offset, const vk::Extent2D& extent);
-		void SetRasterizer(vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode);
+		void SetRasterizer(vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode, vk::FrontFace frontFace = vk::FrontFace::eCounterClockwise);
 		void SetMultisampling();
 		void SetDepthStencil(bool depthTest, bool depthWrite, vk::CompareOp compareOp);
 		void SetColorBlend(bool blendEnable, vk::BlendOp colorBlendOp, vk::BlendOp alphaBlendOp, bool logicOpEnable, vk::LogicOp logicOp);

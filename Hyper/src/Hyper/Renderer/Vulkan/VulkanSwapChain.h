@@ -16,7 +16,7 @@ namespace Hyper
 		[[nodiscard]] vk::Image GetImage(size_t frameIdx) const { return m_Images[frameIdx]; }
 		[[nodiscard]] vk::ImageView GetImageView(size_t frameIdx) const { return m_ImageViews[frameIdx]; }
 		[[nodiscard]] vk::SwapchainKHR GetSwapchain() const { return m_SwapChain; }
-		[[nodiscard]] u32 GetNumFrames() const { return m_Images.size(); }
+		[[nodiscard]] u32 GetNumFrames() const { return static_cast<u32>(m_Images.size()); }
 
 	private:
 		RenderContext* m_pRenderCtx;

@@ -4,18 +4,17 @@
 #define WIN32_LEAN_AND_MEAN // VMA includes windows.h, so make sure that this is not enabled.
 #include <vk_mem_alloc.h>
 
-#include "Hyper/Renderer/RenderContext.h"
+#include "VulkanQueue.h"
 
 namespace Hyper
 {
+	struct RenderContext;
+
 	class VulkanDevice final
 	{
 	public:
 		VulkanDevice(RenderContext* pRenderCtx);
 		~VulkanDevice();
-
-		[[nodiscard]] std::vector<vk::CommandBuffer> GetCommandBuffers(u32 count);
-		[[nodiscard]] vk::Queue GetGraphicsQueue() const { return m_GraphicsQueue; }
 
 	private:
 		[[nodiscard]] bool CheckExtensionsAndLayersSupport() const;
@@ -30,12 +29,8 @@ namespace Hyper
 		};
 
 		RenderContext* m_pRenderCtx;
-
-		u32 m_GraphicsQueueFamilyIndex;
-		vk::Queue m_GraphicsQueue;
-
+		VulkanQueue m_GraphicsQueue;
 		vk::CommandPool m_CommandPool;
-
 		VmaAllocator m_Allocator;
 	};
 }

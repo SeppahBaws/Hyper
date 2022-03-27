@@ -94,13 +94,13 @@ namespace Hyper
 					return qfp.queueFlags & vk::QueueFlagBits::eGraphics;
 				});
 
-			m_GraphicsQueueFamilyIndex = static_cast<u32>(std::distance(queueFamilyProperties.begin(), propertyIterator));
-			assert(m_GraphicsQueueFamilyIndex < queueFamilyProperties.size());
+			u32 graphicsQueueFamilyIndex = static_cast<u32>(std::distance(queueFamilyProperties.begin(), propertyIterator));
+			assert(graphicsQueueFamilyIndex < queueFamilyProperties.size());
 
-			// Create a device
+			// Create a device and retrieve the queues
 			constexpr f32 queuePriority = 0.0f;
 			vk::DeviceQueueCreateInfo deviceQueueCreateInfo{
-				{}, m_GraphicsQueueFamilyIndex, 1, &queuePriority
+				{}, graphicsQueueFamilyIndex, 1, &queuePriority
 			};
 
 			vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{};
@@ -114,7 +114,15 @@ namespace Hyper
 
 			HPR_VKLOG_INFO("Created the logical device");
 
-			m_GraphicsQueue = pRenderCtx->device.getQueue(m_GraphicsQueueFamilyIndex, 0);
+
+			m_GraphicsQueue = VulkanQueue{
+				.queue = pRenderCtx->device.getQueue(graphicsQueueFamilyIndex, 0),
+				.familyIndex = graphicsQueueFamilyIndex,
+				.flags = vk::QueueFlagBits::eGraphics
+			};
+			pRenderCtx->graphicsQueue = m_GraphicsQueue;
+
+			HPR_VKLOG_INFO("Got the graphics queue");
 		}
 
 		// Init VMA
@@ -127,56 +135,15 @@ namespace Hyper
 			
 			VulkanUtils::VkCheck(vmaCreateAllocator(&createInfo, &m_Allocator));
 		}
-
-		// Create command pool
-		{
-			vk::CommandPoolCreateInfo info{};
-			info.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-			info.queueFamilyIndex = m_GraphicsQueueFamilyIndex;
-
-			try
-			{
-				m_CommandPool = pRenderCtx->device.createCommandPool(info);
-			}
-			catch (vk::SystemError& e)
-			{
-				throw std::runtime_error("Failed to create command pool:"s + e.what());
-			}
-
-			HPR_VKLOG_INFO("Created the command pool");
-		}
 	}
 
 	VulkanDevice::~VulkanDevice()
 	{
-		// TODO: keep track of allocated command buffers and destroy them all.
-		m_pRenderCtx->device.destroy(m_CommandPool);
-
 		vmaDestroyAllocator(m_Allocator);
 
 		m_pRenderCtx->device.destroy();
 		VkDebug::FreeDebugCallback(m_pRenderCtx->instance);
 		m_pRenderCtx->instance.destroy();
-	}
-
-	std::vector<vk::CommandBuffer> VulkanDevice::GetCommandBuffers(u32 count)
-	{
-		vk::CommandBufferAllocateInfo allocInfo{};
-		allocInfo.commandPool = m_CommandPool;
-		allocInfo.level = vk::CommandBufferLevel::ePrimary;
-		allocInfo.commandBufferCount = count;
-
-		std::vector<vk::CommandBuffer> buffers;
-		try
-		{
-			buffers = m_pRenderCtx->device.allocateCommandBuffers(allocInfo);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to allocate command buffer: "s + e.what());
-		}
-
-		return buffers;
 	}
 
 	bool VulkanDevice::CheckExtensionsAndLayersSupport() const

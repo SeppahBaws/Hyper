@@ -1,7 +1,10 @@
 ﻿#pragma once
-#include "Hyper/Core/Subsystem.h"
+#include <vulkan/vulkan.hpp>
 
-#include "Hyper/Renderer/Vulkan/VulkanDevice.h"
+#include "Hyper/Core/Subsystem.h"
+#include "Vulkan/VulkanCommandPool.h"
+
+#include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanSwapChain.h"
 
@@ -20,6 +23,7 @@ namespace Hyper
 	private:
 		std::unique_ptr<RenderContext> m_pRenderContext;
 		std::unique_ptr<VulkanDevice> m_pDevice;
+		std::unique_ptr<VulkanCommandPool> m_pCommandPool;
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
 		std::unique_ptr<VulkanPipeline> m_pPipeline;
 

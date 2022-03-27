@@ -1,13 +1,13 @@
 ﻿#include "HyperPCH.h"
 #include "Renderer.h"
 
-#include <iostream>
-
 #include "Hyper/Core/Context.h"
 #include "Hyper/Core/Window.h"
+#include "Vulkan/VulkanCommandPool.h"
+#include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanShader.h"
-
+#include "Vulkan/VulkanSwapChain.h"
 #include "Vulkan/VulkanTemp.h"
 
 namespace Hyper
@@ -21,8 +21,8 @@ namespace Hyper
 	bool Renderer::OnInitialize()
 	{
 		m_pRenderContext = std::make_unique<RenderContext>();
-
 		m_pDevice = std::make_unique<VulkanDevice>(m_pRenderContext.get());
+		m_pCommandPool = std::make_unique<VulkanCommandPool>(m_pRenderContext.get());
 
 		Window* pWindow = m_pContext->GetSubsystem<Window>();
 		m_pSwapChain = std::make_unique<VulkanSwapChain>(pWindow, m_pRenderContext.get(), pWindow->GetWidth(), pWindow->GetHeight());
@@ -48,7 +48,7 @@ namespace Hyper
 
 		// Get command buffers. 1 for each frame in flight.
 		{
-			m_CommandBuffers = m_pDevice->GetCommandBuffers(m_pSwapChain->GetNumFrames());
+			m_CommandBuffers = m_pCommandPool->GetCommandBuffers(m_pSwapChain->GetNumFrames());
 		}
 
 		// Create sync objects
@@ -114,7 +114,7 @@ namespace Hyper
 		{
 			throw std::runtime_error("Failed to begin command buffer: "s + e.what());
 		}
-		
+
 		InsertImageMemoryBarrier(
 			cmd,
 			m_pSwapChain->GetImage(m_CurrentFrame),
@@ -128,7 +128,7 @@ namespace Hyper
 				vk::ImageAspectFlagBits::eColor,
 				0, 1,
 				0, 1 })
-			);
+				);
 
 
 		vk::RenderingAttachmentInfo attachmentInfo = {};
@@ -157,7 +157,7 @@ namespace Hyper
 
 
 		cmd.endRendering();
-		
+
 		InsertImageMemoryBarrier(
 			cmd,
 			m_pSwapChain->GetImage(m_CurrentFrame),
@@ -184,53 +184,31 @@ namespace Hyper
 		}
 
 		// Submit
-		std::array<vk::PipelineStageFlags, 1> waitStages = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
-
-		vk::SubmitInfo submitInfo = {};
-		submitInfo.setWaitSemaphores(m_ImageAvailableSemaphores[m_CurrentFrame]);
-		submitInfo.setWaitDstStageMask(waitStages);
-		submitInfo.setCommandBuffers(cmd);
-		submitInfo.setSignalSemaphores(m_RenderFinishedSemaphores[m_CurrentFrame]);
-
 		m_pRenderContext->device.resetFences(m_InFlightFences[m_CurrentFrame]);
 
-		try
-		{
-			m_pDevice->GetGraphicsQueue().submit(submitInfo, m_InFlightFences[m_CurrentFrame]);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to submit to the graphics queue: "s + e.what());
-		}
+		m_pRenderContext->graphicsQueue.Submit(
+			{ vk::PipelineStageFlagBits::eColorAttachmentOutput },
+			{ m_ImageAvailableSemaphores[m_CurrentFrame] },
+			{ m_RenderFinishedSemaphores[m_CurrentFrame] },
+			cmd,
+			m_InFlightFences[m_CurrentFrame]);
 
 
 		// Present
-		std::array<vk::SwapchainKHR, 1> swapchains = { m_pSwapChain->GetSwapchain() };
-		vk::PresentInfoKHR presentInfo = {};
-		presentInfo.setWaitSemaphores(m_RenderFinishedSemaphores[m_CurrentFrame]);
-		presentInfo.setResults(nullptr);
-		presentInfo.setImageIndices(m_CurrentFrame);
-		presentInfo.setSwapchains(swapchains);
-
-		try
-		{
-			result = m_pDevice->GetGraphicsQueue().presentKHR(presentInfo);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to present: "s + e.what());
-		}
-
-		if (result != vk::Result::eSuccess)
-		{
-			throw std::runtime_error("Failed to present swap chain image: "s + vk::to_string(result));
-		}
+		m_pRenderContext->graphicsQueue.Present(
+			{m_RenderFinishedSemaphores[m_CurrentFrame]},
+			{m_CurrentFrame},
+			{m_pSwapChain->GetSwapchain()}
+		);
 
 		m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
 	void Renderer::OnShutdown()
 	{
+		// Wait till everything is finished.
+		m_pRenderContext->device.waitIdle();
+
 		for (size_t i = 0; i < m_CommandBuffers.size(); i++)
 		{
 			m_pRenderContext->device.destroyFence(m_InFlightFences[i]);
@@ -240,6 +218,10 @@ namespace Hyper
 
 		m_pPipeline.reset();
 		m_pSwapChain.reset();
+
+		// TODO: automatically keep track of allocated command buffers and destroy them all.
+		m_pCommandPool->FreeCommandBuffers(m_CommandBuffers);
+		m_pCommandPool.reset();
 		m_pDevice.reset();
 	}
 }

@@ -18,4 +18,11 @@ namespace Hyper
 		RenderContext* m_pRenderCtx;
 		vk::CommandPool m_Pool;
 	};
+
+	// Helper functions for vulkan command buffers
+	namespace VulkanCommandBuffer
+	{
+		void Begin(vk::CommandBuffer cmd);
+		void End(vk::CommandBuffer cmd);
+	}
 }

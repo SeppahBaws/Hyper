@@ -62,8 +62,11 @@ namespace Hyper
 			HPR_VKLOG_INFO("Created Vulkan Instance");
 		}
 
-		// Setup Vulkan debug utility
-		VkDebug::Setup(pRenderCtx);
+		if (HYPER_VALIDATE)
+		{
+			// Setup Vulkan debug utility
+			VkDebug::Setup(pRenderCtx);
+		}
 
 		// Create device
 		{
@@ -142,7 +145,13 @@ namespace Hyper
 		vmaDestroyAllocator(m_Allocator);
 
 		m_pRenderCtx->device.destroy();
-		VkDebug::FreeDebugCallback(m_pRenderCtx->instance);
+
+		// We only have debug callbacks if we have validation layers enabled.
+		if (HYPER_VALIDATE)
+		{
+			VkDebug::FreeDebugCallback(m_pRenderCtx->instance);
+		}
+
 		m_pRenderCtx->instance.destroy();
 	}
 

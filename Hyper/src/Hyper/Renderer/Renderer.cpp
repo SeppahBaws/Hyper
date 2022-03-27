@@ -3,7 +3,7 @@
 
 #include "Hyper/Core/Context.h"
 #include "Hyper/Core/Window.h"
-#include "Vulkan/VulkanCommandPool.h"
+#include "Vulkan/VulkanCommands.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanShader.h"
@@ -104,17 +104,8 @@ namespace Hyper
 
 		vk::CommandBuffer cmd = m_CommandBuffers[m_CurrentBuffer];
 
-		vk::CommandBufferBeginInfo cmdBeginInfo = {};
-
-		try
-		{
-			cmd.begin(cmdBeginInfo);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to begin command buffer: "s + e.what());
-		}
-
+		VulkanCommandBuffer::Begin(cmd);
+		
 		InsertImageMemoryBarrier(
 			cmd,
 			m_pSwapChain->GetImage(m_CurrentFrame),
@@ -129,8 +120,8 @@ namespace Hyper
 				0, 1,
 				0, 1 })
 				);
-
-
+		
+		
 		vk::RenderingAttachmentInfo attachmentInfo = {};
 		attachmentInfo.imageView = m_pSwapChain->GetImageView(m_CurrentFrame);
 		attachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -138,26 +129,26 @@ namespace Hyper
 		attachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
 		attachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		attachmentInfo.clearValue = vk::ClearColorValue(std::array{ 0.1f, 0.1f, 0.1f, 1.0f });
-
+		
 		vk::RenderingInfo renderingInfo{};
 		renderingInfo.renderArea = vk::Rect2D(vk::Offset2D(), m_pRenderContext->imageExtent);
 		renderingInfo.layerCount = 1;
 		renderingInfo.viewMask = 0;
 		renderingInfo.colorAttachmentCount = 1;
 		renderingInfo.setPColorAttachments(&attachmentInfo);
-
+		
 		cmd.beginRendering(renderingInfo);
-
+		
 		// draw stuff here
-
-
+		
+		
 		// Draw test triangle with basic shader
 		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
 		cmd.draw(3, 1, 0, 0);
-
-
+		
+		
 		cmd.endRendering();
-
+		
 		InsertImageMemoryBarrier(
 			cmd,
 			m_pSwapChain->GetImage(m_CurrentFrame),
@@ -173,15 +164,8 @@ namespace Hyper
 				0, 1
 			})
 		);
-
-		try
-		{
-			cmd.end();
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to end command buffer: "s + e.what());
-		}
+		
+		VulkanCommandBuffer::End(cmd);
 
 		// Submit
 		m_pRenderContext->device.resetFences(m_InFlightFences[m_CurrentFrame]);

@@ -2,7 +2,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Hyper/Core/Subsystem.h"
-#include "Vulkan/VulkanCommandPool.h"
+#include "Vulkan/VulkanCommands.h"
 
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
@@ -27,7 +27,7 @@ namespace Hyper
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
 		std::unique_ptr<VulkanPipeline> m_pPipeline;
 
-		const u32 MAX_FRAMES_IN_FLIGHT = 2;
+		const u32 MAX_FRAMES_IN_FLIGHT = 3;
 		u32 m_CurrentFrame = 0;
 		u32 m_CurrentBuffer;
 

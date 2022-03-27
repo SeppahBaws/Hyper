@@ -1,5 +1,5 @@
 ﻿#include "HyperPCH.h"
-#include "VulkanCommandPool.h"
+#include "VulkanCommands.h"
 
 #include "Hyper/Renderer/RenderContext.h"
 
@@ -52,5 +52,34 @@ namespace Hyper
 	void VulkanCommandPool::FreeCommandBuffers(const std::vector<vk::CommandBuffer>& commandBuffers) const
 	{
 		m_pRenderCtx->device.freeCommandBuffers(m_Pool, commandBuffers);
+	}
+
+	namespace VulkanCommandBuffer
+	{
+		void Begin(vk::CommandBuffer cmd)
+		{
+			vk::CommandBufferBeginInfo info = {};
+
+			try
+			{
+				cmd.begin(info);
+			}
+			catch (vk::SystemError& e)
+			{
+				throw std::runtime_error("Failed to begin command buffer: "s + e.what());
+			}
+		}
+
+		void End(vk::CommandBuffer cmd)
+		{
+			try
+			{
+				cmd.end();
+			}
+			catch (vk::SystemError& e)
+			{
+				throw std::runtime_error("Failed to end command buffer: "s + e.what());
+			}
+		}
 	}
 }

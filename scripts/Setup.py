@@ -6,6 +6,8 @@ def UseVld():
         reply = str(input("Use VLD? [Y/n]: ")).lower().strip()
         if (reply == "y" or reply == ""):
             return True
+        elif (reply == "n"):
+            return False
         else:
             print(f"Invalid argument {reply}.")
 

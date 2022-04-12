@@ -7,5 +7,7 @@ namespace Hyper
 	{
 		void VkCheck(const vk::Result& result);
 		void VkCheck(const VkResult& result);
+
+		void ImageBarrier();
 	}
 }

@@ -159,8 +159,18 @@ namespace Hyper
 		m_PipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
 	}
 
-	VulkanPipeline PipelineBuilder::BuildGraphicsDynamicRendering()
+	void PipelineBuilder::SetDynamicStates(const std::vector<vk::DynamicState>& dynamicStates)
 	{
+		m_DynamicStates = dynamicStates;
+	}
+
+	VulkanPipeline PipelineBuilder::BuildGraphics()
+	{
+		const auto includesDynamicState = [&](vk::DynamicState dynState)
+		{
+			return std::ranges::find(m_DynamicStates, dynState) != m_DynamicStates.end();
+		};
+
 		auto bindingDescription = Vertex::GetBindingDescription();
 		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
 
@@ -196,6 +206,17 @@ namespace Hyper
 		vk::GraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.pNext = &pipelineRendering;
 		pipelineInfo.setStages(shaderStages);
+
+		if (!m_DynamicStates.empty())
+		{
+			vk::PipelineDynamicStateCreateInfo dynamicStateInfo{};
+			dynamicStateInfo.setDynamicStates(m_DynamicStates);
+			pipelineInfo.setPDynamicState(&dynamicStateInfo);
+		}
+		else
+		{
+			pipelineInfo.pDynamicState = nullptr;
+		}
 		
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &m_InputAssembly;
@@ -204,7 +225,6 @@ namespace Hyper
 		pipelineInfo.pMultisampleState = &m_Multisampling;
 		pipelineInfo.pDepthStencilState = &m_DepthStencil;
 		pipelineInfo.pColorBlendState = &m_ColorBlending;
-		pipelineInfo.pDynamicState = nullptr;
 
 		pipelineInfo.layout = layout;
 		pipelineInfo.renderPass = nullptr;

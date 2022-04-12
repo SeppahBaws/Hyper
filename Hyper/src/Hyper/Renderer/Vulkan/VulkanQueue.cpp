@@ -25,7 +25,7 @@ namespace Hyper
 		}
 	}
 
-	void VulkanQueue::Present(const std::vector<vk::Semaphore>& waitSemaphores, const std::vector<u32>& imageIndices,
+	vk::Result VulkanQueue::Present(const std::vector<vk::Semaphore>& waitSemaphores, const std::vector<u32>& imageIndices,
 		const std::vector<vk::SwapchainKHR>& swapchains)
 	{
 		vk::PresentInfoKHR info = {};
@@ -34,19 +34,17 @@ namespace Hyper
 		info.setImageIndices(imageIndices);
 		info.setSwapchains(swapchains);
 
-		vk::Result result;
+		vk::Result result = vk::Result::eSuccess;
+
 		try
 		{
 			result = queue.presentKHR(info);
 		}
-		catch (vk::SystemError& e)
+		catch (...)
 		{
-			throw std::runtime_error("Failed to present: "s + e.what());
+			// Do nothing, we will forward our result code to the outside
 		}
 
-		if (result != vk::Result::eSuccess)
-		{
-			throw std::runtime_error("Failed to present swap chain image: "s + vk::to_string(result));
-		}
+		return result;
 	}
 }

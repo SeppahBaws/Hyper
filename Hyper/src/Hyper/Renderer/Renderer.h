@@ -28,11 +28,10 @@ namespace Hyper
 		std::unique_ptr<VulkanPipeline> m_pPipeline;
 
 		const u32 MAX_FRAMES_IN_FLIGHT = 3;
-		u32 m_CurrentFrame = 0;
-		u32 m_CurrentBuffer;
+		u32 m_FrameIdx = 0;
+		// u32 m_CurrentBuffer;
 
 		std::vector<vk::CommandBuffer> m_CommandBuffers;
-		std::vector<vk::Semaphore> m_ImageAvailableSemaphores;
 		std::vector<vk::Semaphore> m_RenderFinishedSemaphores;
 		std::vector<vk::Fence> m_InFlightFences;
 		vk::RenderPass m_RenderPass;

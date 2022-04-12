@@ -36,15 +36,16 @@ namespace Hyper
 		PipelineBuilder builder{ m_pRenderContext.get() };
 		builder.SetShader(&shader);
 		builder.SetInputAssembly(vk::PrimitiveTopology::eTriangleList, false);
-		builder.SetViewport(0.0f, 0.0f, static_cast<f32>(m_pRenderContext->imageExtent.width), static_cast<f32>(m_pRenderContext->imageExtent.height), 0.0f, 1.0f);
-		builder.SetScissor(vk::Offset2D(0, 0), m_pRenderContext->imageExtent);
+		// builder.SetViewport(0.0f, 0.0f, static_cast<f32>(m_pRenderContext->imageExtent.width), static_cast<f32>(m_pRenderContext->imageExtent.height), 0.0f, 1.0f);
+		// builder.SetScissor(vk::Offset2D(0, 0), m_pRenderContext->imageExtent);
 		builder.SetRasterizer(vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack);
 		builder.SetMultisampling();
 		builder.SetDepthStencil(true, true, vk::CompareOp::eLess);
 		builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
 		builder.SetDescriptorSetLayout({}, {});
+		builder.SetDynamicStates({ vk::DynamicState::eViewport, vk::DynamicState::eScissor });
 
-		m_pPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphicsDynamicRendering());
+		m_pPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
 
 		// Get command buffers. 1 for each frame in flight.
 		{
@@ -54,7 +55,6 @@ namespace Hyper
 		// Create sync objects
 		{
 			const u32 numFrames = m_pSwapChain->GetNumFrames();
-			m_ImageAvailableSemaphores.resize(numFrames);
 			m_RenderFinishedSemaphores.resize(numFrames);
 			m_InFlightFences.resize(numFrames);
 
@@ -65,7 +65,6 @@ namespace Hyper
 			{
 				for (u32 i = 0; i < numFrames; i++)
 				{
-					m_ImageAvailableSemaphores[i] = m_pRenderContext->device.createSemaphore(semaphoreInfo);
 					m_RenderFinishedSemaphores[i] = m_pRenderContext->device.createSemaphore(semaphoreInfo);
 					m_InFlightFences[i] = m_pRenderContext->device.createFence(fenceInfo);
 				}
@@ -81,34 +80,47 @@ namespace Hyper
 
 	void Renderer::OnTick()
 	{
-		vk::Result result = m_pRenderContext->device.waitForFences(m_InFlightFences[m_CurrentFrame], true, UINT64_MAX);
+		vk::Result result = m_pRenderContext->device.waitForFences(m_InFlightFences[m_FrameIdx], true, UINT64_MAX);
 		if (result != vk::Result::eSuccess)
 		{
 			throw std::runtime_error("Failed to wait for fence");
 		}
 
-		m_pRenderContext->device.resetFences(m_InFlightFences[m_CurrentFrame]);
-
-		result = m_pRenderContext->device.acquireNextImageKHR(
-			m_pSwapChain->GetSwapchain(),
-			1'000'000'000,
-			m_ImageAvailableSemaphores[m_CurrentFrame],
-			nullptr,
-			&m_CurrentBuffer
-		);
-
-		if (result != vk::Result::eSuccess)
+		// Resize the swap chain if necessary.
 		{
-			throw std::runtime_error("Failed to acquire swap chain image: "s + vk::to_string(result));
+			const Window* window = m_pContext->GetSubsystem<Window>();
+			const u32 width = window->GetWidth();
+			const u32 height = window->GetHeight();
+			
+			if (width != m_pSwapChain->GetWidth() || height != m_pSwapChain->GetHeight() || !m_pSwapChain->IsPresentEnabled())
+			{
+				m_pRenderContext->device.waitIdle();
+				m_pSwapChain->Resize(width, height);
+			}
 		}
 
-		vk::CommandBuffer cmd = m_CommandBuffers[m_CurrentBuffer];
+		if (!m_pSwapChain->IsPresentEnabled())
+		{
+			return;
+		}
 
+		// Only reset fences if we're submitting any work.
+		m_pRenderContext->device.resetFences(m_InFlightFences[m_FrameIdx]);
+
+		m_FrameIdx = (m_FrameIdx + 1) % MAX_FRAMES_IN_FLIGHT;
+
+		vk::CommandBuffer cmd = m_CommandBuffers[m_FrameIdx];
 		VulkanCommandBuffer::Begin(cmd);
-		
+
+		// Set viewport and scissor
+		const f32 imageWidth = static_cast<f32>(m_pRenderContext->imageExtent.width);
+		const f32 imageHeight = static_cast<f32>(m_pRenderContext->imageExtent.height);
+		cmd.setViewport(0, vk::Viewport{ 0, 0, imageWidth, imageHeight });
+		cmd.setScissor(0, vk::Rect2D{ vk::Offset2D{ 0, 0 }, m_pRenderContext->imageExtent });
+
 		InsertImageMemoryBarrier(
 			cmd,
-			m_pSwapChain->GetImage(m_CurrentFrame),
+			m_pSwapChain->GetImage(),
 			{}, // srcAccessMask
 			vk::AccessFlagBits::eColorAttachmentWrite, // dstAccessMask
 			vk::ImageLayout::eUndefined, // oldLayout
@@ -120,10 +132,10 @@ namespace Hyper
 				0, 1,
 				0, 1 })
 				);
-		
-		
+
+
 		vk::RenderingAttachmentInfo attachmentInfo = {};
-		attachmentInfo.imageView = m_pSwapChain->GetImageView(m_CurrentFrame);
+		attachmentInfo.imageView = m_pSwapChain->GetImageView();
 		attachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		attachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
 		attachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
@@ -136,22 +148,22 @@ namespace Hyper
 		renderingInfo.viewMask = 0;
 		renderingInfo.colorAttachmentCount = 1;
 		renderingInfo.setPColorAttachments(&attachmentInfo);
-		
+
 		cmd.beginRendering(renderingInfo);
 		
 		// draw stuff here
-		
-		
+
+
 		// Draw test triangle with basic shader
 		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
 		cmd.draw(3, 1, 0, 0);
-		
-		
+
+
 		cmd.endRendering();
 		
 		InsertImageMemoryBarrier(
 			cmd,
-			m_pSwapChain->GetImage(m_CurrentFrame),
+			m_pSwapChain->GetImage(),
 			vk::AccessFlagBits::eColorAttachmentWrite,
 			{},
 			vk::ImageLayout::eColorAttachmentOptimal,
@@ -164,28 +176,22 @@ namespace Hyper
 				0, 1
 			})
 		);
-		
+
 		VulkanCommandBuffer::End(cmd);
 
 		// Submit
-		m_pRenderContext->device.resetFences(m_InFlightFences[m_CurrentFrame]);
+		m_pRenderContext->device.resetFences(m_InFlightFences[m_FrameIdx]);
 
 		m_pRenderContext->graphicsQueue.Submit(
 			{ vk::PipelineStageFlagBits::eColorAttachmentOutput },
-			{ m_ImageAvailableSemaphores[m_CurrentFrame] },
-			{ m_RenderFinishedSemaphores[m_CurrentFrame] },
+			{ m_pSwapChain->GetSemaphore() },
+			{ m_RenderFinishedSemaphores[m_FrameIdx] },
 			cmd,
-			m_InFlightFences[m_CurrentFrame]);
+			m_InFlightFences[m_FrameIdx]);
 
 
 		// Present
-		m_pRenderContext->graphicsQueue.Present(
-			{m_RenderFinishedSemaphores[m_CurrentFrame]},
-			{m_CurrentFrame},
-			{m_pSwapChain->GetSwapchain()}
-		);
-
-		m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+		m_pSwapChain->Present(m_RenderFinishedSemaphores[m_FrameIdx]);
 	}
 
 	void Renderer::OnShutdown()
@@ -197,7 +203,6 @@ namespace Hyper
 		{
 			m_pRenderContext->device.destroyFence(m_InFlightFences[i]);
 			m_pRenderContext->device.destroySemaphore(m_RenderFinishedSemaphores[i]);
-			m_pRenderContext->device.destroySemaphore(m_ImageAvailableSemaphores[i]);
 		}
 
 		m_pPipeline.reset();

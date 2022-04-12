@@ -25,7 +25,6 @@ namespace Hyper
 		}
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // TODO: support resizing.
 		m_pWindow = glfwCreateWindow(static_cast<i32>(m_Width), static_cast<i32>(m_Height), m_Title.c_str(), nullptr, nullptr);
 		if (!m_pWindow)
 		{
@@ -33,6 +32,14 @@ namespace Hyper
 			glfwTerminate();
 			return false;
 		}
+		glfwSetWindowUserPointer(m_pWindow, this);
+
+		glfwSetFramebufferSizeCallback(m_pWindow, [](GLFWwindow* glfwWindow, int width, int height)
+		{
+			Window* window = static_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
+			window->m_Width = static_cast<u32>(width);
+			window->m_Height = static_cast<u32>(height);
+		});
 
 		glfwMakeContextCurrent(m_pWindow);
 

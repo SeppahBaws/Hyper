@@ -51,11 +51,12 @@ namespace Hyper
 			// TODO: cap at 60fps
 			m_pContext->OnTick();
 
-			const auto end = std::chrono::high_resolution_clock::now();
-			const auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-			const auto durationUs = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-
-			std::cout << "\rEntire frame took " << std::setw(6) << durationMs << "ms (" << std::setw(6) << durationUs << "us) -- roughly " << std::setw(6) << (1'000'000 / durationUs) << " FPS" << std::flush;
+			// const auto end = std::chrono::high_resolution_clock::now();
+			// const auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			// const auto durationUs = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+			//
+			// std::cout << "\rEntire frame took " << std::setw(6) << durationMs << "ms (" << std::setw(6) << durationUs << "us) -- roughly " << std::setw(6) << (1'000'000 / durationUs) << " FPS" << std::flush;
+			// std::cout << "Entire frame took " << std::setw(6) << durationMs << "ms (" << std::setw(6) << durationUs << "us) -- roughly " << std::setw(6) << (1'000'000 / durationUs) << " FPS" << std::endl;
 		}
 		std::cout << std::endl;
 	}

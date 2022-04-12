@@ -42,8 +42,9 @@ namespace Hyper
 		void SetColorBlend(bool blendEnable, vk::BlendOp colorBlendOp, vk::BlendOp alphaBlendOp, bool logicOpEnable, vk::LogicOp logicOp);
 		void SetDescriptorSetLayout(const std::vector<vk::DescriptorSetLayout>& layouts,
 			const std::vector<vk::PushConstantRange>& pushConstants);
+		void SetDynamicStates(const std::vector<vk::DynamicState>& dynamicStates);
 
-		VulkanPipeline BuildGraphicsDynamicRendering();
+		VulkanPipeline BuildGraphics();
 		// VulkanPipeline BuildCompute();
 
 	private:
@@ -59,5 +60,6 @@ namespace Hyper
 		vk::PipelineColorBlendAttachmentState m_ColorBlendAttachment{};
 		vk::PipelineColorBlendStateCreateInfo m_ColorBlending{};
 		vk::PipelineLayoutCreateInfo m_PipelineLayoutInfo{};
+		std::vector<vk::DynamicState> m_DynamicStates{};
 	};
 }

@@ -17,4 +17,10 @@ namespace Hyper
 	protected:
 		Context* m_pContext;
 	};
+
+	template<class T>
+	concept EngineSystem = requires
+	{
+		std::derived_from<T, Subsystem>;
+	};
 }

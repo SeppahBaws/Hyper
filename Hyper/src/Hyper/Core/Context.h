@@ -12,13 +12,13 @@ namespace Hyper
 	public:
 		Context() = default;
 
-		template<typename T>
+		template<EngineSystem T>
 		void AddSubsystem()
 		{
 			m_Subsystems.emplace_back(std::make_shared<T>(this));
 		}
 
-		template<typename T>
+		template<EngineSystem T>
 		T* GetSubsystem()
 		{
 			for (const auto& subsystem : m_Subsystems)

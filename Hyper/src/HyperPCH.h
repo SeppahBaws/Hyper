@@ -12,3 +12,6 @@
 
 // For using operator""s
 using namespace std::string_literals;
+
+// Temp workaround to speed up builds
+#include <vulkan/vulkan.hpp>

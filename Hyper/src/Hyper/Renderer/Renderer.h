@@ -29,11 +29,15 @@ namespace Hyper
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
 		std::unique_ptr<VulkanPipeline> m_pPipeline;
 
+		std::unique_ptr<VulkanPipeline> m_pRedPipeline;
+
 		std::unique_ptr<Mesh> m_pMesh;
 
 		const u32 MAX_FRAMES_IN_FLIGHT = 3;
 		u32 m_FrameIdx = 0;
 		// u32 m_CurrentBuffer;
+
+		bool m_UseRedShader = false;
 
 		std::vector<vk::CommandBuffer> m_CommandBuffers;
 		std::vector<vk::Semaphore> m_RenderFinishedSemaphores;

@@ -6,6 +6,7 @@
 #include "Context.h"
 #include "Logger.h"
 #include "Window.h"
+#include "Hyper/Input/Input.h"
 #include "Hyper/Renderer/Renderer.h"
 
 namespace Hyper
@@ -18,6 +19,7 @@ namespace Hyper
 
 		// Add subsystems. Order matters: first in, first initialized.
 		m_pContext->AddSubsystem<Window>();
+		m_pContext->AddSubsystem<Input>();
 		m_pContext->AddSubsystem<Renderer>();
 
 

@@ -3,6 +3,7 @@
 
 #include "Hyper/Core/Context.h"
 #include "Hyper/Core/Window.h"
+#include "Hyper/Input/Input.h"
 #include "Vulkan/VulkanCommands.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
@@ -33,6 +34,10 @@ namespace Hyper
 		shader.AddStage(ShaderStageType::Vertex, "res/shaders/test.vert");
 		shader.AddStage(ShaderStageType::Fragment, "res/shaders/test.frag");
 
+		VulkanShader redShader{ m_pRenderContext.get() };
+		redShader.AddStage(ShaderStageType::Vertex, "res/shaders/test.vert");
+		redShader.AddStage(ShaderStageType::Fragment, "res/shaders/red.frag");
+
 		PipelineBuilder builder{ m_pRenderContext.get() };
 		builder.SetShader(&shader);
 		builder.SetInputAssembly(vk::PrimitiveTopology::eTriangleList, false);
@@ -46,6 +51,9 @@ namespace Hyper
 		builder.SetDynamicStates({ vk::DynamicState::eViewport, vk::DynamicState::eScissor });
 
 		m_pPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
+
+		builder.SetShader(&redShader);
+		m_pRedPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
 
 		// Get command buffers. 1 for each frame in flight.
 		{
@@ -85,6 +93,9 @@ namespace Hyper
 
 	void Renderer::OnTick()
 	{
+		const auto input = m_pContext->GetSubsystem<Input>();
+		m_UseRedShader = input->GetMouseButton(MouseButton::Left);
+		
 		vk::Result result = m_pRenderContext->device.waitForFences(m_InFlightFences[m_FrameIdx], true, UINT64_MAX);
 		if (result != vk::Result::eSuccess)
 		{
@@ -160,7 +171,10 @@ namespace Hyper
 
 
 		// Draw test triangle with basic shader
-		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
+		if (m_UseRedShader)
+			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pRedPipeline->GetPipeline());
+		else
+			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
 		m_pMesh->Bind(cmd);
 		m_pMesh->Draw(cmd);
 
@@ -213,6 +227,7 @@ namespace Hyper
 			m_pRenderContext->device.destroySemaphore(m_RenderFinishedSemaphores[i]);
 		}
 
+		m_pRedPipeline.reset();
 		m_pPipeline.reset();
 		m_pSwapChain.reset();
 

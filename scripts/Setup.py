@@ -3,10 +3,10 @@ import subprocess
 
 def UseVld():
     while True:
-        reply = str(input("Use VLD? [Y/n]: ")).lower().strip()
-        if (reply == "y" or reply == ""):
+        reply = str(input("Use VLD? [y/N]: ")).lower().strip()
+        if (reply == "y"):
             return True
-        elif (reply == "n"):
+        elif (reply == "n" or reply == ""):
             return False
         else:
             print(f"Invalid argument {reply}.")

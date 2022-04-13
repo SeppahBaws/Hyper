@@ -25,8 +25,13 @@ namespace Hyper
 		}
 	}
 
+	void VulkanQueue::WaitIdle()
+	{
+		queue.waitIdle();
+	}
+
 	vk::Result VulkanQueue::Present(const std::vector<vk::Semaphore>& waitSemaphores, const std::vector<u32>& imageIndices,
-		const std::vector<vk::SwapchainKHR>& swapchains)
+	                                const std::vector<vk::SwapchainKHR>& swapchains)
 	{
 		vk::PresentInfoKHR info = {};
 		info.setWaitSemaphores(waitSemaphores);

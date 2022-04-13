@@ -3,6 +3,8 @@
 
 namespace Hyper
 {
+	class VulkanCommandPool;
+
 	namespace VulkanUtils
 	{
 		void VkCheck(const vk::Result& result);

@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Hyper/Renderer/Vulkan/VulkanQueue.h"
+#include "Hyper/Renderer/Vulkan/VulkanCommands.h"
 
 namespace Hyper
 {
@@ -12,6 +13,7 @@ namespace Hyper
 		vk::PhysicalDevice physicalDevice;
 		vk::Device device;
 		VulkanQueue graphicsQueue;
+		VulkanCommandPool* commandPool;
 		VmaAllocator allocator;
 
 		vk::Format imageFormat;

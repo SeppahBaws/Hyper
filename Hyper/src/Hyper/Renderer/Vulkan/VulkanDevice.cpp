@@ -137,6 +137,7 @@ namespace Hyper
 			createInfo.instance = pRenderCtx->instance;
 			
 			VulkanUtils::VkCheck(vmaCreateAllocator(&createInfo, &m_Allocator));
+			m_pRenderCtx->allocator = m_Allocator;
 		}
 	}
 

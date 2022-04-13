@@ -21,6 +21,8 @@ namespace Hyper
 			throw std::runtime_error("Failed to create command pool: "s + e.what());
 		}
 
+		m_pRenderCtx->commandPool = this;
+
 		HPR_VKLOG_INFO("Successfully created the command pool");
 	}
 
@@ -49,16 +51,27 @@ namespace Hyper
 		return buffers;
 	}
 
+	vk::CommandBuffer VulkanCommandPool::GetCommandBuffer(vk::CommandBufferLevel level)
+	{
+		return GetCommandBuffers(1, level)[0];
+	}
+
 	void VulkanCommandPool::FreeCommandBuffers(const std::vector<vk::CommandBuffer>& commandBuffers) const
 	{
 		m_pRenderCtx->device.freeCommandBuffers(m_Pool, commandBuffers);
 	}
 
+	void VulkanCommandPool::FreeCommandBuffer(const vk::CommandBuffer& cmd) const
+	{
+		FreeCommandBuffers({ cmd });
+	}
+
 	namespace VulkanCommandBuffer
 	{
-		void Begin(vk::CommandBuffer cmd)
+		void Begin(vk::CommandBuffer cmd, vk::CommandBufferUsageFlags flags)
 		{
 			vk::CommandBufferBeginInfo info = {};
+			info.flags = flags;
 
 			try
 			{

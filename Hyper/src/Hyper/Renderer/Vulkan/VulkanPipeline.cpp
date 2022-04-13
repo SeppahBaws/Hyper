@@ -1,7 +1,7 @@
 ﻿#include "HyperPCH.h"
 #include "VulkanPipeline.h"
 
-#include "Vertex.h"
+#include "VertexPosCol.h"
 #include "VulkanShader.h"
 
 namespace Hyper
@@ -166,19 +166,14 @@ namespace Hyper
 
 	VulkanPipeline PipelineBuilder::BuildGraphics()
 	{
-		const auto includesDynamicState = [&](vk::DynamicState dynState)
-		{
-			return std::ranges::find(m_DynamicStates, dynState) != m_DynamicStates.end();
-		};
-
-		auto bindingDescription = Vertex::GetBindingDescription();
-		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
+		auto bindingDescription = VertexPosCol::GetBindingDescription();
+		auto attributeDescriptions = VertexPosCol::GetAttributeDescriptions();
 
 		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		// vertexInputInfo.setVertexBindingDescriptions(bindingDescription);
-		// vertexInputInfo.setVertexAttributeDescriptions(attributeDescriptions);
-		vertexInputInfo.setVertexBindingDescriptions({});
-		vertexInputInfo.setVertexAttributeDescriptions({});
+		vertexInputInfo.setVertexBindingDescriptions(bindingDescription);
+		vertexInputInfo.setVertexAttributeDescriptions(attributeDescriptions);
+		// vertexInputInfo.setVertexBindingDescriptions({});
+		// vertexInputInfo.setVertexAttributeDescriptions({});
 
 		vk::PipelineViewportStateCreateInfo viewportState{};
 		viewportState.setViewports(m_Viewport);
@@ -207,10 +202,11 @@ namespace Hyper
 		pipelineInfo.pNext = &pipelineRendering;
 		pipelineInfo.setStages(shaderStages);
 
+		vk::PipelineDynamicStateCreateInfo dynamicStateInfo{};
+		dynamicStateInfo.setDynamicStates(m_DynamicStates);
+
 		if (!m_DynamicStates.empty())
 		{
-			vk::PipelineDynamicStateCreateInfo dynamicStateInfo{};
-			dynamicStateInfo.setDynamicStates(m_DynamicStates);
 			pipelineInfo.setPDynamicState(&dynamicStateInfo);
 		}
 		else

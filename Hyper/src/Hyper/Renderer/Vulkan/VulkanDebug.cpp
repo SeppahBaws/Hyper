@@ -4,9 +4,9 @@
 
 namespace Hyper::VkDebug
 {
-	PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerExt;
-	PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerExt;
-	PFN_vkSetDebugUtilsObjectNameEXT pfnVkSetDebugUtilsObjectNameEXT;
+	static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerExt;
+	static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerExt;
+	static PFN_vkSetDebugUtilsObjectNameEXT pfnVkSetDebugUtilsObjectNameEXT;
 	vk::DebugUtilsMessengerEXT debugUtilsMessenger;
 
 	VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(VkInstance instance,
@@ -164,7 +164,7 @@ namespace Hyper::VkDebug
 		nameInfo.objectType = static_cast<VkObjectType>(type);
 		nameInfo.objectHandle = reinterpret_cast<u64>(handle);
 		nameInfo.pObjectName = name.c_str();
-
+	
 		vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
 	}
 }

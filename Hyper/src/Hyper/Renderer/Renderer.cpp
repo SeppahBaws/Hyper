@@ -75,6 +75,11 @@ namespace Hyper
 			}
 		}
 
+		// Create test mesh
+		{
+			m_pMesh = std::make_unique<Mesh>(m_pRenderContext.get());
+		}
+
 		return true;
 	}
 
@@ -156,7 +161,8 @@ namespace Hyper
 
 		// Draw test triangle with basic shader
 		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
-		cmd.draw(3, 1, 0, 0);
+		m_pMesh->Bind(cmd);
+		m_pMesh->Draw(cmd);
 
 
 		cmd.endRendering();
@@ -198,6 +204,8 @@ namespace Hyper
 	{
 		// Wait till everything is finished.
 		m_pRenderContext->device.waitIdle();
+
+		m_pMesh.reset();
 
 		for (size_t i = 0; i < m_CommandBuffers.size(); i++)
 		{

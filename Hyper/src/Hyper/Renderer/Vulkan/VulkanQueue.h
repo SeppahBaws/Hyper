@@ -13,6 +13,7 @@ namespace Hyper
 
 		void Submit(const std::vector<vk::PipelineStageFlags>& waitStages, const std::vector<vk::Semaphore>& waitSemaphores,
 			const std::vector<vk::Semaphore>& signalSemaphores, vk::CommandBuffer cmd, vk::Fence fence);
+		void WaitIdle();
 		vk::Result Present(const std::vector<vk::Semaphore>& waitSemaphores, const std::vector<u32>& imageIndices,
 			const std::vector<vk::SwapchainKHR>& swapchains);
 	};

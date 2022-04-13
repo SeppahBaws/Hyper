@@ -8,6 +8,8 @@
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanSwapChain.h"
 
+#include "Mesh.h"
+
 namespace Hyper
 {
 	class Renderer final : public Subsystem
@@ -26,6 +28,8 @@ namespace Hyper
 		std::unique_ptr<VulkanCommandPool> m_pCommandPool;
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
 		std::unique_ptr<VulkanPipeline> m_pPipeline;
+
+		std::unique_ptr<Mesh> m_pMesh;
 
 		const u32 MAX_FRAMES_IN_FLIGHT = 3;
 		u32 m_FrameIdx = 0;

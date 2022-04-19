@@ -4,6 +4,8 @@
 
 namespace Hyper::VkDebug
 {
+	static bool g_VkDebugEnabled = false;
+
 	static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerExt;
 	static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerExt;
 	static PFN_vkSetDebugUtilsObjectNameEXT pfnVkSetDebugUtilsObjectNameEXT;
@@ -150,16 +152,23 @@ namespace Hyper::VkDebug
 			reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>(&createInfo),
 			nullptr,
 			reinterpret_cast<VkDebugUtilsMessengerEXT*>(&debugUtilsMessenger));
+
+		g_VkDebugEnabled = true;
 	}
 
 	void FreeDebugCallback(vk::Instance instance)
 	{
 		pfnVkDestroyDebugUtilsMessengerExt(
 			instance, static_cast<VkDebugUtilsMessengerEXT>(debugUtilsMessenger), nullptr);
+
+		g_VkDebugEnabled = false;
 	}
 
 	void SetObjectName(vk::Device device, vk::ObjectType type, void* handle, const std::string& name)
 	{
+		if (!g_VkDebugEnabled)
+			return;
+		
 		VkDebugUtilsObjectNameInfoEXT nameInfo{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
 		nameInfo.objectType = static_cast<VkObjectType>(type);
 		nameInfo.objectHandle = reinterpret_cast<u64>(handle);

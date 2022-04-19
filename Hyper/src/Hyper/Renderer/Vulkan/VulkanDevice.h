@@ -20,7 +20,12 @@ namespace Hyper
 		[[nodiscard]] bool CheckExtensionsAndLayersSupport() const;
 
 	private:
+#ifdef HYPER_DISTRIBUTE
+		const bool HYPER_VALIDATE = false;
+#else
 		const bool HYPER_VALIDATE = true;
+#endif
+
 		std::vector<const char*> m_RequiredInstanceLayerNames = {};
 		std::vector<const char*> m_RequiredInstanceExtensionNames = {};
 		std::vector<const char*> m_RequiredDeviceLayerNames = {};

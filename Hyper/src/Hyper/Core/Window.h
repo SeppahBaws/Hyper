@@ -12,7 +12,7 @@ namespace Hyper
 		virtual ~Window() override = default;
 
 		bool OnInitialize() override;
-		void OnTick() override;
+		void OnTick(f32 dt) override;
 		void OnShutdown() override;
 
 		bool ShouldClose() const;

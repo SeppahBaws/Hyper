@@ -1,6 +1,8 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 
+#include "Hyper/Debug/Profiler.h"
+
 namespace Hyper
 {
 	void InsertImageMemoryBarrier(
@@ -14,6 +16,8 @@ namespace Hyper
 		vk::PipelineStageFlags dstStageMask,
 		vk::ImageSubresourceRange subresourceRange)
 	{
+		HPR_PROFILE_SCOPE();
+
 		vk::ImageMemoryBarrier barrier = {};
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

@@ -1,7 +1,9 @@
 ﻿#include "HyperPCH.h"
 #include "Mesh.h"
 
+#include "Hyper/Debug/Profiler.h"
 #include "Vulkan/VulkanDebug.h"
+#include "Vulkan/VulkanIndexBuffer.h"
 
 namespace Hyper
 {
@@ -21,57 +23,31 @@ namespace Hyper
 		};
 
 		// Vertex buffer
-		VulkanBuffer vertexStaging = VulkanBuffer{
-			m_pRenderCtx,
-			m_Vertices.data(),
-			m_Vertices.size() * sizeof(VertexPosCol),
-			vk::BufferUsageFlagBits::eTransferSrc,
-			VMA_MEMORY_USAGE_CPU_ONLY,
-			"Vertex staging buffer"
-		};
-		m_pVertexBuffer = std::make_unique<VulkanBuffer>(
-			m_pRenderCtx,
-			m_Vertices.size() * sizeof(VertexPosCol),
-			vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
-			VMA_MEMORY_USAGE_GPU_ONLY,
-			"Vertex buffer");
-
-		m_pVertexBuffer->CopyFrom(vertexStaging);
-
+		m_pVertexBuffer = std::make_unique<VulkanVertexBuffer>(m_pRenderCtx, "test vertex buffer");
+		m_pVertexBuffer->CreateFrom(m_Vertices);
 
 		// Index buffer
-		VulkanBuffer indexStaging = VulkanBuffer{
-			pRenderCtx,
-			m_Indices.data(),
-			m_Indices.size() * sizeof(u32),
-			vk::BufferUsageFlagBits::eTransferSrc,
-			VMA_MEMORY_USAGE_CPU_ONLY,
-			"Index staging buffer"
-		};
-		m_pIndexBuffer = std::make_unique<VulkanBuffer>(
-			m_pRenderCtx,
-			m_Indices.size() * sizeof(u32),
-			vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
-			VMA_MEMORY_USAGE_GPU_ONLY,
-			"Index buffer");
-
-		m_pIndexBuffer->CopyFrom(indexStaging);
+		m_pIndexBuffer = std::make_unique<VulkanIndexBuffer>(m_pRenderCtx, "test index buffer");
+		m_pIndexBuffer->CreateFrom(m_Indices);
 	}
 
 	Mesh::~Mesh()
 	{
 		m_pVertexBuffer.reset();
-		// vmaDestroyBuffer(m_pRenderCtx->allocator, m_VertexBuffer, m_VertexBufferAllocation);
 	}
 
-	void Mesh::Bind(const vk::CommandBuffer& cmd)
+	void Mesh::Bind(const vk::CommandBuffer& cmd) const
 	{
-		cmd.bindVertexBuffers(0, { m_pVertexBuffer->GetBuffer() }, { 0 });
-		cmd.bindIndexBuffer(m_pIndexBuffer->GetBuffer(), 0, vk::IndexType::eUint32);
+		m_pVertexBuffer->Bind(cmd);
+		m_pIndexBuffer->Bind(cmd);
 	}
 
-	void Mesh::Draw(const vk::CommandBuffer& cmd)
+	void Mesh::Draw(const vk::CommandBuffer& cmd) const
 	{
+		HPR_PROFILE_SCOPE();
+
+		Bind(cmd);
+
 		cmd.drawIndexed(static_cast<u32>(m_Indices.size()), 1, 0, 0, 0);
 	}
 }

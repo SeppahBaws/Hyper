@@ -5,7 +5,8 @@ workspace "HyperEngine"
     configurations
     {
         "Debug",
-        "Release"
+        "Release",
+        "Distribute"
     }
 
     flags
@@ -29,6 +30,7 @@ include "Dependencies.lua"
 
 group "Dependencies"
 include "Hyper/dependencies/glfw"
+include "Hyper/dependencies/Optick"
 group ""
 
 group "Core"

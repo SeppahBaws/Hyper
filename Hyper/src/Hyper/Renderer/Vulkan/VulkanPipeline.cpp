@@ -172,8 +172,6 @@ namespace Hyper
 		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.setVertexBindingDescriptions(bindingDescription);
 		vertexInputInfo.setVertexAttributeDescriptions(attributeDescriptions);
-		// vertexInputInfo.setVertexBindingDescriptions({});
-		// vertexInputInfo.setVertexAttributeDescriptions({});
 
 		vk::PipelineViewportStateCreateInfo viewportState{};
 		viewportState.setViewports(m_Viewport);

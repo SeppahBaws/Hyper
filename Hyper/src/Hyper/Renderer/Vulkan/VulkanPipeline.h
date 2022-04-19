@@ -40,8 +40,7 @@ namespace Hyper
 		void SetMultisampling();
 		void SetDepthStencil(bool depthTest, bool depthWrite, vk::CompareOp compareOp);
 		void SetColorBlend(bool blendEnable, vk::BlendOp colorBlendOp, vk::BlendOp alphaBlendOp, bool logicOpEnable, vk::LogicOp logicOp);
-		void SetDescriptorSetLayout(const std::vector<vk::DescriptorSetLayout>& layouts,
-			const std::vector<vk::PushConstantRange>& pushConstants);
+		void SetDescriptorSetLayout(const std::vector<vk::DescriptorSetLayout>& layouts, const std::vector<vk::PushConstantRange>& pushConstants);
 		void SetDynamicStates(const std::vector<vk::DynamicState>& dynamicStates);
 
 		VulkanPipeline BuildGraphics();

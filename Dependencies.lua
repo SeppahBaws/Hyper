@@ -8,6 +8,7 @@ IncludeDir["spdlog"] = "%{wks.location}/Hyper/dependencies/spdlog/include"
 IncludeDir["Vulkan"] = "%{VULKAN_SDK}/Include"
 IncludeDir["magic_enum"] = "%{wks.location}/Hyper/dependencies/magic_enum/include"
 IncludeDir["VkMemAlloc"] = "%{wks.location}/Hyper/dependencies/VulkanMemoryAllocator/include"
+IncludeDir["Optick"] = "%{wks.location}/Hyper/dependencies/Optick/src"
 
 LibDir = {}
 LibDir["Vulkan"] = "%{VULKAN_SDK}/Lib"

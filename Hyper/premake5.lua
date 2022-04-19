@@ -26,7 +26,8 @@ project "Hyper"
         "%{IncludeDir.spdlog}",
         "%{IncludeDir.Vulkan}",
         "%{IncludeDir.magic_enum}",
-        "%{IncludeDir.VkMemAlloc}"
+        "%{IncludeDir.VkMemAlloc}",
+        "%{IncludeDir.Optick}"
     }
 
     libdirs
@@ -37,6 +38,7 @@ project "Hyper"
     links
     {
         "GLFW",
+        "Optick",
         "%{Library.Vulkan}"
     }
 
@@ -75,6 +77,25 @@ project "Hyper"
         defines
         {
             "HYPER_RELEASE"
+        }
+
+        -- Shaderc release libraries
+        links
+        {
+            "%{LibDir.Vulkan}/shaderc_shared.lib",
+            "%{LibDir.Vulkan}/shaderc_util.lib",
+            "%{LibDir.Vulkan}/spirv-cross-core.lib",
+            "%{LibDir.Vulkan}/spirv-cross-glsl.lib",
+            "%{LibDir.Vulkan}/SPIRV-Tools.lib",
+        }
+
+    filter "configurations:Distribute"
+        runtime "Release"
+        optimize "on"
+
+        defines
+        {
+            "HYPER_DISTRIBUTE"
         }
 
         -- Shaderc release libraries

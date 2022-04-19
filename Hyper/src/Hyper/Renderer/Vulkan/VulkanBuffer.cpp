@@ -7,7 +7,7 @@
 
 namespace Hyper
 {
-	VulkanBuffer::VulkanBuffer(RenderContext* pRenderCtx, void* data, vk::DeviceSize size,
+	VulkanBuffer::VulkanBuffer(RenderContext* pRenderCtx, const void* data, vk::DeviceSize size,
 		vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, const std::string& name)
 		: VulkanBuffer(pRenderCtx, size, bufferUsage, memoryUsage, name)
 	{

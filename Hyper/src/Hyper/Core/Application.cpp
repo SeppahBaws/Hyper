@@ -1,11 +1,10 @@
 ﻿#include "HyperPCH.h"
 #include "Application.h"
 
-#include <iostream>
-
 #include "Context.h"
 #include "Logger.h"
 #include "Window.h"
+#include "Hyper/Debug/Profiler.h"
 #include "Hyper/Input/Input.h"
 #include "Hyper/Renderer/Renderer.h"
 
@@ -46,20 +45,19 @@ namespace Hyper
 			return;
 		}
 
+		auto t = std::chrono::high_resolution_clock::now();
+		auto lastTime = std::chrono::high_resolution_clock::now();
 		while (!pWindow->ShouldClose())
 		{
-			const auto start = std::chrono::high_resolution_clock::now();
+			HPR_PROFILE_FRAME("Application loop");
 
-			// TODO: cap at 60fps
-			m_pContext->OnTick();
+			const auto currentTime = std::chrono::high_resolution_clock::now();
+			const f32 dt = std::chrono::duration<f32>(currentTime - lastTime).count();
+			lastTime = currentTime;
 
-			// const auto end = std::chrono::high_resolution_clock::now();
-			// const auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-			// const auto durationUs = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-			//
-			// std::cout << "\rEntire frame took " << std::setw(6) << durationMs << "ms (" << std::setw(6) << durationUs << "us) -- roughly " << std::setw(6) << (1'000'000 / durationUs) << " FPS" << std::flush;
-			// std::cout << "Entire frame took " << std::setw(6) << durationMs << "ms (" << std::setw(6) << durationUs << "us) -- roughly " << std::setw(6) << (1'000'000 / durationUs) << " FPS" << std::endl;
+			m_pContext->OnTick(dt);
 		}
-		std::cout << std::endl;
+
+		HPR_PROFILE_SHUTDOWN();
 	}
 }

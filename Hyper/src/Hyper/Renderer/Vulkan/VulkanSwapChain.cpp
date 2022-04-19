@@ -6,6 +6,7 @@
 #include "VulkanDebug.h"
 #include "VulkanUtility.h"
 #include "Hyper/Core/Window.h"
+#include "Hyper/Debug/Profiler.h"
 #include "Hyper/Renderer/RenderContext.h"
 
 namespace Hyper
@@ -40,6 +41,8 @@ namespace Hyper
 
 	u32 VulkanSwapChain::AcquireNextImage()
 	{
+		HPR_PROFILE_SCOPE();
+
 		m_SemaphoreIdx = (m_SemaphoreIdx + 1) % m_ImageAcquiredSemaphores.size();
 		const vk::Semaphore signalSemaphore = m_ImageAcquiredSemaphores[m_SemaphoreIdx];
 
@@ -118,6 +121,7 @@ namespace Hyper
 
 		// TODO: make this a parameter?
 		const u32 imageCount = surfaceCapabilities.minImageCount + 1;
+		m_pRenderCtx->imagesInFlight = imageCount;
 
 		// Create swapchain
 		{
@@ -137,7 +141,7 @@ namespace Hyper
 
 			createInfo.preTransform = surfaceCapabilities.currentTransform;
 			createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-			createInfo.presentMode = vk::PresentModeKHR::eMailbox; // TODO: allow for customization.
+			createInfo.presentMode = vk::PresentModeKHR::eFifo; // TODO: allow for customization.
 			createInfo.clipped = true;
 			createInfo.oldSwapchain = nullptr;
 

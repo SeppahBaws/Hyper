@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 
 #include "Context.h"
+#include "Hyper/Debug/Profiler.h"
 
 namespace Hyper
 {
@@ -42,12 +43,15 @@ namespace Hyper
 		});
 
 		glfwMakeContextCurrent(m_pWindow);
+		glfwSwapInterval(1);
 
 		return true;
 	}
 
-	void Window::OnTick()
+	void Window::OnTick(f32 dt)
 	{
+		HPR_PROFILE_SCOPE();
+		
 		glfwSwapBuffers(m_pWindow);
 		glfwPollEvents();
 	}

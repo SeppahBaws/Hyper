@@ -3,13 +3,15 @@
 
 #include "Hyper/Core/Context.h"
 #include "Hyper/Core/Window.h"
-#include "Hyper/Input/Input.h"
+#include "Hyper/Debug/Profiler.h"
 #include "Vulkan/VulkanCommands.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanShader.h"
 #include "Vulkan/VulkanSwapChain.h"
 #include "Vulkan/VulkanTemp.h"
+
+#include <glm/gtx/transform.hpp>
 
 namespace Hyper
 {
@@ -21,6 +23,8 @@ namespace Hyper
 
 	bool Renderer::OnInitialize()
 	{
+		HPR_PROFILE_SCOPE();
+		
 		m_pRenderContext = std::make_unique<RenderContext>();
 		m_pDevice = std::make_unique<VulkanDevice>(m_pRenderContext.get());
 		m_pCommandPool = std::make_unique<VulkanCommandPool>(m_pRenderContext.get());
@@ -34,26 +38,26 @@ namespace Hyper
 		shader.AddStage(ShaderStageType::Vertex, "res/shaders/test.vert");
 		shader.AddStage(ShaderStageType::Fragment, "res/shaders/test.frag");
 
-		VulkanShader redShader{ m_pRenderContext.get() };
-		redShader.AddStage(ShaderStageType::Vertex, "res/shaders/test.vert");
-		redShader.AddStage(ShaderStageType::Fragment, "res/shaders/red.frag");
+		vk::PushConstantRange pushConst{};
+		pushConst.offset = 0;
+		pushConst.size = sizeof(RenderMatrixPushConst);
+		pushConst.stageFlags = vk::ShaderStageFlagBits::eVertex;
+
+		const std::vector pushConsts = { pushConst };
 
 		PipelineBuilder builder{ m_pRenderContext.get() };
 		builder.SetShader(&shader);
 		builder.SetInputAssembly(vk::PrimitiveTopology::eTriangleList, false);
 		// builder.SetViewport(0.0f, 0.0f, static_cast<f32>(m_pRenderContext->imageExtent.width), static_cast<f32>(m_pRenderContext->imageExtent.height), 0.0f, 1.0f);
 		// builder.SetScissor(vk::Offset2D(0, 0), m_pRenderContext->imageExtent);
-		builder.SetRasterizer(vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack);
+		builder.SetRasterizer(vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone);
 		builder.SetMultisampling();
 		builder.SetDepthStencil(true, true, vk::CompareOp::eLess);
 		builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
-		builder.SetDescriptorSetLayout({}, {});
+		builder.SetDescriptorSetLayout({}, pushConsts);
 		builder.SetDynamicStates({ vk::DynamicState::eViewport, vk::DynamicState::eScissor });
 
 		m_pPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
-
-		builder.SetShader(&redShader);
-		m_pRedPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
 
 		// Get command buffers. 1 for each frame in flight.
 		{
@@ -62,16 +66,15 @@ namespace Hyper
 
 		// Create sync objects
 		{
-			const u32 numFrames = m_pSwapChain->GetNumFrames();
-			m_RenderFinishedSemaphores.resize(numFrames);
-			m_InFlightFences.resize(numFrames);
+			m_RenderFinishedSemaphores.resize(m_pRenderContext->imagesInFlight);
+			m_InFlightFences.resize(m_pRenderContext->imagesInFlight);
 
 			const vk::SemaphoreCreateInfo semaphoreInfo{};
 			const vk::FenceCreateInfo fenceInfo{ vk::FenceCreateFlagBits::eSignaled };
 
 			try
 			{
-				for (u32 i = 0; i < numFrames; i++)
+				for (u32 i = 0; i < m_pRenderContext->imagesInFlight; i++)
 				{
 					m_RenderFinishedSemaphores[i] = m_pRenderContext->device.createSemaphore(semaphoreInfo);
 					m_InFlightFences[i] = m_pRenderContext->device.createFence(fenceInfo);
@@ -91,15 +94,19 @@ namespace Hyper
 		return true;
 	}
 
-	void Renderer::OnTick()
+	void Renderer::OnTick(f32 dt)
 	{
-		const auto input = m_pContext->GetSubsystem<Input>();
-		m_UseRedShader = input->GetMouseButton(MouseButton::Left);
-		
-		vk::Result result = m_pRenderContext->device.waitForFences(m_InFlightFences[m_FrameIdx], true, UINT64_MAX);
-		if (result != vk::Result::eSuccess)
+		HPR_PROFILE_SCOPE();
+
+		vk::Result result;
+
 		{
-			throw std::runtime_error("Failed to wait for fence");
+			HPR_PROFILE_SCOPE("Wait for fences");
+			result = m_pRenderContext->device.waitForFences(m_InFlightFences[m_FrameIdx], true, UINT64_MAX);
+			if (result != vk::Result::eSuccess)
+			{
+				throw std::runtime_error("Failed to wait for fence");
+			}
 		}
 
 		// Resize the swap chain if necessary.
@@ -120,13 +127,16 @@ namespace Hyper
 			return;
 		}
 
-		// Only reset fences if we're submitting any work.
-		m_pRenderContext->device.resetFences(m_InFlightFences[m_FrameIdx]);
-
-		m_FrameIdx = (m_FrameIdx + 1) % MAX_FRAMES_IN_FLIGHT;
+		{
+			HPR_PROFILE_SCOPE("Reset fences");
+			// Only reset fences if we're submitting any work.
+			m_pRenderContext->device.resetFences(m_InFlightFences[m_FrameIdx]);
+		}
 
 		vk::CommandBuffer cmd = m_CommandBuffers[m_FrameIdx];
 		VulkanCommandBuffer::Begin(cmd);
+
+		HPR_PROFILE_GPU_CONTEXT(cmd);
 
 		// Set viewport and scissor
 		const f32 imageWidth = static_cast<f32>(m_pRenderContext->imageExtent.width);
@@ -137,12 +147,12 @@ namespace Hyper
 		InsertImageMemoryBarrier(
 			cmd,
 			m_pSwapChain->GetImage(),
-			{}, // srcAccessMask
-			vk::AccessFlagBits::eColorAttachmentWrite, // dstAccessMask
-			vk::ImageLayout::eUndefined, // oldLayout
-			vk::ImageLayout::eColorAttachmentOptimal, // newLayout
-			vk::PipelineStageFlagBits::eTopOfPipe, // srcStageMask
-			vk::PipelineStageFlagBits::eColorAttachmentOutput, // dstStageMask
+			{},
+			vk::AccessFlagBits::eColorAttachmentWrite,
+			vk::ImageLayout::eUndefined,
+			vk::ImageLayout::eColorAttachmentOptimal,
+			vk::PipelineStageFlagBits::eTopOfPipe,
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
 			vk::ImageSubresourceRange({
 				vk::ImageAspectFlagBits::eColor,
 				0, 1,
@@ -150,36 +160,67 @@ namespace Hyper
 				);
 
 
-		vk::RenderingAttachmentInfo attachmentInfo = {};
-		attachmentInfo.imageView = m_pSwapChain->GetImageView();
-		attachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		attachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
-		attachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-		attachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		attachmentInfo.clearValue = vk::ClearColorValue(std::array{ 0.1f, 0.1f, 0.1f, 1.0f });
+		{
+			HPR_PROFILE_SCOPE("Begin rendering");
+			vk::RenderingAttachmentInfo attachmentInfo = {};
+			attachmentInfo.imageView = m_pSwapChain->GetImageView();
+			attachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			attachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
+			attachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+			attachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+			attachmentInfo.clearValue = vk::ClearColorValue(std::array{ 0.1f, 0.1f, 0.1f, 1.0f });
 		
-		vk::RenderingInfo renderingInfo{};
-		renderingInfo.renderArea = vk::Rect2D(vk::Offset2D(), m_pRenderContext->imageExtent);
-		renderingInfo.layerCount = 1;
-		renderingInfo.viewMask = 0;
-		renderingInfo.colorAttachmentCount = 1;
-		renderingInfo.setPColorAttachments(&attachmentInfo);
+			vk::RenderingInfo renderingInfo{};
+			renderingInfo.renderArea = vk::Rect2D(vk::Offset2D(), m_pRenderContext->imageExtent);
+			renderingInfo.layerCount = 1;
+			renderingInfo.viewMask = 0;
+			renderingInfo.colorAttachmentCount = 1;
+			renderingInfo.setPColorAttachments(&attachmentInfo);
 
-		cmd.beginRendering(renderingInfo);
+			cmd.beginRendering(renderingInfo);
+		}
 		
 		// draw stuff here
 
 
-		// Draw test triangle with basic shader
-		if (m_UseRedShader)
-			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pRedPipeline->GetPipeline());
-		else
+		{
+			HPR_PROFILE_SCOPE("Upload push constants");
+			// Create the camera push const
+			const glm::vec3 camPos = { 0.0f, 0.0f, -2.0f };
+		
+			const Window* pWindow = m_pContext->GetSubsystem<Window>();
+		
+			const glm::mat4 view = glm::translate(glm::mat4(1.0f), camPos);
+			// Camera projection
+			glm::mat4 proj = glm::perspective(
+				glm::radians(70.0f),
+				static_cast<f32>(pWindow->GetWidth()) / static_cast<f32>(pWindow->GetHeight()),
+				0.1f,
+				200.0f);
+			proj[1][1] *= -1;
+
+			m_Rot += 40 * dt;
+			const glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(m_Rot), glm::vec3(0.0f, 1.0f, 0.0f));
+		
+			RenderMatrixPushConst pushConst{};
+			pushConst.renderMatrix = proj * view * model;
+		
+			cmd.pushConstants<RenderMatrixPushConst>(m_pPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, pushConst);
+		}
+
+
+		{
+			HPR_PROFILE_SCOPE("Draw mesh");
+			// Draw test triangle with basic shader
 			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
-		m_pMesh->Bind(cmd);
-		m_pMesh->Draw(cmd);
+			m_pMesh->Draw(cmd);
+		}
 
 
-		cmd.endRendering();
+		{
+			HPR_PROFILE_SCOPE("End rendering");
+			cmd.endRendering();
+		}
 		
 		InsertImageMemoryBarrier(
 			cmd,
@@ -212,6 +253,9 @@ namespace Hyper
 
 		// Present
 		m_pSwapChain->Present(m_RenderFinishedSemaphores[m_FrameIdx]);
+
+		m_FrameIdx = (m_FrameIdx + 1) % m_pRenderContext->imagesInFlight;
+		m_FrameNumber++;
 	}
 
 	void Renderer::OnShutdown()
@@ -227,7 +271,6 @@ namespace Hyper
 			m_pRenderContext->device.destroySemaphore(m_RenderFinishedSemaphores[i]);
 		}
 
-		m_pRedPipeline.reset();
 		m_pPipeline.reset();
 		m_pSwapChain.reset();
 

@@ -10,7 +10,7 @@ namespace Hyper
 	{
 	public:
 		VulkanBuffer(RenderContext* pRenderCtx, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, const std::string& name, vk::BufferCreateFlags flags = {});
-		VulkanBuffer(RenderContext* pRenderCtx, void* data, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, const std::string& name);
+		VulkanBuffer(RenderContext* pRenderCtx, const void* data, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, const std::string& name);
 		~VulkanBuffer();
 		// Make sure we can't copy or move the buffer
 		VulkanBuffer(const VulkanBuffer& other) = delete;

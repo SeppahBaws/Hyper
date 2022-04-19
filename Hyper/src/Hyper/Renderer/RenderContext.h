@@ -15,6 +15,7 @@ namespace Hyper
 		VulkanQueue graphicsQueue;
 		VulkanCommandPool* commandPool;
 		VmaAllocator allocator;
+		u32 imagesInFlight;
 
 		vk::Format imageFormat;
 		vk::Extent2D imageExtent;

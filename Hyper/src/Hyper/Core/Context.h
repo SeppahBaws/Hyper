@@ -4,6 +4,7 @@
 #include <ranges>
 
 #include "Subsystem.h"
+#include "Hyper/Debug/Profiler.h"
 
 namespace Hyper
 {
@@ -32,6 +33,8 @@ namespace Hyper
 
 		bool OnInitialize()
 		{
+			HPR_PROFILE_SCOPE();
+
 			bool success = true;
 			for (auto& subsystem : m_Subsystems)
 			{
@@ -45,16 +48,20 @@ namespace Hyper
 			return success;
 		}
 
-		void OnTick()
+		void OnTick(f32 dt)
 		{
+			HPR_PROFILE_SCOPE();
+
 			for (auto& subsystem : m_Subsystems)
 			{
-				subsystem->OnTick();
+				subsystem->OnTick(dt);
 			}
 		}
 
 		void OnShutdown()
 		{
+			HPR_PROFILE_SCOPE();
+
 			for (auto& subsystem : m_Subsystems | std::views::reverse)
 			{
 				subsystem->OnShutdown();

@@ -1,17 +1,20 @@
 ﻿#pragma once
 #include <vulkan/vulkan.hpp>
 
+#include "Mesh.h"
 #include "Hyper/Core/Subsystem.h"
 #include "Vulkan/VulkanCommands.h"
-
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanSwapChain.h"
 
-#include "Mesh.h"
-
 namespace Hyper
 {
+	struct RenderMatrixPushConst
+	{
+		glm::mat4 renderMatrix;
+	};
+	
 	class Renderer final : public Subsystem
 	{
 	public:
@@ -19,7 +22,7 @@ namespace Hyper
 		~Renderer() override = default;
 
 		bool OnInitialize() override;
-		void OnTick() override;
+		void OnTick(f32 dt) override;
 		void OnShutdown() override;
 
 	private:
@@ -29,15 +32,12 @@ namespace Hyper
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
 		std::unique_ptr<VulkanPipeline> m_pPipeline;
 
-		std::unique_ptr<VulkanPipeline> m_pRedPipeline;
-
 		std::unique_ptr<Mesh> m_pMesh;
 
-		const u32 MAX_FRAMES_IN_FLIGHT = 3;
 		u32 m_FrameIdx = 0;
-		// u32 m_CurrentBuffer;
+		u64 m_FrameNumber = 0;
 
-		bool m_UseRedShader = false;
+		f32 m_Rot = 0;
 
 		std::vector<vk::CommandBuffer> m_CommandBuffers;
 		std::vector<vk::Semaphore> m_RenderFinishedSemaphores;

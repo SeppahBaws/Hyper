@@ -1,6 +1,7 @@
 ﻿#include "HyperPCH.h"
 #include "VulkanQueue.h"
 
+#include "Hyper/Debug/Profiler.h"
 #include "Hyper/Renderer/RenderContext.h"
 
 namespace Hyper
@@ -9,6 +10,8 @@ namespace Hyper
 		const std::vector<vk::Semaphore>& waitSemaphores, const std::vector<vk::Semaphore>& signalSemaphores,
 		vk::CommandBuffer cmd, vk::Fence fence)
 	{
+		HPR_PROFILE_SCOPE();
+
 		vk::SubmitInfo info = {};
 		info.setWaitDstStageMask(waitStages);
 		info.setWaitSemaphores(waitSemaphores);
@@ -27,12 +30,16 @@ namespace Hyper
 
 	void VulkanQueue::WaitIdle()
 	{
+		HPR_PROFILE_SCOPE();
+
 		queue.waitIdle();
 	}
 
 	vk::Result VulkanQueue::Present(const std::vector<vk::Semaphore>& waitSemaphores, const std::vector<u32>& imageIndices,
 	                                const std::vector<vk::SwapchainKHR>& swapchains)
 	{
+		HPR_PROFILE_SCOPE();
+
 		vk::PresentInfoKHR info = {};
 		info.setWaitSemaphores(waitSemaphores);
 		info.setResults(nullptr);

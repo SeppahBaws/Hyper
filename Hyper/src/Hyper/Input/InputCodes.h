@@ -156,4 +156,11 @@ namespace Hyper
 		CapsLock        = 0x0010,
 		NumLock         = 0x0020
 	};
+
+	enum class CursorMode : u32
+	{
+		Normal          = 0x00034001,
+		Hidden          = 0x00034002,
+		Disabled        = 0x00034003
+	};
 }

@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <vulkan/vulkan.hpp>
 
+#include "EditorCamera.h"
 #include "Mesh.h"
 #include "Hyper/Core/Subsystem.h"
 #include "Vulkan/VulkanCommands.h"
@@ -43,5 +44,7 @@ namespace Hyper
 		std::vector<vk::Semaphore> m_RenderFinishedSemaphores;
 		std::vector<vk::Fence> m_InFlightFences;
 		vk::RenderPass m_RenderPass;
+
+		std::unique_ptr<EditorCamera> m_pCamera;
 	};
 }

@@ -17,14 +17,16 @@ namespace Hyper
 {
 	class Window;
 
-	Renderer::Renderer(Context* pContext) : Subsystem(pContext)
+	Renderer::Renderer(Context* pContext)
+		: Subsystem(pContext)
+		  , m_pCamera(std::make_unique<EditorCamera>(pContext))
 	{
 	}
 
 	bool Renderer::OnInitialize()
 	{
 		HPR_PROFILE_SCOPE();
-		
+
 		m_pRenderContext = std::make_unique<RenderContext>();
 		m_pDevice = std::make_unique<VulkanDevice>(m_pRenderContext.get());
 		m_pCommandPool = std::make_unique<VulkanCommandPool>(m_pRenderContext.get());
@@ -91,6 +93,11 @@ namespace Hyper
 			m_pMesh = std::make_unique<Mesh>(m_pRenderContext.get());
 		}
 
+		// Setup test camera (temp code)
+		{
+			m_pCamera->Setup();
+		}
+
 		return true;
 	}
 
@@ -114,7 +121,7 @@ namespace Hyper
 			const Window* window = m_pContext->GetSubsystem<Window>();
 			const u32 width = window->GetWidth();
 			const u32 height = window->GetHeight();
-			
+
 			if (width != m_pSwapChain->GetWidth() || height != m_pSwapChain->GetHeight() || !m_pSwapChain->IsPresentEnabled())
 			{
 				m_pRenderContext->device.waitIdle();
@@ -132,6 +139,9 @@ namespace Hyper
 			// Only reset fences if we're submitting any work.
 			m_pRenderContext->device.resetFences(m_InFlightFences[m_FrameIdx]);
 		}
+
+		// Update camera just for test
+		m_pCamera->Update(dt);
 
 		vk::CommandBuffer cmd = m_CommandBuffers[m_FrameIdx];
 		VulkanCommandBuffer::Begin(cmd);
@@ -156,8 +166,9 @@ namespace Hyper
 			vk::ImageSubresourceRange({
 				vk::ImageAspectFlagBits::eColor,
 				0, 1,
-				0, 1 })
-				);
+				0, 1
+			})
+		);
 
 
 		{
@@ -168,8 +179,8 @@ namespace Hyper
 			attachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
 			attachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
 			attachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-			attachmentInfo.clearValue = vk::ClearColorValue(std::array{ 0.1f, 0.1f, 0.1f, 1.0f });
-		
+			attachmentInfo.clearValue = vk::ClearColorValue(std::array{ 0.0f, 0.0f, 0.0f, 1.0f });
+
 			vk::RenderingInfo renderingInfo{};
 			renderingInfo.renderArea = vk::Rect2D(vk::Offset2D(), m_pRenderContext->imageExtent);
 			renderingInfo.layerCount = 1;
@@ -179,32 +190,18 @@ namespace Hyper
 
 			cmd.beginRendering(renderingInfo);
 		}
-		
+
 		// draw stuff here
 
 
 		{
 			HPR_PROFILE_SCOPE("Upload push constants");
-			// Create the camera push const
-			const glm::vec3 camPos = { 0.0f, 0.0f, -2.0f };
-		
-			const Window* pWindow = m_pContext->GetSubsystem<Window>();
-		
-			const glm::mat4 view = glm::translate(glm::mat4(1.0f), camPos);
-			// Camera projection
-			glm::mat4 proj = glm::perspective(
-				glm::radians(70.0f),
-				static_cast<f32>(pWindow->GetWidth()) / static_cast<f32>(pWindow->GetHeight()),
-				0.1f,
-				200.0f);
-			proj[1][1] *= -1;
-
 			m_Rot += 40 * dt;
 			const glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(m_Rot), glm::vec3(0.0f, 1.0f, 0.0f));
-		
+
 			RenderMatrixPushConst pushConst{};
-			pushConst.renderMatrix = proj * view * model;
-		
+			pushConst.renderMatrix = m_pCamera->GetViewProjection() * model;
+
 			cmd.pushConstants<RenderMatrixPushConst>(m_pPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, pushConst);
 		}
 
@@ -221,7 +218,7 @@ namespace Hyper
 			HPR_PROFILE_SCOPE("End rendering");
 			cmd.endRendering();
 		}
-		
+
 		InsertImageMemoryBarrier(
 			cmd,
 			m_pSwapChain->GetImage(),

@@ -19,8 +19,13 @@ namespace Hyper
 		[[nodiscard]] bool GetKey(Key key) const;
 		[[nodiscard]] bool GetMouseButton(MouseButton button) const;
 		[[nodiscard]] glm::vec2 GetMousePos() const;
+		[[nodiscard]] glm::vec2 GetMouseMovement();
+
+		void SetCursorMode(CursorMode mode) const;
 
 	private:
-		Window* m_pWindow;
+		Window* m_pWindow{};
+
+		glm::vec2 m_LastMousePos{};
 	};
 }

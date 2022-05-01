@@ -36,4 +36,17 @@ namespace Hyper
 
 		return { static_cast<f32>(x), static_cast<f32>(y) };
 	}
+
+	glm::vec2 Input::GetMouseMovement()
+	{
+		const glm::vec2 currPos = GetMousePos();
+		const glm::vec2 mov = m_LastMousePos - currPos;
+		m_LastMousePos = currPos;
+		return mov;
+	}
+
+	void Input::SetCursorMode(CursorMode mode) const
+	{
+		glfwSetInputMode(m_pWindow->GetHandle(), GLFW_CURSOR, static_cast<u32>(mode));
+	}
 }

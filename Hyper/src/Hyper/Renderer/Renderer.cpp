@@ -151,7 +151,7 @@ namespace Hyper
 		// Set viewport and scissor
 		const f32 imageWidth = static_cast<f32>(m_pRenderContext->imageExtent.width);
 		const f32 imageHeight = static_cast<f32>(m_pRenderContext->imageExtent.height);
-		cmd.setViewport(0, vk::Viewport{ 0, 0, imageWidth, imageHeight });
+		cmd.setViewport(0, vk::Viewport{ 0, 0, imageWidth, imageHeight, 0.0f, 1.0f });
 		cmd.setScissor(0, vk::Rect2D{ vk::Offset2D{ 0, 0 }, m_pRenderContext->imageExtent });
 
 		InsertImageMemoryBarrier(
@@ -173,20 +173,16 @@ namespace Hyper
 
 		{
 			HPR_PROFILE_SCOPE("Begin rendering");
-			vk::RenderingAttachmentInfo attachmentInfo = {};
-			attachmentInfo.imageView = m_pSwapChain->GetImageView();
-			attachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			attachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
-			attachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-			attachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-			attachmentInfo.clearValue = vk::ClearColorValue(std::array{ 0.0f, 0.0f, 0.0f, 1.0f });
+
+			const std::array<vk::RenderingAttachmentInfo, 2> attachments = m_pSwapChain->GetRenderingAttachments();
 
 			vk::RenderingInfo renderingInfo{};
 			renderingInfo.renderArea = vk::Rect2D(vk::Offset2D(), m_pRenderContext->imageExtent);
 			renderingInfo.layerCount = 1;
 			renderingInfo.viewMask = 0;
 			renderingInfo.colorAttachmentCount = 1;
-			renderingInfo.setPColorAttachments(&attachmentInfo);
+			renderingInfo.setPColorAttachments(&attachments[0]);
+			renderingInfo.setPDepthAttachment(&attachments[1]);
 
 			cmd.beginRendering(renderingInfo);
 		}
@@ -260,6 +256,7 @@ namespace Hyper
 		// Wait till everything is finished.
 		m_pRenderContext->device.waitIdle();
 
+		m_pCamera.reset();
 		m_pMesh.reset();
 
 		for (size_t i = 0; i < m_CommandBuffers.size(); i++)

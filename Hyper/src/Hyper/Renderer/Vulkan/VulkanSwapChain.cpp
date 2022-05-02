@@ -82,6 +82,27 @@ namespace Hyper
 		CreateSwapChain(width, height);
 	}
 
+	std::array<vk::RenderingAttachmentInfo, 2> VulkanSwapChain::GetRenderingAttachments() const
+	{
+		std::array<vk::RenderingAttachmentInfo, 2> attachments{};
+
+		attachments[0].imageView = GetImageView();
+		attachments[0].imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		attachments[0].resolveMode = vk::ResolveModeFlagBits::eNone;
+		attachments[0].loadOp = vk::AttachmentLoadOp::eClear;
+		attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
+		attachments[0].clearValue = vk::ClearColorValue(std::array{ 0.0f, 0.0f, 0.0f, 1.0f });
+
+		attachments[1].imageView = m_pDepthBuffer->GetImageView();
+		attachments[1].imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		attachments[1].resolveMode = vk::ResolveModeFlagBits::eNone;
+		attachments[1].loadOp = vk::AttachmentLoadOp::eClear;
+		attachments[1].storeOp = vk::AttachmentStoreOp::eStore;
+		attachments[1].clearValue = vk::ClearDepthStencilValue(1.0f);
+
+		return attachments;
+	}
+
 	void VulkanSwapChain::CreateSwapChain(u32 width, u32 height)
 	{
 		// Create surface.
@@ -179,7 +200,7 @@ namespace Hyper
 				viewInfo.image = image;
 				viewInfo.viewType = vk::ImageViewType::e2D;
 				viewInfo.format = m_ImageFormat;
-				viewInfo.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+				viewInfo.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
 
 				vk::ImageView imageView;
 
@@ -192,9 +213,18 @@ namespace Hyper
 					throw std::runtime_error("Failed to create image view: "s + e.what());
 				}
 				m_ImageViews.push_back(imageView);
-
 			}
+
 			HPR_VKLOG_INFO("Created swap chain image views ({})", m_ImageViews.size());
+		}
+
+		// Create the depth buffer
+		{
+			m_pDepthBuffer = std::make_unique<VulkanImage>(
+				m_pRenderCtx, vk::Format::eD24UnormS8Uint, vk::ImageType::e2D, vk::ImageUsageFlagBits::eDepthStencilAttachment,
+				vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, "Depth Buffer", m_Width, m_Height);
+
+			HPR_VKLOG_INFO("Created depth buffer");
 		}
 
 		// Create image acquired semaphores
@@ -219,6 +249,7 @@ namespace Hyper
 		}
 		m_ImageAcquiredSemaphores.clear();
 
+		m_pDepthBuffer.reset();
 		for (const auto& imageView : m_ImageViews)
 		{
 			m_pRenderCtx->device.destroyImageView(imageView);

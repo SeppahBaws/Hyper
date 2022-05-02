@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include <vulkan/vulkan.hpp>
 
+#include "VulkanImage.h"
+
 namespace Hyper
 {
 	struct RenderContext;
@@ -28,6 +30,8 @@ namespace Hyper
 
 		void Resize(u32 width, u32 height);
 
+		std::array<vk::RenderingAttachmentInfo, 2> GetRenderingAttachments() const;
+
 	private:
 		void CreateSwapChain(u32 width, u32 height);
 		void DestroySwapChain();
@@ -47,6 +51,8 @@ namespace Hyper
 		vk::SwapchainKHR m_SwapChain{};
 		std::vector<vk::Image> m_Images{};
 		std::vector<vk::ImageView> m_ImageViews{};
+
+		std::unique_ptr<VulkanImage> m_pDepthBuffer{};
 
 		vk::Format m_ImageFormat;
 		vk::ColorSpaceKHR m_ColorSpace;

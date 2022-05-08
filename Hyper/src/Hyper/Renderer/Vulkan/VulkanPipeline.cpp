@@ -1,7 +1,7 @@
 ﻿#include "HyperPCH.h"
 #include "VulkanPipeline.h"
 
-#include "VertexPosCol.h"
+#include "Vertex.h"
 #include "VulkanShader.h"
 
 namespace Hyper
@@ -166,8 +166,8 @@ namespace Hyper
 
 	VulkanPipeline PipelineBuilder::BuildGraphics()
 	{
-		auto bindingDescription = VertexPosCol::GetBindingDescription();
-		auto attributeDescriptions = VertexPosCol::GetAttributeDescriptions();
+		auto bindingDescription = VertexPosNormTex::GetBindingDescription();
+		auto attributeDescriptions = VertexPosNormTex::GetAttributeDescriptions();
 
 		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.setVertexBindingDescriptions(bindingDescription);

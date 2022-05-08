@@ -47,6 +47,25 @@ project "Sandbox"
         runtime "Debug"
         symbols "on"
 
+        postbuildcommands
+        {
+            "{COPY} %{BinDir.assimp}/Debug/assimp-vc143-mtd.* %{cfg.targetdir}"
+        }
+
     filter "configurations:Release"
         runtime "Release"
         optimize "on"
+
+        postbuildcommands
+        {
+            "{COPY} %{BinDir.assimp}/Release/assimp-vc143-mt.* %{cfg.targetdir}"
+        }
+
+    filter "configurations:Distribute"
+        runtime "Release"
+        optimize "on"
+
+        postbuildcommands
+        {
+            "{COPY} %{BinDir.assimp}/Release/assimp-vc143-mt.* %{cfg.targetdir}"
+        }

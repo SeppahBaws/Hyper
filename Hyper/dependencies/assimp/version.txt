@@ -1,0 +1,3 @@
+v5.2.3
+
+https://github.com/assimp/assimp/releases/tag/v5.2.3

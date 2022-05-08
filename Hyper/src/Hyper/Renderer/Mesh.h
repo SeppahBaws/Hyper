@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Vulkan/VertexPosCol.h"
+#include "Vulkan/Vertex.h"
 #include "Vulkan/VulkanBuffer.h"
 #include "Vulkan/VulkanIndexBuffer.h"
 #include "Vulkan/VulkanVertexBuffer.h"
@@ -18,7 +18,7 @@ namespace Hyper
 	private:
 		RenderContext* m_pRenderCtx;
 
-		std::vector<VertexPosCol> m_Vertices;
+		std::vector<VertexPosNormTex> m_Vertices;
 		std::vector<u32> m_Indices;
 
 		std::unique_ptr<VulkanVertexBuffer> m_pVertexBuffer{};

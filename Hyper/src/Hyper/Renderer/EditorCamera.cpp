@@ -22,7 +22,7 @@ namespace Hyper
 
 		m_pInput = m_pContext->GetSubsystem<Input>();
 
-		m_FovDegrees = 70.0f;
+		m_FovDegrees = 60.0f;
 		m_pWindow = m_pContext->GetSubsystem<Window>();
 		m_Width = m_pWindow->GetWidth();
 		m_Height = m_pWindow->GetHeight();
@@ -48,23 +48,23 @@ namespace Hyper
 		if (m_pInput->GetMouseButton(MouseButton::Right))
 		{
 			if (m_pInput->GetKey(Key::A))
-				movement.x += 1;
-			if (m_pInput->GetKey(Key::D))
 				movement.x -= 1;
+			if (m_pInput->GetKey(Key::D))
+				movement.x += 1;
 
 			if (m_pInput->GetKey(Key::W))
-				movement.z -= 1;
+				movement.y += 1;
 			if (m_pInput->GetKey(Key::S))
-				movement.z += 1;
+				movement.y -= 1;
 
 			if (m_pInput->GetKey(Key::Q))
-				movement.y -= 1;
+				movement.z -= 1;
 			if (m_pInput->GetKey(Key::E))
-				movement.y += 1;
+				movement.z += 1;
 
 			// Todo: parameterize look speed
-			m_Yaw -= mouseMov.x * dt * m_LookSpeed;
-			m_Pitch -= mouseMov.y * dt * m_LookSpeed;
+			m_Yaw += mouseMov.x * dt * m_LookSpeed;
+			m_Pitch += mouseMov.y * dt * m_LookSpeed;
 
 			m_pInput->SetCursorMode(CursorMode::Disabled);
 		}
@@ -78,22 +78,22 @@ namespace Hyper
 
 		glm::vec3 front;
 		front.x = cos(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
-		front.y = sin(glm::radians(m_Pitch));
-		front.z = sin(glm::radians(m_Yaw)) * cos(glm::radians(-m_Pitch));
+		front.y = sin(glm::radians(m_Yaw)) * cos(glm::radians(-m_Pitch));
+		front.z = sin(glm::radians(m_Pitch));
 		front = glm::normalize(front);
 		m_Forward = front;
 
 		if (glm::length(movement) > 0)
 		{
-			const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+			const glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 			const glm::vec3 forward = glm::normalize(m_Forward);
 			const glm::vec3 right = glm::normalize(glm::cross(m_Forward, up));
 
 			movement = glm::normalize(movement);
 			glm::vec3 mov{};
 			mov += movement.x * right;
-			mov += movement.y * up;
-			mov += movement.z * forward;
+			mov += movement.y * forward;
+			mov += movement.z * up;
 
 			m_Position += mov * dt * m_MoveSpeed;
 		}
@@ -103,7 +103,7 @@ namespace Hyper
 
 	void EditorCamera::ComputeViewProjection()
 	{
-		m_View = glm::lookAtLH(m_Position, m_Position + m_Forward, glm::vec3(0.0f, 1.0f, 0.0f));
+		m_View = glm::lookAtRH(m_Position, m_Position + m_Forward, glm::vec3(0.0f, 0.0f, 1.0f));
 		m_ViewProjection = m_Projection * m_View;
 	}
 

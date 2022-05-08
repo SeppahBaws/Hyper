@@ -2,7 +2,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "EditorCamera.h"
-#include "Mesh.h"
+#include "TestMesh.h"
 #include "Hyper/Core/Subsystem.h"
 #include "Vulkan/VulkanCommands.h"
 #include "Vulkan/VulkanDevice.h"
@@ -33,7 +33,7 @@ namespace Hyper
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
 		std::unique_ptr<VulkanPipeline> m_pPipeline;
 
-		std::unique_ptr<Mesh> m_pMesh;
+		std::unique_ptr<TestMesh> m_pMesh;
 
 		u32 m_FrameIdx = 0;
 		u64 m_FrameNumber = 0;

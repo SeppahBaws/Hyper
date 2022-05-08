@@ -27,12 +27,14 @@ project "Hyper"
         "%{IncludeDir.Vulkan}",
         "%{IncludeDir.magic_enum}",
         "%{IncludeDir.VkMemAlloc}",
-        "%{IncludeDir.Optick}"
+        "%{IncludeDir.Optick}",
+        "%{IncludeDir.assimp}"
     }
 
     libdirs
     {
-        "%{LibDir.Vulkan}"
+        "%{LibDir.Vulkan}",
+        "%{LibDir.assimp}",
     }
 
     links
@@ -68,6 +70,9 @@ project "Hyper"
             "%{LibDir.Vulkan}/spirv-cross-cored.lib",
             "%{LibDir.Vulkan}/spirv-cross-glsld.lib",
             "%{LibDir.Vulkan}/SPIRV-Toolsd.lib",
+
+            -- Assimp debug
+            "%{LibDir.assimp}/Debug/assimp-vc143-mtd.lib",
         }
 
     filter "configurations:Release"
@@ -87,6 +92,9 @@ project "Hyper"
             "%{LibDir.Vulkan}/spirv-cross-core.lib",
             "%{LibDir.Vulkan}/spirv-cross-glsl.lib",
             "%{LibDir.Vulkan}/SPIRV-Tools.lib",
+
+            -- Assimp release
+            "%{LibDir.assimp}/Release/assimp-vc143-mt.lib",
         }
 
     filter "configurations:Distribute"
@@ -98,12 +106,15 @@ project "Hyper"
             "HYPER_DISTRIBUTE"
         }
 
-        -- Shaderc release libraries
         links
         {
+            -- Shaderc release libraries
             "%{LibDir.Vulkan}/shaderc_shared.lib",
             "%{LibDir.Vulkan}/shaderc_util.lib",
             "%{LibDir.Vulkan}/spirv-cross-core.lib",
             "%{LibDir.Vulkan}/spirv-cross-glsl.lib",
             "%{LibDir.Vulkan}/SPIRV-Tools.lib",
+
+            -- Assimp release
+            "%{LibDir.assimp}/Release/assimp-vc143-mt.lib",
         }

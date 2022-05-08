@@ -39,9 +39,9 @@ namespace Hyper
 		u32 m_Width, m_Height;
 		f32 m_ZNear, m_ZFar;
 
-		glm::vec3 m_Position{ 0.0f, 0.0f, -2.0f };
-		glm::vec3 m_Forward{ 0.0f, 0.0f, 1.0f };
-		f32 m_Yaw{}, m_Pitch{};
+		glm::vec3 m_Position{ 0.0f, -5.0f, 0.0f };
+		glm::vec3 m_Forward{};
+		f32 m_Yaw{ 90.0f }, m_Pitch{};
 
 		glm::mat4 m_View{};
 		glm::mat4 m_Projection{};

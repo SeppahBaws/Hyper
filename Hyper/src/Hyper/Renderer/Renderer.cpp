@@ -90,7 +90,7 @@ namespace Hyper
 
 		// Create test mesh
 		{
-			m_pMesh = std::make_unique<Mesh>(m_pRenderContext.get());
+			m_pMesh = std::make_unique<TestMesh>(m_pRenderContext.get());
 		}
 
 		// Setup test camera (temp code)
@@ -108,7 +108,6 @@ namespace Hyper
 		vk::Result result;
 
 		{
-			HPR_PROFILE_SCOPE("Wait for fences");
 			result = m_pRenderContext->device.waitForFences(m_InFlightFences[m_FrameIdx], true, UINT64_MAX);
 			if (result != vk::Result::eSuccess)
 			{
@@ -134,11 +133,8 @@ namespace Hyper
 			return;
 		}
 
-		{
-			HPR_PROFILE_SCOPE("Reset fences");
-			// Only reset fences if we're submitting any work.
-			m_pRenderContext->device.resetFences(m_InFlightFences[m_FrameIdx]);
-		}
+		// Only reset fences if we're submitting any work.
+		m_pRenderContext->device.resetFences(m_InFlightFences[m_FrameIdx]);
 
 		// Update camera just for test
 		m_pCamera->Update(dt);
@@ -171,49 +167,40 @@ namespace Hyper
 		);
 
 
-		{
-			HPR_PROFILE_SCOPE("Begin rendering");
+		// Begin rendering
+		const std::array<vk::RenderingAttachmentInfo, 2> attachments = m_pSwapChain->GetRenderingAttachments();
 
-			const std::array<vk::RenderingAttachmentInfo, 2> attachments = m_pSwapChain->GetRenderingAttachments();
+		vk::RenderingInfo renderingInfo{};
+		renderingInfo.renderArea = vk::Rect2D(vk::Offset2D(), m_pRenderContext->imageExtent);
+		renderingInfo.layerCount = 1;
+		renderingInfo.viewMask = 0;
+		renderingInfo.colorAttachmentCount = 1;
+		renderingInfo.setPColorAttachments(&attachments[0]);
+		renderingInfo.setPDepthAttachment(&attachments[1]);
 
-			vk::RenderingInfo renderingInfo{};
-			renderingInfo.renderArea = vk::Rect2D(vk::Offset2D(), m_pRenderContext->imageExtent);
-			renderingInfo.layerCount = 1;
-			renderingInfo.viewMask = 0;
-			renderingInfo.colorAttachmentCount = 1;
-			renderingInfo.setPColorAttachments(&attachments[0]);
-			renderingInfo.setPDepthAttachment(&attachments[1]);
-
-			cmd.beginRendering(renderingInfo);
-		}
+		cmd.beginRendering(renderingInfo);
 
 		// draw stuff here
 
 
-		{
-			HPR_PROFILE_SCOPE("Upload push constants");
-			m_Rot += 40 * dt;
-			const glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(m_Rot), glm::vec3(0.0f, 1.0f, 0.0f));
+		// Upload push const
+		RenderMatrixPushConst pushConst{};
+		// m_Rot += 40 * dt;
+		// const glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(m_Rot), glm::vec3(0.0f, 1.0f, 0.0f));
+		const glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(m_Rot), glm::vec3(0.0f, 1.0f, 0.0f));
+		
+		pushConst.renderMatrix = m_pCamera->GetViewProjection() * model;
 
-			RenderMatrixPushConst pushConst{};
-			pushConst.renderMatrix = m_pCamera->GetViewProjection() * model;
+		cmd.pushConstants<RenderMatrixPushConst>(m_pPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, pushConst);
 
-			cmd.pushConstants<RenderMatrixPushConst>(m_pPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, pushConst);
-		}
-
-
-		{
-			HPR_PROFILE_SCOPE("Draw mesh");
-			// Draw test triangle with basic shader
-			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
-			m_pMesh->Draw(cmd);
-		}
+		// Draw test triangle with basic shader
+		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
+		// m_pMesh->Draw(cmd);
+		m_pMesh->Draw(cmd);
 
 
-		{
-			HPR_PROFILE_SCOPE("End rendering");
-			cmd.endRendering();
-		}
+		// End rendering
+		cmd.endRendering();
 
 		InsertImageMemoryBarrier(
 			cmd,

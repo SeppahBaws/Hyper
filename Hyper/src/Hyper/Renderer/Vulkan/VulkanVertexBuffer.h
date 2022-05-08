@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "VertexPosCol.h"
+#include "Vertex.h"
 #include "VulkanBuffer.h"
 
 namespace Hyper
@@ -10,7 +10,7 @@ namespace Hyper
         explicit VulkanVertexBuffer(RenderContext* pRenderCtx, const std::string& name);
         ~VulkanVertexBuffer();
 
-        void CreateFrom(const std::vector<VertexPosCol>& vertices);
+        void CreateFrom(const std::vector<VertexPosNormTex>& vertices);
 
         void Bind(const vk::CommandBuffer& cmd) const;
 

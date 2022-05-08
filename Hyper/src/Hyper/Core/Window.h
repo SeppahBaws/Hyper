@@ -2,6 +2,7 @@
 #include "Subsystem.h"
 
 struct GLFWwindow;
+struct GLFWmonitor;
 
 namespace Hyper
 {
@@ -20,6 +21,10 @@ namespace Hyper
 		[[nodiscard]] GLFWwindow* GetHandle() const { return m_pWindow; }
 		[[nodiscard]] u32 GetWidth() const { return m_Width; }
 		[[nodiscard]] u32 GetHeight() const { return m_Height; }
+
+	private:
+		void CenterWindow();
+		GLFWmonitor* GetBestMonitor() const;
 
 	private:
 		GLFWwindow* m_pWindow = nullptr;

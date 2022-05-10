@@ -1,5 +1,5 @@
 project "Hyper"
-    kind "StaticLib"
+    kind "ConsoleApp"
     language "C++"
     cppdialect "C++20"
     staticruntime "on"
@@ -44,6 +44,22 @@ project "Hyper"
         "%{Library.Vulkan}"
     }
 
+    if (_OPTIONS["use-vld"]) then
+        defines { "HYPER_USE_VLD" }
+        includedirs
+        {
+            (VLDLocation .. "/include")
+        }
+        libdirs
+        {
+            (VLDLocation .. "/lib/Win64")
+        }
+        links
+        {
+            "vld"
+        }
+    end
+
     filter "system:windows"
         systemversion "latest"
         system "Windows"
@@ -75,6 +91,11 @@ project "Hyper"
             "%{LibDir.assimp}/Debug/assimp-vc143-mtd.lib",
         }
 
+        postbuildcommands
+        {
+            "{COPY} %{BinDir.assimp}/Debug/assimp-vc143-mtd.* %{cfg.targetdir}"
+        }
+
     filter "configurations:Release"
         runtime "Release"
         optimize "on"
@@ -97,24 +118,7 @@ project "Hyper"
             "%{LibDir.assimp}/Release/assimp-vc143-mt.lib",
         }
 
-    filter "configurations:Distribute"
-        runtime "Release"
-        optimize "on"
-
-        defines
+        postbuildcommands
         {
-            "HYPER_DISTRIBUTE"
-        }
-
-        links
-        {
-            -- Shaderc release libraries
-            "%{LibDir.Vulkan}/shaderc_shared.lib",
-            "%{LibDir.Vulkan}/shaderc_util.lib",
-            "%{LibDir.Vulkan}/spirv-cross-core.lib",
-            "%{LibDir.Vulkan}/spirv-cross-glsl.lib",
-            "%{LibDir.Vulkan}/SPIRV-Tools.lib",
-
-            -- Assimp release
-            "%{LibDir.assimp}/Release/assimp-vc143-mt.lib",
+            "{COPY} %{BinDir.assimp}/Release/assimp-vc143-mt.* %{cfg.targetdir}"
         }

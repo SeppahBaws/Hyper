@@ -3,7 +3,7 @@ import subprocess
 
 def UseVld():
     while True:
-        reply = str(input("Use VLD? [y/N]: ")).lower().strip()
+        reply = str(input("Use VLD to detect memory leaks? [y/N]: ")).lower().strip()
         if (reply == "y"):
             return True
         elif (reply == "n" or reply == ""):

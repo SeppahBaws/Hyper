@@ -13,5 +13,3 @@
 //
 // Here's also a handy-dandy illustration to visually explain what on earth is going on:
 // https://twitter.com/FreyaHolmer/status/1325556229410861056/photo/1
-
-#include "Hyper/Core/Application.h"

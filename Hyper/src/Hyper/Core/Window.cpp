@@ -11,9 +11,9 @@ namespace Hyper
 {
 	Window::Window(Context* pContext)
 		: Subsystem(pContext)
-		, m_Width(1600)
-		, m_Height(900)
-		, m_Title("Hyper Engine")
+		, m_Width(1920)
+		, m_Height(1080)
+		, m_Title("Hyper")
 	{
 	}
 

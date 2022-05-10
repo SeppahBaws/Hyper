@@ -1,9 +1,10 @@
-#ifdef SANDBOX_USE_VLD
+#include "HyperPCH.h"
+#ifdef HYPER_USE_VLD
 // ReSharper Disable Once CppUnusedIncludeDirective
 #include <vld.h>
 #endif
 
-#include <Hyper.h>
+#include "Hyper/Core/Application.h"
 
 int main()
 {

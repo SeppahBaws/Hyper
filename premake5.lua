@@ -1,12 +1,11 @@
-workspace "HyperEngine"
+workspace "Hyper"
     architecture "x86_64"
-    startproject "Sandbox"
+    startproject "Hyper"
 
     configurations
     {
         "Debug",
-        "Release",
-        "Distribute"
+        "Release"
     }
 
     flags
@@ -29,12 +28,8 @@ end
 include "Dependencies.lua"
 
 group "Dependencies"
-include "Hyper/dependencies/glfw"
-include "Hyper/dependencies/Optick"
+    include "Hyper/dependencies/glfw"
+    include "Hyper/dependencies/Optick"
 group ""
 
-group "Core"
-    include "Hyper"
-group ""
-
-include "Sandbox"
+include "Hyper"

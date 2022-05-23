@@ -9,13 +9,10 @@ namespace Hyper
 	class Mesh
 	{
 	public:
-		explicit Mesh(RenderContext* pRenderCtx);
+		explicit Mesh(RenderContext* pRenderCtx, const std::vector<VertexPosNormTex>& vertices, const std::vector<u32>& indices);
 		~Mesh();
 
-		void Bind(const vk::CommandBuffer& cmd) const;
 		void Draw(const vk::CommandBuffer& cmd) const;
-
-		void Import();
 
 	private:
 		RenderContext* m_pRenderCtx;

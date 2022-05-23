@@ -35,73 +35,25 @@ namespace Hyper::VkDebug
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
 	{
-		std::string debugMessage{};
-
-		const std::string severity = vk::to_string(
-			static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(messageSeverity));
+		const std::string severity = vk::to_string(static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(messageSeverity));
 		const std::string type = vk::to_string(static_cast<vk::DebugUtilsMessageTypeFlagsEXT>(messageType));
-		debugMessage += fmt::format("{}: {}:\n", severity, type);
-
-
-		const std::string messageIdName = pCallbackData->pMessageIdName;
-		const i32 messageIdNumber = pCallbackData->messageIdNumber;
 		const std::string message = pCallbackData->pMessage;
-		debugMessage += fmt::format("\tmessageIDName   = <{}>\n\tmessageIdNumber = {}\n\tmessage         = <{}>\n",
-			messageIdName, messageIdNumber, message);
-
-		if (pCallbackData->queueLabelCount > 0)
-		{
-			debugMessage += fmt::format("\tQueue Labels:\n");
-			for (u32 i = 0; i < pCallbackData->queueLabelCount; i++)
-			{
-				debugMessage += fmt::format("\t\tlabelName = <{}>\n", pCallbackData->pQueueLabels[i].pLabelName);
-			}
-		}
-
-		if (pCallbackData->cmdBufLabelCount > 0)
-		{
-			debugMessage += fmt::format("\tCommandBuffer Labels:\n");
-			for (u32 i = 0; i < pCallbackData->cmdBufLabelCount; i++)
-			{
-				debugMessage += fmt::format("\t\tlabelName = <{}>\n", pCallbackData->pCmdBufLabels[i].pLabelName);
-			}
-		}
-
-		if (pCallbackData->objectCount > 0)
-		{
-			debugMessage += fmt::format("\tObjects:\n");
-
-			for (u32 i = 0; i < pCallbackData->objectCount; i++)
-			{
-				const std::string objectType = vk::to_string(
-					static_cast<vk::ObjectType>(pCallbackData->pObjects[i].objectType));
-
-				debugMessage += fmt::format("\t\tObject {}\n", i);
-				debugMessage += fmt::format("\t\t\tobjectType   = {}\n", objectType);
-				debugMessage += fmt::format("\t\t\tobjectHandle = {}\n", pCallbackData->pObjects[i].objectHandle);
-				if (pCallbackData->pObjects[i].pObjectName)
-				{
-					debugMessage += fmt::format("\t\t\tobjectName = <{}>\n",
-						pCallbackData->pObjects[i].pObjectName);
-				}
-			}
-		}
 
 		switch (messageSeverity)
 		{
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-			HPR_VKLOG_TRACE(debugMessage);
+			HPR_VKLOG_TRACE("{} {} {}", severity, type, message);
 			break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-			HPR_VKLOG_INFO(debugMessage);
+			HPR_VKLOG_INFO("{} {} {}", severity, type, message);
 			break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-			HPR_VKLOG_WARN(debugMessage);
+			HPR_VKLOG_WARN("{} {} {}", severity, type, message);
 			break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-			HPR_VKLOG_ERROR(debugMessage);
+			HPR_VKLOG_ERROR("{} {} {}", severity, type, message);
 			break;
-		default:;
+		default: ;
 		}
 
 		return false;
@@ -109,24 +61,22 @@ namespace Hyper::VkDebug
 
 	void Setup(RenderContext* pRenderContext)
 	{
-		pfnVkCreateDebugUtilsMessengerExt = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(pRenderContext->
-			instance.getProcAddr("vkCreateDebugUtilsMessengerEXT"));
+		pfnVkCreateDebugUtilsMessengerExt = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(pRenderContext->instance.getProcAddr("vkCreateDebugUtilsMessengerEXT"));
 		if (!pfnVkCreateDebugUtilsMessengerExt)
 		{
 			HPR_VKLOG_ERROR("GetInstanceProcAdd: Unable to find PfnVkCreateDebugUtilsMessengerExt function.");
 			return;
 		}
 
-		pfnVkDestroyDebugUtilsMessengerExt = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(pRenderContext->
-			instance.getProcAddr("vkDestroyDebugUtilsMessengerEXT"));
+		pfnVkDestroyDebugUtilsMessengerExt = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(pRenderContext->instance.
+			getProcAddr("vkDestroyDebugUtilsMessengerEXT"));
 		if (!pfnVkDestroyDebugUtilsMessengerExt)
 		{
 			HPR_VKLOG_ERROR("GetInstanceProcAdd: Unable to find PfnVkDestroyDebugUtilsMessengerExt function.");
 			return;
 		}
 
-		pfnVkSetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(pRenderContext->
-			instance.getProcAddr("vkSetDebugUtilsObjectNameEXT"));
+		pfnVkSetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(pRenderContext->instance.getProcAddr("vkSetDebugUtilsObjectNameEXT"));
 		if (!pfnVkSetDebugUtilsObjectNameEXT)
 		{
 			HPR_VKLOG_ERROR("GetInstanceProcAdd: Unable to find PfnVkSetDebugUtilsObjectNameEXT function.");
@@ -168,12 +118,12 @@ namespace Hyper::VkDebug
 	{
 		if (!g_VkDebugEnabled)
 			return;
-		
+
 		VkDebugUtilsObjectNameInfoEXT nameInfo{ VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT };
 		nameInfo.objectType = static_cast<VkObjectType>(type);
 		nameInfo.objectHandle = reinterpret_cast<u64>(handle);
 		nameInfo.pObjectName = name.c_str();
-	
+
 		vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
 	}
 }

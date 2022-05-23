@@ -3,6 +3,7 @@
 
 #include "FlyCamera.h"
 #include "Mesh.h"
+#include "Model.h"
 #include "Hyper/Core/Subsystem.h"
 #include "Vulkan/VulkanCommands.h"
 #include "Vulkan/VulkanDescriptors.h"
@@ -48,7 +49,7 @@ namespace Hyper
 		std::unique_ptr<VulkanShader> m_pShader;
 		std::unique_ptr<VulkanPipeline> m_pPipeline;
 
-		std::unique_ptr<Mesh> m_pMesh;
+		std::unique_ptr<Model> m_pModel;
 
 		u32 m_FrameIdx = 0;
 		u64 m_FrameNumber = 0;

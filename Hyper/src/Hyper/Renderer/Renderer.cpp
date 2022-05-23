@@ -143,13 +143,9 @@ namespace Hyper
 			}
 		}
 
-		// Create test mesh
+		// Setup model and camera (Temp code)
 		{
-			m_pMesh = std::make_unique<Mesh>(m_pRenderContext.get());
-		}
-
-		// Setup test camera (temp code)
-		{
+			m_pModel = std::make_unique<Model>(m_pRenderContext.get(), "res/models/Bistro-Exterior.obj");
 			m_pCamera->Setup();
 		}
 
@@ -258,15 +254,9 @@ namespace Hyper
 
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetLayout(), 0, { currentFrameData.descriptor }, {});
 		}
-		
-		// Upload push const
 
-		ModelMatrixPushConst pushConst{};
-		pushConst.modelMatrix = glm::mat4(1.0f);
-		cmd.pushConstants<ModelMatrixPushConst>(m_pPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, pushConst);
-
-
-		m_pMesh->Draw(cmd);
+		// Draw the model to the screen
+		m_pModel->Draw(cmd, m_pPipeline->GetLayout());
 
 
 		// End rendering
@@ -314,7 +304,7 @@ namespace Hyper
 		m_pRenderContext->device.waitIdle();
 
 		m_pCamera.reset();
-		m_pMesh.reset();
+		m_pModel.reset();
 
 		for (size_t i = 0; i < m_CommandBuffers.size(); i++)
 		{

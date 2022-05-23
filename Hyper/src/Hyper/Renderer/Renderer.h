@@ -1,19 +1,33 @@
 ﻿#pragma once
 #include <vulkan/vulkan.hpp>
 
-#include "EditorCamera.h"
-#include "TestMesh.h"
+#include "FlyCamera.h"
+#include "Mesh.h"
 #include "Hyper/Core/Subsystem.h"
 #include "Vulkan/VulkanCommands.h"
+#include "Vulkan/VulkanDescriptors.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanSwapChain.h"
 
 namespace Hyper
 {
-	struct RenderMatrixPushConst
+	struct ModelMatrixPushConst
 	{
-		glm::mat4 renderMatrix;
+		glm::mat4 modelMatrix;
+	};
+
+	struct CameraData
+	{
+		glm::mat4 view;
+		glm::mat4 proj;
+		glm::mat4 viewProj;
+	};
+
+	struct FrameData
+	{
+		VulkanBuffer cameraBuffer;
+		vk::DescriptorSet descriptor;
 	};
 	
 	class Renderer final : public Subsystem
@@ -31,9 +45,10 @@ namespace Hyper
 		std::unique_ptr<VulkanDevice> m_pDevice;
 		std::unique_ptr<VulkanCommandPool> m_pCommandPool;
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
+		std::unique_ptr<VulkanShader> m_pShader;
 		std::unique_ptr<VulkanPipeline> m_pPipeline;
 
-		std::unique_ptr<TestMesh> m_pMesh;
+		std::unique_ptr<Mesh> m_pMesh;
 
 		u32 m_FrameIdx = 0;
 		u64 m_FrameNumber = 0;
@@ -45,6 +60,10 @@ namespace Hyper
 		std::vector<vk::Fence> m_InFlightFences;
 		vk::RenderPass m_RenderPass;
 
-		std::unique_ptr<EditorCamera> m_pCamera;
+		std::unique_ptr<FlyCamera> m_pCamera;
+		
+		std::vector<FrameData> m_FrameDatas;
+		std::unique_ptr<DescriptorSetLayout> m_pGlobalSetLayout{};
+		std::unique_ptr<DescriptorPool> m_pDescriptorPool{};
 	};
 }

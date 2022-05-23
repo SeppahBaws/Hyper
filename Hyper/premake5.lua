@@ -78,22 +78,19 @@ project "Hyper"
             "HYPER_DEBUG"
         }
 
-        -- Shaderc debug libraries
         links
         {
+            -- Shaderc debug libraries
             "%{LibDir.Vulkan}/shaderc_sharedd.lib",
             "%{LibDir.Vulkan}/shaderc_utild.lib",
-            "%{LibDir.Vulkan}/spirv-cross-cored.lib",
-            "%{LibDir.Vulkan}/spirv-cross-glsld.lib",
-            "%{LibDir.Vulkan}/SPIRV-Toolsd.lib",
 
-            -- Assimp debug
-            "%{LibDir.assimp}/Debug/assimp-vc143-mtd.lib",
+            -- Assimp debug libraries
+            "%{LibDir.assimp}/assimp-vc143-mtd.lib",
         }
 
         postbuildcommands
         {
-            "{COPY} %{BinDir.assimp}/Debug/assimp-vc143-mtd.* %{cfg.targetdir}"
+            "{COPY} %{BinDir.assimp}/assimp-vc143-mtd.* %{cfg.targetdir}"
         }
 
     filter "configurations:Release"
@@ -105,20 +102,17 @@ project "Hyper"
             "HYPER_RELEASE"
         }
 
-        -- Shaderc release libraries
         links
         {
+            -- Shaderc release libraries
             "%{LibDir.Vulkan}/shaderc_shared.lib",
             "%{LibDir.Vulkan}/shaderc_util.lib",
-            "%{LibDir.Vulkan}/spirv-cross-core.lib",
-            "%{LibDir.Vulkan}/spirv-cross-glsl.lib",
-            "%{LibDir.Vulkan}/SPIRV-Tools.lib",
 
-            -- Assimp release
-            "%{LibDir.assimp}/Release/assimp-vc143-mt.lib",
+            -- Assimp release libraries
+            "%{LibDir.assimp}/assimp-vc143-mt.lib",
         }
 
         postbuildcommands
         {
-            "{COPY} %{BinDir.assimp}/Release/assimp-vc143-mt.* %{cfg.targetdir}"
+            "{COPY} %{BinDir.assimp}/assimp-vc143-mt.* %{cfg.targetdir}"
         }

@@ -1,5 +1,5 @@
 ﻿#include "HyperPCH.h"
-#include "EditorCamera.h"
+#include "FlyCamera.h"
 
 #include <glm/matrix.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -10,12 +10,12 @@
 
 namespace Hyper
 {
-	EditorCamera::EditorCamera(Context* pContext)
+	FlyCamera::FlyCamera(Context* pContext)
 		: m_pContext(pContext)
 	{
 	}
 
-	void EditorCamera::Setup()
+	void FlyCamera::Setup()
 	{
 		if (m_IsSetup)
 			return;
@@ -34,7 +34,7 @@ namespace Hyper
 		m_IsSetup = true;
 	}
 
-	void EditorCamera::Update(f32 dt)
+	void FlyCamera::Update(f32 dt)
 	{
 		if (m_Width != m_pWindow->GetWidth() || m_Height != m_pWindow->GetHeight())
 		{
@@ -101,13 +101,13 @@ namespace Hyper
 		ComputeViewProjection();
 	}
 
-	void EditorCamera::ComputeViewProjection()
+	void FlyCamera::ComputeViewProjection()
 	{
 		m_View = glm::lookAtRH(m_Position, m_Position + m_Forward, glm::vec3(0.0f, 0.0f, 1.0f));
 		m_ViewProjection = m_Projection * m_View;
 	}
 
-	void EditorCamera::ComputeProjection()
+	void FlyCamera::ComputeProjection()
 	{
 		m_Projection = glm::perspective(glm::radians(m_FovDegrees), static_cast<f32>(m_Width) / static_cast<f32>(m_Height), m_ZNear, m_ZFar);
 		m_Projection[1][1] *= -1;

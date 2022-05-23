@@ -15,6 +15,8 @@ namespace Hyper
 		void Bind(const vk::CommandBuffer& cmd) const;
 		void Draw(const vk::CommandBuffer& cmd) const;
 
+		void Import();
+
 	private:
 		RenderContext* m_pRenderCtx;
 
@@ -23,7 +25,5 @@ namespace Hyper
 
 		std::unique_ptr<VulkanVertexBuffer> m_pVertexBuffer{};
 		std::unique_ptr<VulkanIndexBuffer> m_pIndexBuffer{};
-		// std::unique_ptr<VulkanBuffer> m_pVertexBuffer{};
-		// std::unique_ptr<VulkanBuffer> m_pIndexBuffer{};
 	};
 }

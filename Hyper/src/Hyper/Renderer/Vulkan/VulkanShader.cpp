@@ -3,6 +3,7 @@
 #include "Hyper/IO/FileUtils.h"
 
 #include <shaderc/shaderc.hpp>
+#include <spirv_cross/spirv_reflect.hpp>
 
 namespace Hyper
 {
@@ -35,125 +36,105 @@ namespace Hyper
 		throw std::runtime_error("Unsupported shader type!");
 	}
 
-	ShaderModule::ShaderModule(RenderContext* pRenderCtx, ShaderStageType type,
-		const std::filesystem::path& filePath)
-		: m_pRenderCtx(pRenderCtx), m_Type(type), m_FilePath(filePath)
-	{
-		std::string shaderCode;
-		if (!IO::ReadFileSync(filePath, shaderCode))
-		{
-			throw std::runtime_error("Failed to read shader file: "s + m_FilePath.string());
-		}
-
-		// TODO: compiled shader caching system.
-
-		// Compile GLSL code to SPIR-V
-		std::vector<u32> shaderBinary{};
-		{
-			shaderc::Compiler compiler{};
-			shaderc::CompileOptions options;
-			options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
-			options.SetWarningsAsErrors();
-			options.SetGenerateDebugInfo();
-
-			if (!compiler.IsValid())
-			{
-				throw std::runtime_error("Shader compiler is invalid!");
-			}
-
-			const auto result = compiler.CompileGlslToSpv(shaderCode, GetShadercShaderKind(type), filePath.string().c_str(), options);
-
-			const shaderc_compilation_status status = result.GetCompilationStatus();
-			std::string shaderId = filePath.string();
-			size_t numWarnings = result.GetNumWarnings();
-			size_t numErrors = result.GetNumErrors();
-
-			if (result.GetCompilationStatus() == shaderc_compilation_status_success)
-			{
-				HPR_VKLOG_INFO("Successfully compiled shader {} with {} warning(s) and {} error(s)", shaderId, numWarnings, numErrors);
-
-				shaderBinary = { result.cbegin(), result.cend() };
-			}
-			else
-			{
-				HPR_VKLOG_ERROR("Failed to compile shader {} : {}, {} warning(s) and {} error(s):", shaderId, ToString(status), numWarnings, numErrors);
-				HPR_VKLOG_ERROR("Errors:\n{}", result.GetErrorMessage());
-			}
-		}
-
-		// TODO: create `VkShaderModule`s
-		{
-			vk::ShaderModuleCreateInfo createInfo = {};
-			createInfo.setCode(shaderBinary);
-
-			try
-			{
-				m_Module = pRenderCtx->device.createShaderModule(createInfo);
-			}
-			catch (vk::SystemError& e)
-			{
-				throw std::runtime_error("Failed to create shader module: "s + e.what());
-			}
-
-			m_ShaderInfo = vk::PipelineShaderStageCreateInfo{};
-			m_ShaderInfo.stage = static_cast<vk::ShaderStageFlagBits>(m_Type);
-			m_ShaderInfo.module = m_Module;
-			m_ShaderInfo.pName = "main";
-		}
-	}
-
-	ShaderModule::~ShaderModule()
-	{
-		if (m_Module)
-		{
-			m_pRenderCtx->device.destroyShaderModule(m_Module);
-		}
-	}
-
-	ShaderModule::ShaderModule(ShaderModule&& other)
-		: m_pRenderCtx(other.m_pRenderCtx)
-		, m_Type(other.m_Type)
-		, m_FilePath(other.m_FilePath)
-		, m_Module(other.m_Module)
-		, m_ShaderInfo(other.m_ShaderInfo)
-	{
-		// Invalidate the other's handle so that we don't try to destroy it when moving.
-		other.m_Module = nullptr;
-	}
-
-	ShaderModule& ShaderModule::operator=(ShaderModule&& other)
-	{
-		m_pRenderCtx = other.m_pRenderCtx;
-		m_Type = other.m_Type;
-		m_FilePath = other.m_FilePath;
-		m_Module = other.m_Module;
-		m_ShaderInfo = other.m_ShaderInfo;
-
-		// Invalidate the other's handle so that we don't try to destroy it when moving.
-		other.m_Module = nullptr;
-
-		return *this;
-	}
-
-	VulkanShader::VulkanShader(RenderContext* pRenderCtx)
+	VulkanShader::VulkanShader(RenderContext* pRenderCtx, std::unordered_map<ShaderStageType, std::filesystem::path> shaders)
 		: m_pRenderCtx(pRenderCtx)
 	{
+		for (const auto& [stage, path] : shaders)
+		{
+			const vk::ShaderModule vulkanModule = CompileStage(stage, path);
+			m_ShaderModules.insert_or_assign(stage, ShaderModule{
+				path,
+				vulkanModule
+			});
+		}
+
+		HPR_VKLOG_INFO("Successfully created shaders");
 	}
 
-	void VulkanShader::AddStage(ShaderStageType type, const std::filesystem::path& filePath)
+	VulkanShader::~VulkanShader()
 	{
-		m_ShaderModules.insert_or_assign(type, ShaderModule(m_pRenderCtx, type, filePath));
+		for (const auto& [_, module] : m_ShaderModules | std::views::values)
+		{
+			m_pRenderCtx->device.destroyShaderModule(module);
+		}
 	}
 
 	std::vector<vk::PipelineShaderStageCreateInfo> VulkanShader::GetAllShaderStages() const
 	{
 		std::vector<vk::PipelineShaderStageCreateInfo> infos;
 
-		for (const auto& shaderModule : m_ShaderModules | std::views::values)
+		for (const auto& [stage, module] : m_ShaderModules)
 		{
-			infos.push_back(shaderModule.GetShaderInfo());
+			auto& info = infos.emplace_back();
+			info.module = module.module;
+			info.stage = static_cast<vk::ShaderStageFlagBits>(stage);
+			info.pName = "main";
 		}
 
 		return infos;
+	}
+
+	vk::ShaderModule VulkanShader::CompileStage(ShaderStageType stage, const std::filesystem::path& filePath)
+	{
+		std::string shaderCode;
+		if (!IO::ReadFileSync(filePath, shaderCode))
+		{
+			throw std::runtime_error("Failed to read shader file: "s + filePath.string());
+		}
+
+		// TODO: compiled shader caching system.
+
+		// Compile GLSL code to SPIR-V
+		std::vector<u32> shaderBinary{};
+
+		shaderc::Compiler compiler{};
+		shaderc::CompileOptions options;
+		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+		options.SetWarningsAsErrors();
+		options.SetGenerateDebugInfo();
+
+		if (!compiler.IsValid())
+		{
+			throw std::runtime_error("Shader compiler is invalid!");
+		}
+
+		const auto result = compiler.CompileGlslToSpv(shaderCode, GetShadercShaderKind(stage), filePath.string().c_str(), options);
+
+		const shaderc_compilation_status status = result.GetCompilationStatus();
+		std::string shaderId = filePath.string();
+		size_t numWarnings = result.GetNumWarnings();
+		size_t numErrors = result.GetNumErrors();
+
+		// Check compilation status.
+		if (result.GetCompilationStatus() == shaderc_compilation_status_success)
+		{
+			HPR_VKLOG_INFO("Successfully compiled shader {} with {} warning(s) and {} error(s)", shaderId, numWarnings, numErrors);
+
+			// Storing this for now, in case we want to do some sort of shader reflection later.
+			shaderBinary = { result.cbegin(), result.cend() };
+		}
+		else
+		{
+			HPR_VKLOG_ERROR("Failed to compile shader {} : {}, {} warning(s) and {} error(s):", shaderId, ToString(status), numWarnings, numErrors);
+			HPR_VKLOG_ERROR("Errors:\n{}", result.GetErrorMessage());
+		}
+
+		// Create shader module
+		vk::ShaderModule module;
+		{
+			vk::ShaderModuleCreateInfo createInfo = {};
+			createInfo.setCode(shaderBinary);
+
+			try
+			{
+				module = m_pRenderCtx->device.createShaderModule(createInfo);
+			}
+			catch (vk::SystemError& e)
+			{
+				throw std::runtime_error("Failed to create shader module: "s + e.what());
+			}
+		}
+
+		return module;
 	}
 }

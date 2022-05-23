@@ -7,11 +7,10 @@ namespace Hyper
 {
 	class Context;
 
-	class EditorCamera
+	class FlyCamera
 	{
 	public:
-		EditorCamera(Context* pContext);
-		// Camera(f32 fovDegrees, f32 width, f32 height, f32 zNear, f32 zFar, const glm::vec3& position, const glm::vec3& forward);
+		FlyCamera(Context* pContext);
 
 		void Setup();
 		void Update(f32 dt);
@@ -20,10 +19,9 @@ namespace Hyper
 		void ComputeProjection();
 		void ComputeViewProjection();
 
-		[[nodiscard]] glm::mat4 GetViewProjection() const
-		{
-			return m_ViewProjection;
-		}
+		[[nodiscard]] glm::mat4 GetView() const { return m_View; }
+		[[nodiscard]] glm::mat4 GetProjection() const { return m_Projection; }
+		[[nodiscard]] glm::mat4 GetViewProjection() const { return m_ViewProjection; }
 
 	private:
 		Context* m_pContext;

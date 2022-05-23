@@ -12,14 +12,18 @@ namespace Hyper
 		VulkanBuffer(RenderContext* pRenderCtx, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, const std::string& name, vk::BufferCreateFlags flags = {});
 		VulkanBuffer(RenderContext* pRenderCtx, const void* data, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, const std::string& name);
 		~VulkanBuffer();
-		// Make sure we can't copy or move the buffer
+		// Make sure we can't copy the buffer
 		VulkanBuffer(const VulkanBuffer& other) = delete;
-		VulkanBuffer(VulkanBuffer&& other) = delete;
 		VulkanBuffer& operator=(const VulkanBuffer& other) = delete;
-		VulkanBuffer& operator=(VulkanBuffer&& other) = delete;
+
+		// Overloads for moving
+		VulkanBuffer(VulkanBuffer&& other);
+		VulkanBuffer& operator=(VulkanBuffer&& other);
 
 		[[nodiscard]] void* Map();
 		void Unmap();
+
+		void SetData(const void* data, size_t size);
 
 		[[nodiscard]] vk::Buffer GetBuffer() const { return m_Buffer; }
 

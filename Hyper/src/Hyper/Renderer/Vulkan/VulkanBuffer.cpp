@@ -54,6 +54,34 @@ namespace Hyper
 		vmaDestroyBuffer(m_pRenderCtx->allocator, m_Buffer, m_Allocation);
 	}
 
+	VulkanBuffer::VulkanBuffer(VulkanBuffer&& other)
+		: m_pRenderCtx(other.m_pRenderCtx)
+		, m_Size(other.m_Size)
+		, m_UsageFlags(other.m_UsageFlags)
+		, m_Buffer(other.m_Buffer)
+		, m_Allocation(other.m_Allocation)
+	{
+		// Invalidate other's important data
+		other.m_Buffer = nullptr;
+		other.m_Allocation = nullptr;
+	}
+	
+	VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& other)
+	{
+		// Yoink other's data
+		m_pRenderCtx = other.m_pRenderCtx;
+		m_Size = other.m_Size;
+		m_UsageFlags = other.m_UsageFlags;
+		m_Buffer = other.m_Buffer;
+		m_Allocation = other.m_Allocation;
+	
+		// Invalidate other's important data
+		other.m_Buffer = nullptr;
+		other.m_Allocation = nullptr;
+	
+		return *this;
+	}
+
 	void* VulkanBuffer::Map()
 	{
 		void* data;
@@ -65,6 +93,13 @@ namespace Hyper
 	void VulkanBuffer::Unmap()
 	{
 		vmaUnmapMemory(m_pRenderCtx->allocator, m_Allocation);
+	}
+
+	void VulkanBuffer::SetData(const void* data, size_t size)
+	{
+		void* mapped = Map();
+		memcpy(mapped, data, size);
+		Unmap();
 	}
 
 	void VulkanBuffer::CopyFrom(const VulkanBuffer& srcBuffer)

@@ -5,6 +5,7 @@
 #include "Hyper/Core/Window.h"
 #include "Hyper/Debug/Profiler.h"
 #include "Vulkan/VulkanCommands.h"
+#include "Vulkan/VulkanDescriptors.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanShader.h"
@@ -19,7 +20,7 @@ namespace Hyper
 
 	Renderer::Renderer(Context* pContext)
 		: Subsystem(pContext)
-		  , m_pCamera(std::make_unique<EditorCamera>(pContext))
+		, m_pCamera(std::make_unique<FlyCamera>(pContext))
 	{
 	}
 
@@ -36,30 +37,84 @@ namespace Hyper
 
 
 		// Shader test
-		VulkanShader shader{ m_pRenderContext.get() };
-		shader.AddStage(ShaderStageType::Vertex, "res/shaders/test.vert");
-		shader.AddStage(ShaderStageType::Fragment, "res/shaders/test.frag");
+		m_pShader = std::make_unique<VulkanShader>(m_pRenderContext.get(), std::unordered_map<ShaderStageType, std::filesystem::path>{
+			{ ShaderStageType::Vertex, "res/shaders/test.vert" }, { ShaderStageType::Fragment, "res/shaders/test.frag" }
+		});
 
-		vk::PushConstantRange pushConst{};
-		pushConst.offset = 0;
-		pushConst.size = sizeof(RenderMatrixPushConst);
-		pushConst.stageFlags = vk::ShaderStageFlagBits::eVertex;
+		// Create the frame data
+		{
+			m_pGlobalSetLayout = std::make_unique<DescriptorSetLayout>(
+				DescriptorSetLayout::Builder(m_pRenderContext->device)
+				.AddBinding(vk::DescriptorType::eUniformBuffer, 0, 1, vk::ShaderStageFlagBits::eVertex)
+				.Build());
+			m_pDescriptorPool = std::make_unique<DescriptorPool>(
+				DescriptorPool::Builder(m_pRenderContext->device)
+				.AddSize(vk::DescriptorType::eUniformBuffer, 10 * m_pSwapChain->GetNumFrames())
+				.SetMaxSets(10 * m_pSwapChain->GetNumFrames())
+				.Build());
 
-		const std::vector pushConsts = { pushConst };
+			try
+			{
+				for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
+				{
+					std::vector<vk::DescriptorSet> descriptorSets = m_pDescriptorPool->Allocate({ m_pGlobalSetLayout->GetLayout() });
+					m_FrameDatas.emplace_back<FrameData>(FrameData{
+						VulkanBuffer(m_pRenderContext.get(), sizeof(CameraData), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU,
+							fmt::format("Camera buffer {}", i)),
+						descriptorSets[0]
+					});
+				}
+			}
+			catch (vk::SystemError& e)
+			{
+				throw std::runtime_error("Failed to create descriptor sets: "s + e.what());
+			}
 
-		PipelineBuilder builder{ m_pRenderContext.get() };
-		builder.SetShader(&shader);
-		builder.SetInputAssembly(vk::PrimitiveTopology::eTriangleList, false);
-		// builder.SetViewport(0.0f, 0.0f, static_cast<f32>(m_pRenderContext->imageExtent.width), static_cast<f32>(m_pRenderContext->imageExtent.height), 0.0f, 1.0f);
-		// builder.SetScissor(vk::Offset2D(0, 0), m_pRenderContext->imageExtent);
-		builder.SetRasterizer(vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone);
-		builder.SetMultisampling();
-		builder.SetDepthStencil(true, true, vk::CompareOp::eLess);
-		builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
-		builder.SetDescriptorSetLayout({}, pushConsts);
-		builder.SetDynamicStates({ vk::DynamicState::eViewport, vk::DynamicState::eScissor });
+			try
+			{
+				for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
+				{
+					DescriptorWriter writer{m_pRenderContext->device, m_FrameDatas[i].descriptor};
+					
+					vk::DescriptorBufferInfo bufferInfo{};
+					bufferInfo.buffer = m_FrameDatas[i].cameraBuffer.GetBuffer();
+					bufferInfo.offset = 0;
+					bufferInfo.range = sizeof(CameraData);
 
-		m_pPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
+					writer.WriteBuffer(bufferInfo, 0, vk::DescriptorType::eUniformBuffer);
+					writer.Write();
+				}
+			}
+			catch (vk::SystemError& e)
+			{
+				throw std::runtime_error("Failed to update descriptor sets: "s + e.what());
+			}
+		}
+
+		// Create the pipeline
+		{
+			vk::PushConstantRange modelPushConst = {};
+			modelPushConst.offset = 0;
+			modelPushConst.size = sizeof(ModelMatrixPushConst);
+			modelPushConst.stageFlags = vk::ShaderStageFlagBits::eVertex;
+
+			const std::vector descriptorSetLayouts = { m_pGlobalSetLayout->GetLayout() };
+			const std::vector pushConstants = { modelPushConst };
+
+			PipelineBuilder builder{ m_pRenderContext.get() };
+			builder.SetShader(m_pShader.get());
+			builder.SetInputAssembly(vk::PrimitiveTopology::eTriangleList, false);
+			// builder.SetViewport(0.0f, 0.0f, static_cast<f32>(m_pRenderContext->imageExtent.width), static_cast<f32>(m_pRenderContext->imageExtent.height), 0.0f, 1.0f);
+			// builder.SetScissor(vk::Offset2D(0, 0), m_pRenderContext->imageExtent);
+			builder.SetRasterizer(vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone);
+			builder.SetMultisampling();
+			builder.SetDepthStencil(true, true, vk::CompareOp::eLess);
+			builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
+			builder.SetDescriptorSetLayout(descriptorSetLayouts, pushConstants);
+			builder.SetDynamicStates({ vk::DynamicState::eViewport, vk::DynamicState::eScissor });
+
+			m_pPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
+		}
 
 		// Get command buffers. 1 for each frame in flight.
 		{
@@ -90,7 +145,7 @@ namespace Hyper
 
 		// Create test mesh
 		{
-			m_pMesh = std::make_unique<TestMesh>(m_pRenderContext.get());
+			m_pMesh = std::make_unique<Mesh>(m_pRenderContext.get());
 		}
 
 		// Setup test camera (temp code)
@@ -180,22 +235,37 @@ namespace Hyper
 
 		cmd.beginRendering(renderingInfo);
 
+		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
+
 		// draw stuff here
 
+		FrameData& currentFrameData = m_FrameDatas[m_FrameIdx];
 
-		// Upload push const
-		RenderMatrixPushConst pushConst{};
-		// m_Rot += 40 * dt;
-		// const glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(m_Rot), glm::vec3(0.0f, 1.0f, 0.0f));
-		const glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(m_Rot), glm::vec3(0.0f, 1.0f, 0.0f));
+		// Update global uniform buffers
+		{
+			CameraData camData{};
+			camData.view = m_pCamera->GetView();
+			camData.proj = m_pCamera->GetProjection();
+			camData.viewProj = m_pCamera->GetViewProjection();
+			currentFrameData.cameraBuffer.SetData(&camData, sizeof(CameraData));
+
+			DescriptorWriter writer{ m_pRenderContext->device, m_FrameDatas[m_FrameIdx].descriptor };
+			vk::DescriptorBufferInfo cameraBufferInfo = {};
+			cameraBufferInfo.buffer = currentFrameData.cameraBuffer.GetBuffer();
+			cameraBufferInfo.offset = 0;
+			cameraBufferInfo.range = sizeof(CameraData);
+			writer.WriteBuffer(cameraBufferInfo, 0, vk::DescriptorType::eUniformBuffer);
+
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetLayout(), 0, { currentFrameData.descriptor }, {});
+		}
 		
-		pushConst.renderMatrix = m_pCamera->GetViewProjection() * model;
+		// Upload push const
 
-		cmd.pushConstants<RenderMatrixPushConst>(m_pPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, pushConst);
+		ModelMatrixPushConst pushConst{};
+		pushConst.modelMatrix = glm::mat4(1.0f);
+		cmd.pushConstants<ModelMatrixPushConst>(m_pPipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0, pushConst);
 
-		// Draw test triangle with basic shader
-		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
-		// m_pMesh->Draw(cmd);
+
 		m_pMesh->Draw(cmd);
 
 
@@ -252,6 +322,11 @@ namespace Hyper
 			m_pRenderContext->device.destroySemaphore(m_RenderFinishedSemaphores[i]);
 		}
 
+		m_pDescriptorPool.reset();
+		m_pGlobalSetLayout.reset();
+		m_FrameDatas.clear();
+
+		m_pShader.reset();
 		m_pPipeline.reset();
 		m_pSwapChain.reset();
 

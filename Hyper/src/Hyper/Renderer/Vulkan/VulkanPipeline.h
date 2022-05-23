@@ -1,12 +1,11 @@
 ﻿#pragma once
 #include <vulkan/vulkan.hpp>
 
+#include "VulkanShader.h"
 #include "Hyper/Renderer/RenderContext.h"
 
 namespace Hyper
 {
-	class VulkanShader;
-
 	class VulkanPipeline
 	{
 	public:

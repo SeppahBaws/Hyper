@@ -1,6 +1,10 @@
 ﻿#include "HyperPCH.h"
 #include "Mesh.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include "Hyper/Debug/Profiler.h"
 #include "Vulkan/VulkanDebug.h"
 #include "Vulkan/VulkanIndexBuffer.h"
@@ -10,45 +14,7 @@ namespace Hyper
 	Mesh::Mesh(RenderContext* pRenderCtx)
 		: m_pRenderCtx(pRenderCtx)
 	{
-		// Test square
-		// m_Vertices = {
-		// 	{{ -0.5f,  0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }},
-		// 	{{  0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }},
-		// 	{{  0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }},
-		// 	{{ -0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }},
-		// };
-		//
-		// m_Indices = {
-		// 	0, 1, 2,
-		// 	0, 2, 3
-		// };
-
-		// Test cube
-		m_Vertices = {
-			{ {  0.500000, -0.500000, -0.500000 }, { 1.0f, 0.0f, 0.0f } },
-			{ {  0.500000,  0.500000, -0.500000 }, { 0.0f, 1.0f, 0.0f } },
-			{ {  0.500000, -0.500000,  0.500000 }, { 0.0f, 0.0f, 1.0f } },
-			{ {  0.500000,  0.500000,  0.500000 }, { 1.0f, 1.0f, 1.0f } },
-			{ { -0.500000, -0.500000, -0.500000 }, { 1.0f, 0.0f, 0.0f } },
-			{ { -0.500000,  0.500000, -0.500000 }, { 0.0f, 1.0f, 0.0f } },
-			{ { -0.500000, -0.500000,  0.500000 }, { 0.0f, 0.0f, 1.0f } },
-			{ { -0.500000,  0.500000,  0.500000 }, { 1.0f, 1.0f, 1.0f } }
-		};
-
-		m_Indices = {
-			1, 2, 0,
-			3, 6, 2,
-			7, 4, 6,
-			5, 0, 4,
-			6, 0, 2,
-			3, 5, 7,
-			1, 3, 2,
-			3, 7, 6,
-			7, 5, 4,
-			5, 1, 0,
-			6, 4, 0,
-			3, 1, 5
-		};
+		Import();
 
 		// Vertex buffer
 		m_pVertexBuffer = std::make_unique<VulkanVertexBuffer>(m_pRenderCtx, "test vertex buffer");
@@ -77,5 +43,51 @@ namespace Hyper
 		Bind(cmd);
 
 		cmd.drawIndexed(static_cast<u32>(m_Indices.size()), 1, 0, 0, 0);
+	}
+
+	void Mesh::Import()
+	{
+		m_Vertices = {};
+		m_Indices = {};
+		Assimp::Importer importer;
+
+		const aiScene* scene = importer.ReadFile("res/models/Suzanne.fbx", aiProcess_Triangulate);
+		if (scene == nullptr)
+		{
+			HPR_CORE_LOG_ERROR("Failed to import model file!");
+			return;
+		}
+
+		for (u32 m = 0; m < scene->mNumMeshes; m++)
+		{
+			const aiMesh* mesh = scene->mMeshes[m];
+			for (u32 v = 0; v < mesh->mNumVertices; v++)
+			{
+				// Positions are guaranteed, the rest is uncertain
+				const glm::vec3 pos{ mesh->mVertices[v].x, mesh->mVertices[v].y, mesh->mVertices[v].z };
+				glm::vec3 norm{ 0.0f, 0.0f, 1.0f };
+				glm::vec2 tex{ 0.0f, 0.0f };
+
+				if (mesh->HasNormals())
+				{
+					norm = { mesh->mNormals[v].x, mesh->mNormals[v].y, mesh->mNormals[v].z };
+				}
+				if (mesh->HasTextureCoords(0))
+				{
+					tex = { mesh->mTextureCoords[0][v].x, mesh->mTextureCoords[0][v].y };
+				}
+
+				m_Vertices.emplace_back(VertexPosNormTex{ pos, norm, tex });
+			}
+
+			for (u32 f = 0; f < mesh->mNumFaces; f++)
+			{
+				const aiFace face = mesh->mFaces[f];
+				for (u32 i = 0; i < face.mNumIndices; i++)
+				{
+					m_Indices.emplace_back(face.mIndices[i]);
+				}
+			}
+		}
 	}
 }

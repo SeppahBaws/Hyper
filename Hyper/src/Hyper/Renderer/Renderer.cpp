@@ -35,21 +35,17 @@ namespace Hyper
 		Window* pWindow = m_pContext->GetSubsystem<Window>();
 		m_pSwapChain = std::make_unique<VulkanSwapChain>(pWindow, m_pRenderContext.get(), pWindow->GetWidth(), pWindow->GetHeight());
 
-
-		// Shader test
-		m_pShader = std::make_unique<VulkanShader>(m_pRenderContext.get(), std::unordered_map<ShaderStageType, std::filesystem::path>{
-			{ ShaderStageType::Vertex, "res/shaders/test.vert" }, { ShaderStageType::Fragment, "res/shaders/test.frag" }
-		});
-
 		// Create the frame data
 		{
-			m_pGlobalSetLayout = std::make_unique<DescriptorSetLayout>(
-				DescriptorSetLayout::Builder(m_pRenderContext->device)
+			m_pGlobalSetLayout = std::make_unique<vk::DescriptorSetLayout>(
+				DescriptorSetLayoutBuilder(m_pRenderContext->device)
 				.AddBinding(vk::DescriptorType::eUniformBuffer, 0, 1, vk::ShaderStageFlagBits::eVertex)
 				.Build());
+			// TODO: this pool should be centralized somewhere.
 			m_pDescriptorPool = std::make_unique<DescriptorPool>(
 				DescriptorPool::Builder(m_pRenderContext->device)
 				.AddSize(vk::DescriptorType::eUniformBuffer, 10 * m_pSwapChain->GetNumFrames())
+				.AddSize(vk::DescriptorType::eCombinedImageSampler, 1000)
 				.SetMaxSets(10 * m_pSwapChain->GetNumFrames())
 				.Build());
 
@@ -57,7 +53,7 @@ namespace Hyper
 			{
 				for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
 				{
-					std::vector<vk::DescriptorSet> descriptorSets = m_pDescriptorPool->Allocate({ m_pGlobalSetLayout->GetLayout() });
+					std::vector<vk::DescriptorSet> descriptorSets = m_pDescriptorPool->Allocate({ *m_pGlobalSetLayout });
 					m_FrameDatas.emplace_back<FrameData>(FrameData{
 						VulkanBuffer(m_pRenderContext.get(), sizeof(CameraData), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU,
 							fmt::format("Camera buffer {}", i)),
@@ -74,9 +70,9 @@ namespace Hyper
 			{
 				for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
 				{
-					DescriptorWriter writer{m_pRenderContext->device, m_FrameDatas[i].descriptor};
-					
-					vk::DescriptorBufferInfo bufferInfo{};
+					DescriptorWriter writer{ m_pRenderContext->device, m_FrameDatas[i].descriptor };
+
+					vk::DescriptorBufferInfo bufferInfo = {};
 					bufferInfo.buffer = m_FrameDatas[i].cameraBuffer.GetBuffer();
 					bufferInfo.offset = 0;
 					bufferInfo.range = sizeof(CameraData);
@@ -93,13 +89,15 @@ namespace Hyper
 
 		// Create the pipeline
 		{
-			vk::PushConstantRange modelPushConst = {};
-			modelPushConst.offset = 0;
-			modelPushConst.size = sizeof(ModelMatrixPushConst);
-			modelPushConst.stageFlags = vk::ShaderStageFlagBits::eVertex;
+			m_pShader = std::make_unique<VulkanShader>(
+				m_pRenderContext.get(),
+				std::unordered_map<ShaderStageType, std::filesystem::path>{
+					{ ShaderStageType::Vertex, "res/shaders/StaticGeometry.vert" },
+					{ ShaderStageType::Fragment, "res/shaders/StaticGeometry.frag" }
+				});
 
-			const std::vector descriptorSetLayouts = { m_pGlobalSetLayout->GetLayout() };
-			const std::vector pushConstants = { modelPushConst };
+			const auto descriptorSetLayouts = m_pShader->GetAllDescriptorSetLayouts();
+			const auto pushConstants = m_pShader->GetAllPushConstantRanges();
 
 			PipelineBuilder builder{ m_pRenderContext.get() };
 			builder.SetShader(m_pShader.get());
@@ -114,6 +112,16 @@ namespace Hyper
 			builder.SetDynamicStates({ vk::DynamicState::eViewport, vk::DynamicState::eScissor });
 
 			m_pPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
+		}
+
+		// Setup model and camera (Temp code)
+		{
+			// m_pModel = std::make_unique<Model>(m_pRenderContext.get(), "res/models/Cuub.fbx");
+			// m_pModel = std::make_unique<Model>(m_pRenderContext.get(), "res/Bistro/Exterior/exterior.obj");
+			m_pModel = std::make_unique<Model>(m_pRenderContext.get(), "res/sponza/sponza.obj");
+			m_pModel->SetRotation({ 90, 0, 0 });
+			m_pModel->SetScale(glm::vec3{ 0.01f });
+			m_pCamera->Setup();
 		}
 
 		// Get command buffers. 1 for each frame in flight.
@@ -141,12 +149,6 @@ namespace Hyper
 			{
 				throw std::runtime_error("Failed to create sync objects: "s + e.what());
 			}
-		}
-
-		// Setup model and camera (Temp code)
-		{
-			m_pModel = std::make_unique<Model>(m_pRenderContext.get(), "res/models/Bistro-Exterior.obj");
-			m_pCamera->Setup();
 		}
 
 		return true;
@@ -218,49 +220,51 @@ namespace Hyper
 		);
 
 
-		// Begin rendering
-		const std::array<vk::RenderingAttachmentInfo, 2> attachments = m_pSwapChain->GetRenderingAttachments();
-
-		vk::RenderingInfo renderingInfo{};
-		renderingInfo.renderArea = vk::Rect2D(vk::Offset2D(), m_pRenderContext->imageExtent);
-		renderingInfo.layerCount = 1;
-		renderingInfo.viewMask = 0;
-		renderingInfo.colorAttachmentCount = 1;
-		renderingInfo.setPColorAttachments(&attachments[0]);
-		renderingInfo.setPDepthAttachment(&attachments[1]);
-
-		cmd.beginRendering(renderingInfo);
-
-		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
-
-		// draw stuff here
-
-		FrameData& currentFrameData = m_FrameDatas[m_FrameIdx];
-
-		// Update global uniform buffers
+		// Geometry pass.
 		{
-			CameraData camData{};
-			camData.view = m_pCamera->GetView();
-			camData.proj = m_pCamera->GetProjection();
-			camData.viewProj = m_pCamera->GetViewProjection();
-			currentFrameData.cameraBuffer.SetData(&camData, sizeof(CameraData));
+			// Begin rendering
+			const std::array<vk::RenderingAttachmentInfo, 2> attachments = m_pSwapChain->GetRenderingAttachments();
 
-			DescriptorWriter writer{ m_pRenderContext->device, m_FrameDatas[m_FrameIdx].descriptor };
-			vk::DescriptorBufferInfo cameraBufferInfo = {};
-			cameraBufferInfo.buffer = currentFrameData.cameraBuffer.GetBuffer();
-			cameraBufferInfo.offset = 0;
-			cameraBufferInfo.range = sizeof(CameraData);
-			writer.WriteBuffer(cameraBufferInfo, 0, vk::DescriptorType::eUniformBuffer);
+			vk::RenderingInfo renderingInfo{};
+			renderingInfo.renderArea = vk::Rect2D(vk::Offset2D(), m_pRenderContext->imageExtent);
+			renderingInfo.layerCount = 1;
+			renderingInfo.viewMask = 0;
+			renderingInfo.colorAttachmentCount = 1;
+			renderingInfo.setPColorAttachments(&attachments[0]);
+			renderingInfo.setPDepthAttachment(&attachments[1]);
 
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetLayout(), 0, { currentFrameData.descriptor }, {});
+			cmd.beginRendering(renderingInfo);
+
+			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetPipeline());
+
+			// draw stuff here
+
+			FrameData& currentFrameData = m_FrameDatas[m_FrameIdx];
+
+			// Update global uniform buffers
+			{
+				CameraData camData{};
+				camData.view = m_pCamera->GetView();
+				camData.proj = m_pCamera->GetProjection();
+				camData.viewProj = m_pCamera->GetViewProjection();
+				currentFrameData.cameraBuffer.SetData(&camData, sizeof(CameraData));
+
+				DescriptorWriter writer{ m_pRenderContext->device, m_FrameDatas[m_FrameIdx].descriptor };
+				vk::DescriptorBufferInfo cameraBufferInfo = {};
+				cameraBufferInfo.buffer = currentFrameData.cameraBuffer.GetBuffer();
+				cameraBufferInfo.offset = 0;
+				cameraBufferInfo.range = sizeof(CameraData);
+				writer.WriteBuffer(cameraBufferInfo, 0, vk::DescriptorType::eUniformBuffer);
+
+				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pPipeline->GetLayout(), 0, { currentFrameData.descriptor }, {});
+			}
+
+			// Draw the model to the screen
+			m_pModel->Draw(cmd, m_pPipeline->GetLayout());
+
+			// End rendering
+			cmd.endRendering();
 		}
-
-		// Draw the model to the screen
-		m_pModel->Draw(cmd, m_pPipeline->GetLayout());
-
-
-		// End rendering
-		cmd.endRendering();
 
 		InsertImageMemoryBarrier(
 			cmd,
@@ -303,9 +307,6 @@ namespace Hyper
 		// Wait till everything is finished.
 		m_pRenderContext->device.waitIdle();
 
-		m_pCamera.reset();
-		m_pModel.reset();
-
 		for (size_t i = 0; i < m_CommandBuffers.size(); i++)
 		{
 			m_pRenderContext->device.destroyFence(m_InFlightFences[i]);
@@ -313,12 +314,16 @@ namespace Hyper
 		}
 
 		m_pDescriptorPool.reset();
+		m_pRenderContext->device.destroyDescriptorSetLayout(*m_pGlobalSetLayout);
 		m_pGlobalSetLayout.reset();
 		m_FrameDatas.clear();
 
 		m_pShader.reset();
 		m_pPipeline.reset();
 		m_pSwapChain.reset();
+
+		m_pCamera.reset();
+		m_pModel.reset();
 
 		// TODO: automatically keep track of allocated command buffers and destroy them all.
 		m_pCommandPool->FreeCommandBuffers(m_CommandBuffers);

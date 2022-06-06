@@ -2,7 +2,7 @@ project "Hyper"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++20"
-    staticruntime "on"
+    -- staticruntime "on"
     warnings "extra"
 
     targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
@@ -28,7 +28,8 @@ project "Hyper"
         "%{IncludeDir.magic_enum}",
         "%{IncludeDir.VkMemAlloc}",
         "%{IncludeDir.Optick}",
-        "%{IncludeDir.assimp}"
+        "%{IncludeDir.assimp}",
+        "%{IncludeDir.stb}"
     }
 
     libdirs
@@ -41,7 +42,8 @@ project "Hyper"
     {
         "GLFW",
         "Optick",
-        "%{Library.Vulkan}"
+        "%{Library.Vulkan}",
+        "stb"
     }
 
     if (_OPTIONS["use-vld"]) then
@@ -83,6 +85,10 @@ project "Hyper"
             -- Shaderc debug libraries
             "%{LibDir.Vulkan}/shaderc_sharedd.lib",
             "%{LibDir.Vulkan}/shaderc_utild.lib",
+            
+            -- Spirv Cross for reflection
+            "%{LibDir.Vulkan}/spirv-cross-cored.lib",
+            "%{LibDir.Vulkan}/spirv-cross-reflectd.lib",
 
             -- Assimp debug libraries
             "%{LibDir.assimp}/assimp-vc143-mtd.lib",
@@ -107,6 +113,10 @@ project "Hyper"
             -- Shaderc release libraries
             "%{LibDir.Vulkan}/shaderc_shared.lib",
             "%{LibDir.Vulkan}/shaderc_util.lib",
+            
+            -- Spirv Cross for reflection
+            "%{LibDir.Vulkan}/spirv-cross-core.lib",
+            "%{LibDir.Vulkan}/spirv-cross-reflect.lib",
 
             -- Assimp release libraries
             "%{LibDir.assimp}/assimp-vc143-mt.lib",

@@ -44,7 +44,7 @@ namespace Hyper
 	{
 		glm::vec3 position;
 		glm::vec3 normal;
-		glm::vec2 texCoord;
+		glm::vec2 uv;
 
 		static vk::VertexInputBindingDescription GetBindingDescription()
 		{
@@ -73,7 +73,7 @@ namespace Hyper
 			attributes[2].location = 2;
 			attributes[2].binding = 0;
 			attributes[2].format = vk::Format::eR32G32Sfloat;
-			attributes[2].offset = offsetof(VertexPosNormTex, normal);
+			attributes[2].offset = offsetof(VertexPosNormTex, uv);
 
 			return attributes;
 		}

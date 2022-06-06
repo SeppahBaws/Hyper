@@ -5,6 +5,8 @@
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_reflect.hpp>
 
+#include "VulkanDescriptors.h"
+
 namespace Hyper
 {
 	std::string ToString(const shaderc_compilation_status& status)
@@ -41,11 +43,32 @@ namespace Hyper
 	{
 		for (const auto& [stage, path] : shaders)
 		{
-			const vk::ShaderModule vulkanModule = CompileStage(stage, path);
+			auto [shaderModule, spirvBytes] = CompileStage(stage, path);
 			m_ShaderModules.insert_or_assign(stage, ShaderModule{
 				path,
-				vulkanModule
+				shaderModule
 			});
+
+			Reflect(stage, spirvBytes);
+		}
+
+		for (const auto& descriptorSet : m_DescriptorSetBindings)
+		{
+			auto builder = DescriptorSetLayoutBuilder(m_pRenderCtx->device);
+			for (const auto& [descType, binding, stageFlags] : descriptorSet)
+			{
+				builder = builder.AddBinding(descType, binding, 1, stageFlags);
+			}
+		
+			m_DescriptorLayouts.push_back(builder.Build());
+		}
+
+		for (const auto& [offset, size, stageFlags] : m_PushConstants)
+		{
+			auto& range = m_PushConstRanges.emplace_back();
+			range.offset = offset;
+			range.size = size;
+			range.stageFlags = stageFlags;
 		}
 
 		HPR_VKLOG_INFO("Successfully created shaders");
@@ -53,9 +76,16 @@ namespace Hyper
 
 	VulkanShader::~VulkanShader()
 	{
-		for (const auto& [_, module] : m_ShaderModules | std::views::values)
+		for (auto& layout : m_DescriptorLayouts)
+		{
+			m_pRenderCtx->device.destroyDescriptorSetLayout(layout);
+			layout = nullptr;
+		}
+
+		for (auto& [_, module] : m_ShaderModules | std::views::values)
 		{
 			m_pRenderCtx->device.destroyShaderModule(module);
+			module = nullptr;
 		}
 	}
 
@@ -74,7 +104,7 @@ namespace Hyper
 		return infos;
 	}
 
-	vk::ShaderModule VulkanShader::CompileStage(ShaderStageType stage, const std::filesystem::path& filePath)
+	std::pair<vk::ShaderModule, std::vector<u32>> VulkanShader::CompileStage(ShaderStageType stage, const std::filesystem::path& filePath)
 	{
 		std::string shaderCode;
 		if (!IO::ReadFileSync(filePath, shaderCode))
@@ -135,6 +165,74 @@ namespace Hyper
 			}
 		}
 
-		return module;
+		return { module, shaderBinary };
+	}
+
+	void VulkanShader::Reflect(ShaderStageType stage, const std::vector<u32>& spirvBytes)
+	{
+		spirv_cross::Compiler compiler(spirvBytes);
+		auto resources = compiler.get_shader_resources();
+
+		// Uniform buffers
+		for (const auto& resource : resources.uniform_buffers)
+		{
+			// uniformBuffer.
+			const auto& name = resource.name;
+			auto& bufferType = compiler.get_type(resource.base_type_id);
+			u32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			u32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+
+			HPR_VKLOG_INFO("Uniform buffer: '{}'", name);
+			HPR_VKLOG_INFO("  binding: {}", binding);
+			HPR_VKLOG_INFO("  set: {}", descriptorSet);
+
+			if (descriptorSet >= m_DescriptorSetBindings.size())
+				m_DescriptorSetBindings.resize(descriptorSet + 1);
+
+			auto& set = m_DescriptorSetBindings[descriptorSet].emplace_back();
+			set.binding = binding;
+			set.descType = vk::DescriptorType::eUniformBuffer;
+			set.stageFlags = static_cast<vk::ShaderStageFlagBits>(stage);
+		}
+
+		// Samplers
+		for (const auto& resource : resources.sampled_images)
+		{
+			const auto& name = resource.name;
+			u32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			u32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+
+			if (descriptorSet >= m_DescriptorSetBindings.size())
+				m_DescriptorSetBindings.resize(descriptorSet + 1);
+
+			auto& set = m_DescriptorSetBindings[descriptorSet].emplace_back();
+			set.binding = binding;
+			set.descType = vk::DescriptorType::eCombinedImageSampler;
+			set.stageFlags = static_cast<vk::ShaderStageFlagBits>(stage);
+
+			HPR_VKLOG_INFO("Sampler: '{}'", name);
+			HPR_VKLOG_INFO("  binding: {}", binding);
+			HPR_VKLOG_INFO("  set: {}", descriptorSet);
+		}
+
+		// Push constants
+		for (const auto& resource : resources.push_constant_buffers)
+		{
+			const std::string& name = resource.name;
+			auto& bufferType = compiler.get_type(resource.base_type_id);
+			const u32 bufferSize = static_cast<u32>(compiler.get_declared_struct_size(bufferType));
+			u32 bufferOffset = 0;
+			if (!m_PushConstants.empty())
+				bufferOffset = m_PushConstants.back().offset + m_PushConstants.back().size;
+
+			auto& pushConst = m_PushConstants.emplace_back();
+			pushConst.size = bufferSize - bufferOffset;
+			pushConst.offset = bufferOffset;
+			pushConst.stageFlags = static_cast<vk::ShaderStageFlagBits>(stage);
+
+			HPR_VKLOG_INFO("Push constant: '{}'", name);
+			HPR_VKLOG_INFO("  size: {}", pushConst.size);
+			HPR_VKLOG_INFO("  offset: {}", pushConst.offset);
+		}
 	}
 }

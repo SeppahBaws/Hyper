@@ -3,12 +3,12 @@
 
 namespace Hyper
 {
-	DescriptorSetLayout::Builder::Builder(vk::Device device)
+	DescriptorSetLayoutBuilder::DescriptorSetLayoutBuilder(vk::Device device)
 		: m_Device(device)
 	{
 	}
 
-	DescriptorSetLayout::Builder DescriptorSetLayout::Builder::AddBinding(vk::DescriptorType descriptorType, u32 binding, u32 count, vk::ShaderStageFlags stageFlags)
+	DescriptorSetLayoutBuilder DescriptorSetLayoutBuilder::AddBinding(vk::DescriptorType descriptorType, u32 binding, u32 count, vk::ShaderStageFlags stageFlags)
 	{
 		m_Bindings.emplace_back(vk::DescriptorSetLayoutBinding{
 			binding,
@@ -19,50 +19,23 @@ namespace Hyper
 		return *this;
 	}
 
-	DescriptorSetLayout DescriptorSetLayout::Builder::Build()
-	{
-		return DescriptorSetLayout(m_Device, m_Bindings);
-	}
-
-	DescriptorSetLayout::DescriptorSetLayout(vk::Device device, const std::vector<vk::DescriptorSetLayoutBinding> bindings)
-		: m_Device(device)
+	vk::DescriptorSetLayout DescriptorSetLayoutBuilder::Build()
 	{
 		vk::DescriptorSetLayoutCreateInfo info = {};
-		info.setBindings(bindings);
+		info.setBindings(m_Bindings);
+
+		vk::DescriptorSetLayout layout;
 
 		try
 		{
-			m_Layout = device.createDescriptorSetLayout(info);
+			layout = m_Device.createDescriptorSetLayout(info);
 		}
 		catch (vk::SystemError& e)
 		{
 			throw std::runtime_error("Failed to create Descriptor Set Layout: "s + e.what());
 		}
-	}
 
-	DescriptorSetLayout::~DescriptorSetLayout()
-	{
-		if (m_Device && m_Layout)
-		{
-			m_Device.destroyDescriptorSetLayout(m_Layout);
-		}
-	}
-
-	DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& other) noexcept
-		: m_Device(other.m_Device), m_Layout(other.m_Layout)
-	{
-		other.m_Device = nullptr;
-		other.m_Layout = nullptr;
-	}
-
-	DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout&& other) noexcept
-	{
-		m_Device = other.m_Device;
-		m_Layout = other.m_Layout;
-		other.m_Device = nullptr;
-		other.m_Layout = nullptr;
-
-		return *this;
+		return layout;
 	}
 
 	DescriptorPool::Builder::Builder(vk::Device device)
@@ -138,7 +111,7 @@ namespace Hyper
 		return *this;
 	}
 
-	std::vector<vk::DescriptorSet> DescriptorPool::Allocate(const std::vector<vk::DescriptorSetLayout>& layouts)
+	std::vector<vk::DescriptorSet> DescriptorPool::Allocate(const std::vector<vk::DescriptorSetLayout>& layouts) const
 	{
 		vk::DescriptorSetAllocateInfo info = {};
 		info.descriptorPool = m_Pool;
@@ -171,6 +144,18 @@ namespace Hyper
 		setWrite.descriptorCount = 1;
 		setWrite.descriptorType = type;
 		setWrite.setBufferInfo(bufferInfo);
+
+		m_DescriptorWrites.push_back(setWrite);
+	}
+	
+	void DescriptorWriter::WriteImage(const vk::DescriptorImageInfo& imageInfo, u32 dstBinding, vk::DescriptorType type)
+	{
+		vk::WriteDescriptorSet setWrite = {};
+		setWrite.dstBinding = dstBinding;
+		setWrite.dstSet = m_DescriptorSet;
+		setWrite.descriptorCount = 1;
+		setWrite.descriptorType = type;
+		setWrite.setImageInfo(imageInfo);
 
 		m_DescriptorWrites.push_back(setWrite);
 	}

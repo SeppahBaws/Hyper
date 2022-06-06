@@ -9,16 +9,16 @@
 namespace Hyper
 {
 	VulkanImage::VulkanImage(RenderContext* pRenderCtx, vk::Format format, vk::ImageType type, vk::ImageUsageFlags usage, vk::ImageAspectFlags aspectFlags,
-	                         const std::string& debugName, u32 width, u32 height, u32 depth)
+		const std::string& debugName, u32 width, u32 height, u32 depth)
 		: m_pRenderCtx(pRenderCtx)
-		  , m_Format(format)
-		  , m_Type(type)
-		  , m_Usage(usage)
-		  , m_AspectFlags(aspectFlags)
-		  , m_Width(width)
-		  , m_Height(height)
-		  , m_Depth(depth)
-		  , m_DebugName(debugName)
+		, m_Format(format)
+		, m_Type(type)
+		, m_Usage(usage)
+		, m_AspectFlags(aspectFlags)
+		, m_Width(width)
+		, m_Height(height)
+		, m_Depth(depth)
+		, m_DebugName(debugName)
 	{
 		CreateImageAndView();
 	}
@@ -42,9 +42,55 @@ namespace Hyper
 		CreateImageAndView();
 	}
 
+	void VulkanImage::TransitionLayout(vk::CommandBuffer cmd, vk::AccessFlags newAccessFlags, vk::ImageLayout newLayout, vk::PipelineStageFlags newStageFlags)
+	{
+		vk::ImageMemoryBarrier barrier = {};
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.srcAccessMask = m_AccessFlags;
+		barrier.dstAccessMask = newAccessFlags;
+		barrier.oldLayout = m_Layout;
+		barrier.newLayout = newLayout;
+		barrier.image = m_Image;
+		barrier.subresourceRange = vk::ImageSubresourceRange{
+			m_AspectFlags,
+			0, 1,
+			0, 1
+		};
+
+		cmd.pipelineBarrier(m_PipelineStageFlags, newStageFlags, {}, {}, {}, { barrier });
+
+		m_Layout = newLayout;
+		m_AccessFlags = newAccessFlags;
+		m_PipelineStageFlags = newStageFlags;
+	}
+
+	void VulkanImage::CopyFrom(vk::CommandBuffer cmd, const VulkanBuffer& srcBuffer)
+	{
+		vk::BufferImageCopy copyRegion = {};
+		copyRegion.bufferOffset = 0;
+		copyRegion.bufferRowLength = 0;
+		copyRegion.bufferImageHeight = 0;
+		copyRegion.imageSubresource.aspectMask = m_AspectFlags;
+		copyRegion.imageSubresource.mipLevel = 0;
+		copyRegion.imageSubresource.baseArrayLayer = 0;
+		copyRegion.imageSubresource.layerCount = 1;
+		copyRegion.imageExtent = vk::Extent3D{
+			m_Width,
+			m_Height,
+			1
+		};
+
+		cmd.copyBufferToImage(srcBuffer.GetBuffer(), m_Image, m_Layout, copyRegion);
+	}
+
 	void VulkanImage::CreateImageAndView()
 	{
 		HPR_PROFILE_SCOPE("VulkanImage::Create");
+
+		m_Layout = vk::ImageLayout::eUndefined;
+		m_AccessFlags = {};
+		m_PipelineStageFlags = vk::PipelineStageFlagBits::eTopOfPipe;
 
 		vk::ImageCreateInfo imageInfo{};
 		imageInfo.imageType = m_Type;
@@ -63,7 +109,7 @@ namespace Hyper
 
 		VulkanUtils::VkCheck(
 			vmaCreateImage(m_pRenderCtx->allocator, reinterpret_cast<VkImageCreateInfo*>(&imageInfo), &alloc, reinterpret_cast<VkImage*>(&m_Image), &m_Allocation,
-			               nullptr)
+				nullptr)
 		);
 
 		vk::ImageViewCreateInfo imageViewInfo{};

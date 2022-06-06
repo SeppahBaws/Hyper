@@ -4,6 +4,7 @@
 #include "FlyCamera.h"
 #include "Mesh.h"
 #include "Model.h"
+#include "Texture.h"
 #include "Hyper/Core/Subsystem.h"
 #include "Vulkan/VulkanCommands.h"
 #include "Vulkan/VulkanDescriptors.h"
@@ -64,7 +65,7 @@ namespace Hyper
 		std::unique_ptr<FlyCamera> m_pCamera;
 		
 		std::vector<FrameData> m_FrameDatas;
-		std::unique_ptr<DescriptorSetLayout> m_pGlobalSetLayout{};
+		std::unique_ptr<vk::DescriptorSetLayout> m_pGlobalSetLayout{};
 		std::unique_ptr<DescriptorPool> m_pDescriptorPool{};
 	};
 }

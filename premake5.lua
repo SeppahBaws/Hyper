@@ -30,6 +30,7 @@ include "Dependencies.lua"
 group "Dependencies"
     include "Hyper/dependencies/glfw"
     include "Hyper/dependencies/Optick"
+    include "Hyper/dependencies/stb"
 group ""
 
 include "Hyper"

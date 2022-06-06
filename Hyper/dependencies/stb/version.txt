@@ -1,0 +1,3 @@
+latest commit (10 september 2021)
+
+https://github.com/nothings/stb/tree/af1a5bc352164740c1cc1354942b1c6b72eacb8a

@@ -6,37 +6,17 @@
 
 namespace Hyper
 {
-	class DescriptorSetLayout
+	class DescriptorSetLayoutBuilder
 	{
 	public:
-		class Builder
-		{
-		public:
-			Builder(vk::Device device);
+		DescriptorSetLayoutBuilder(vk::Device device);
 
-			Builder AddBinding(vk::DescriptorType descriptorType, u32 binding, u32 count, vk::ShaderStageFlags stageFlags);
-
-			DescriptorSetLayout Build();
-
-		private:
-			vk::Device m_Device;
-			std::vector<vk::DescriptorSetLayoutBinding> m_Bindings;
-		};
-
-		DescriptorSetLayout(vk::Device device, const std::vector<vk::DescriptorSetLayoutBinding> bindings);
-		~DescriptorSetLayout();
-		DescriptorSetLayout(const DescriptorSetLayout& other) = delete;
-		DescriptorSetLayout& operator=(const DescriptorSetLayout& other) = delete;
-		DescriptorSetLayout(DescriptorSetLayout&& other) noexcept;
-		DescriptorSetLayout& operator=(DescriptorSetLayout&& other) noexcept;
-
-		[[nodiscard]] vk::DescriptorSetLayout GetLayout() const { return m_Layout; }
+		DescriptorSetLayoutBuilder AddBinding(vk::DescriptorType descriptorType, u32 binding, u32 count, vk::ShaderStageFlags stageFlags);
+		vk::DescriptorSetLayout Build();
 
 	private:
-		friend class DescriptorPool;
-
 		vk::Device m_Device;
-		vk::DescriptorSetLayout m_Layout;
+		std::vector<vk::DescriptorSetLayoutBinding> m_Bindings;
 	};
 
 	class DescriptorPool
@@ -67,7 +47,7 @@ namespace Hyper
 		DescriptorPool(DescriptorPool&& other) noexcept;
 		DescriptorPool& operator=(DescriptorPool&& other) noexcept;
 
-		std::vector<vk::DescriptorSet> Allocate(const std::vector<vk::DescriptorSetLayout>& layouts);
+		std::vector<vk::DescriptorSet> Allocate(const std::vector<vk::DescriptorSetLayout>& layouts) const;
 
 		[[nodiscard]] vk::DescriptorPool GetPool() const { return m_Pool; }
 
@@ -82,6 +62,7 @@ namespace Hyper
 		DescriptorWriter(vk::Device device, vk::DescriptorSet descriptorSet);
 
 		void WriteBuffer(const vk::DescriptorBufferInfo& bufferInfo, u32 dstBinding, vk::DescriptorType type);
+		void WriteImage(const vk::DescriptorImageInfo& imageInfo, u32 dstBinding, vk::DescriptorType type);
 		void Write();
 
 	private:

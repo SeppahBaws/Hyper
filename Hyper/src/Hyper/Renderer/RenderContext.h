@@ -7,6 +7,8 @@
 
 namespace Hyper
 {
+	class Renderer;
+
 	struct RenderContext
 	{
 		vk::Instance instance;

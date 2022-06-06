@@ -7,6 +7,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include "Material.h"
 #include "Mesh.h"
 #include "Renderer.h"
 #include "Hyper/Debug/Profiler.h"
@@ -25,7 +26,7 @@ namespace Hyper
 		Import(path);
 	}
 
-	void Model::Draw(const vk::CommandBuffer& cmd, const vk::PipelineLayout& layout) const
+	void Model::Draw(const vk::CommandBuffer& cmd, const vk::PipelineLayout& pipelineLayout) const
 	{
 		HPR_PROFILE_SCOPE();
 
@@ -34,10 +35,20 @@ namespace Hyper
 		pushConst.modelMatrix = glm::translate(glm::mat4(1.0f), m_Position)
 			* glm::toMat4(glm::quat(glm::radians(m_Rotation)))
 			* glm::scale(glm::mat4(1.0f), m_Scale);
-		cmd.pushConstants<ModelMatrixPushConst>(layout, vk::ShaderStageFlagBits::eVertex, 0, pushConst);
+		cmd.pushConstants<ModelMatrixPushConst>(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, pushConst);
+
+		u32 currentMaterial = 0;
+		m_Materials[currentMaterial].Bind(cmd, pipelineLayout);
 
 		for (const std::unique_ptr<Mesh>& pMesh : m_Meshes)
 		{
+			const u32 meshMat = pMesh->GetMaterialIdx();
+			if (meshMat != currentMaterial)
+			{
+				currentMaterial = meshMat;
+				m_Materials[meshMat].Bind(cmd, pipelineLayout);
+			}
+
 			pMesh->Draw(cmd);
 		}
 	}
@@ -55,12 +66,104 @@ namespace Hyper
 			return;
 		}
 
+		// Load materials
+		for (u32 m = 0; m < scene->mNumMaterials; m++)
+		{
+			aiString texturePath;
+
+			const aiMaterial* pMat = scene->mMaterials[m];
+			const std::string materialName = pMat->GetName().C_Str();
+
+			HPR_CORE_LOG_INFO("Material '{}'", pMat->GetName().C_Str());
+			// for (u32 p = 0; p < pMat->mNumProperties; p++)
+			// {
+			// 	const aiMaterialProperty* property = pMat->mProperties[p];
+			// 	// property->mKey
+			// 	// pMat->Get(aimatkey)
+			// 	HPR_CORE_LOG_INFO("  Material property: {}", property->mKey.C_Str());
+			// }
+
+			auto getTextureType = [](u32 number)
+			{
+				switch (number)
+				{
+case aiTextureType_NONE: return "aiTextureType_NONE";
+case aiTextureType_DIFFUSE: return "aiTextureType_DIFFUSE";
+case aiTextureType_SPECULAR: return "aiTextureType_SPECULAR";
+case aiTextureType_AMBIENT: return "aiTextureType_AMBIENT";
+case aiTextureType_EMISSIVE: return "aiTextureType_EMISSIVE";
+case aiTextureType_HEIGHT: return "aiTextureType_HEIGHT";
+case aiTextureType_NORMALS: return "aiTextureType_NORMALS";
+case aiTextureType_SHININESS: return "aiTextureType_SHININESS";
+case aiTextureType_OPACITY: return "aiTextureType_OPACITY";
+case aiTextureType_DISPLACEMENT: return "aiTextureType_DISPLACEMENT";
+case aiTextureType_LIGHTMAP: return "aiTextureType_LIGHTMAP";
+case aiTextureType_REFLECTION: return "aiTextureType_REFLECTION";
+case aiTextureType_BASE_COLOR: return "aiTextureType_BASE_COLOR";
+case aiTextureType_NORMAL_CAMERA: return "aiTextureType_NORMAL_CAMERA";
+case aiTextureType_EMISSION_COLOR: return "aiTextureType_EMISSION_COLOR";
+case aiTextureType_METALNESS: return "aiTextureType_METALNESS";
+case aiTextureType_DIFFUSE_ROUGHNESS: return "aiTextureType_DIFFUSE_ROUGHNESS";
+case aiTextureType_AMBIENT_OCCLUSION: return "aiTextureType_AMBIENT_OCCLUSION";
+case aiTextureType_SHEEN: return "aiTextureType_SHEEN";
+case aiTextureType_CLEARCOAT: return "aiTextureType_CLEARCOAT";
+case aiTextureType_TRANSMISSION: return "aiTextureType_TRANSMISSION";
+case aiTextureType_UNKNOWN: return "aiTextureType_UNKNOWN";
+				}
+
+				return "unknown value";
+			};
+
+			aiString tempPath;
+			for (u32 t = 0; t < aiTextureType_UNKNOWN; t++)
+			{
+				auto textureType = getTextureType(t);
+				if (AI_SUCCESS == pMat->GetTexture(static_cast<aiTextureType>(t), 0, &tempPath))
+				{
+					HPR_CORE_LOG_INFO("  {} - YES - {}", textureType, std::string(tempPath.C_Str()));
+				}
+				else
+				{
+					HPR_CORE_LOG_WARN("  {} - No texture", textureType);
+				}
+			}
+
+			// Material material{ m_pRenderCtx, materialName };
+			Material& material = m_Materials.emplace_back(m_pRenderCtx, materialName);
+
+			if (AI_SUCCESS == pMat->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath))
+			{
+				const auto absoluteTexturePath = path.parent_path() / std::filesystem::path(texturePath.C_Str());
+				material.LoadTexture(MaterialTextureType::Albedo, absoluteTexturePath);
+			}
+			else
+			{
+				material.LoadTexture(MaterialTextureType::Albedo, "res/textures/default-white.png");
+			}
+
+			if (AI_SUCCESS == pMat->GetTexture(aiTextureType_NORMALS, 0, &texturePath))
+			{
+				const auto absoluteTexturePath = path.parent_path().append(texturePath.C_Str());
+				material.LoadTexture(MaterialTextureType::Normal, absoluteTexturePath);
+			}
+			else
+			{
+				material.LoadTexture(MaterialTextureType::Normal, "res/textures/default-normal.png");
+			}
+
+			material.PostLoadInititalize();
+			// m_Materials.push_back(std::move(material));
+		}
+
+		// Load meshes
 		for (u32 m = 0; m < scene->mNumMeshes; m++)
 		{
 			std::vector<VertexPosNormTex> vertices;
 			std::vector<u32> indices;
 
 			const aiMesh* mesh = scene->mMeshes[m];
+
+			// Load vertices
 			for (u32 v = 0; v < mesh->mNumVertices; v++)
 			{
 				// Positions are guaranteed, the rest is uncertain
@@ -80,6 +183,7 @@ namespace Hyper
 				vertices.emplace_back(VertexPosNormTex{ pos, norm, tex });
 			}
 
+			// Load indices
 			for (u32 f = 0; f < mesh->mNumFaces; f++)
 			{
 				const aiFace face = mesh->mFaces[f];
@@ -89,8 +193,14 @@ namespace Hyper
 				}
 			}
 
-			m_Meshes.emplace_back(std::make_unique<Mesh>(m_pRenderCtx, vertices, indices));
+			m_Meshes.emplace_back(std::make_unique<Mesh>(m_pRenderCtx, mesh->mMaterialIndex, vertices, indices));
 		}
+
+		// Sort meshes based on their material idx
+		std::ranges::sort(m_Meshes, [](const std::unique_ptr<Mesh>& left, const std::unique_ptr<Mesh>& right)
+		{
+			return left->GetMaterialIdx() < right->GetMaterialIdx();
+		});
 
 		HPR_CORE_LOG_INFO("Successfully imported model '{}'!", path.filename().string());
 	}

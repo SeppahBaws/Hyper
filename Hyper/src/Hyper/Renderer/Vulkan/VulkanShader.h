@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <vulkan/vulkan.hpp>
 
+#include "VulkanDescriptors.h"
 #include "Hyper/Renderer/RenderContext.h"
 
 namespace Hyper
@@ -17,6 +18,20 @@ namespace Hyper
 		vk::ShaderModule module;
 	};
 
+	struct ShaderDescriptorBinding
+	{
+		vk::DescriptorType descType;
+		u32 binding;
+		vk::ShaderStageFlags stageFlags;
+	};
+
+	struct ShaderPushConstant
+	{
+		u32 offset;
+		u32 size;
+		vk::ShaderStageFlags stageFlags;
+	};
+
 	class VulkanShader
 	{
 	public:
@@ -25,12 +40,22 @@ namespace Hyper
 
 		[[nodiscard]] std::vector<vk::PipelineShaderStageCreateInfo> GetAllShaderStages() const;
 
+		[[nodiscard]] const std::vector<vk::DescriptorSetLayout>& GetAllDescriptorSetLayouts() const { return m_DescriptorLayouts; }
+		[[nodiscard]] const std::vector<vk::PushConstantRange>& GetAllPushConstantRanges() const { return m_PushConstRanges; }
+
 	private:
-		vk::ShaderModule CompileStage(ShaderStageType stage, const std::filesystem::path& filePath);
+		std::pair<vk::ShaderModule, std::vector<u32>> CompileStage(ShaderStageType stage, const std::filesystem::path& filePath);
+		void Reflect(ShaderStageType stage, const std::vector<u32>& spirvBytes);
 
 	private:
 		RenderContext* m_pRenderCtx;
 
 		std::unordered_map<ShaderStageType, ShaderModule> m_ShaderModules;
+
+		std::vector<std::vector<ShaderDescriptorBinding>> m_DescriptorSetBindings;
+		std::vector<ShaderPushConstant> m_PushConstants;
+
+		std::vector<vk::DescriptorSetLayout> m_DescriptorLayouts;
+		std::vector<vk::PushConstantRange> m_PushConstRanges;
 	};
 }

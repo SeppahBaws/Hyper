@@ -14,6 +14,8 @@
 
 #include <glm/gtx/transform.hpp>
 
+#include "Vulkan/VulkanDebug.h"
+
 namespace Hyper
 {
 	class Window;
@@ -116,11 +118,11 @@ namespace Hyper
 
 		// Setup model and camera (Temp code)
 		{
-			// m_pModel = std::make_unique<Model>(m_pRenderContext.get(), "res/models/Cuub.fbx");
-			// m_pModel = std::make_unique<Model>(m_pRenderContext.get(), "res/Bistro/Exterior/exterior.obj");
-			m_pModel = std::make_unique<Model>(m_pRenderContext.get(), "res/sponza/sponza.obj");
-			m_pModel->SetRotation({ 90, 0, 0 });
-			m_pModel->SetScale(glm::vec3{ 0.01f });
+			m_pScene = std::make_unique<Scene>(m_pRenderContext.get());
+
+			// m_pScene->AddModel("res/models/Cuub.fbx");
+			m_pScene->AddModel("res/sponza/sponza.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+			m_pScene->BuildAccelerationStructure();
 			m_pCamera->Setup();
 		}
 
@@ -218,10 +220,11 @@ namespace Hyper
 				0, 1
 			})
 		);
-
-
+		
 		// Geometry pass.
 		{
+			VkDebug::BeginRegion(cmd, "Geometry pass", { 0.8f, 0.6f, 0.1f, 1.0f });
+
 			// Begin rendering
 			const std::array<vk::RenderingAttachmentInfo, 2> attachments = m_pSwapChain->GetRenderingAttachments();
 
@@ -260,10 +263,22 @@ namespace Hyper
 			}
 
 			// Draw the model to the screen
-			m_pModel->Draw(cmd, m_pPipeline->GetLayout());
+			m_pScene->Draw(cmd, m_pPipeline->GetLayout());
 
 			// End rendering
 			cmd.endRendering();
+
+			VkDebug::EndRegion(cmd);
+		}  
+
+		// RT pass.
+		{
+			VkDebug::BeginRegion(cmd, "RT Pass", { 0.3f, 0.3f, 0.8f, 1.0f });
+
+			// Trace rays (for the love of god please just work kthx)
+			m_pScene->RayTrace(cmd);
+
+			VkDebug::EndRegion(cmd);
 		}
 
 		InsertImageMemoryBarrier(
@@ -322,8 +337,8 @@ namespace Hyper
 		m_pPipeline.reset();
 		m_pSwapChain.reset();
 
+		m_pScene.reset();
 		m_pCamera.reset();
-		m_pModel.reset();
 
 		// TODO: automatically keep track of allocated command buffers and destroy them all.
 		m_pCommandPool->FreeCommandBuffers(m_CommandBuffers);

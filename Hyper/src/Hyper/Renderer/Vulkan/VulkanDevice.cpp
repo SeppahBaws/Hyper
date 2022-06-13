@@ -2,12 +2,15 @@
 #include "VulkanDevice.h"
 
 #include "VulkanDebug.h"
+#include "VulkanExtensions.h"
 #include "VulkanUtility.h"
 
 namespace Hyper
 {
 	VulkanDevice::VulkanDevice(RenderContext* pRenderCtx)
 		: m_pRenderCtx(pRenderCtx)
+		, m_MarkerMap{}
+		, m_GpuCrashTracker{m_MarkerMap}
 	{
 		if (HYPER_VALIDATE)
 		{
@@ -68,6 +71,8 @@ namespace Hyper
 			VkDebug::Setup(pRenderCtx);
 		}
 
+		m_GpuCrashTracker.Initialize();
+
 		// Create device
 		{
 			// Find physical device
@@ -86,33 +91,62 @@ namespace Hyper
 
 			pRenderCtx->physicalDevice = *foundDevice;
 
+			vk::PhysicalDeviceProperties2 properties{};
+			properties.pNext = &pRenderCtx->rtProperties;
+			pRenderCtx->physicalDevice.getProperties2(&properties);
+
 			HPR_VKLOG_INFO("Found a physical device");
 
 			std::vector<vk::QueueFamilyProperties> queueFamilyProperties = pRenderCtx->physicalDevice.getQueueFamilyProperties();
 
-			// Get the first index which supports graphics
-			const auto propertyIterator = std::find_if(queueFamilyProperties.begin(), queueFamilyProperties.end(),
+			// Get the first QueueFamily which supports graphics and compute
+			const auto graphicsPropertyIterator = std::find_if(queueFamilyProperties.begin(), queueFamilyProperties.end(),
 				[](const vk::QueueFamilyProperties& qfp)
 				{
-					return qfp.queueFlags & vk::QueueFlagBits::eGraphics;
+					return qfp.queueFlags & (vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute);
 				});
 
-			u32 graphicsQueueFamilyIndex = static_cast<u32>(std::distance(queueFamilyProperties.begin(), propertyIterator));
+			u32 graphicsQueueFamilyIndex = static_cast<u32>(std::distance(queueFamilyProperties.begin(), graphicsPropertyIterator));
 			assert(graphicsQueueFamilyIndex < queueFamilyProperties.size());
 
 			// Create a device and retrieve the queues
 			constexpr f32 queuePriority = 0.0f;
-			vk::DeviceQueueCreateInfo deviceQueueCreateInfo{
-				{}, graphicsQueueFamilyIndex, 1, &queuePriority
-			};
+			std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos{};
+			// Graphics queue
+			queueCreateInfos.emplace_back(vk::DeviceQueueCreateInfo{{}, graphicsQueueFamilyIndex, 1, &queuePriority});
 
-			vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{};
-			dynamicRenderingFeatures.dynamicRendering = true;
+			auto deviceCreateInfoChain = vk::StructureChain<
+				vk::DeviceCreateInfo,
+				// Dynamic rendering
+				vk::PhysicalDeviceDynamicRenderingFeatures,
+				// Ray-tracing features
+				vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
+				vk::PhysicalDeviceBufferDeviceAddressFeatures,
+				vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
+				// Device diagnostics for Nvidia Aftermath
+				// TODO: make this an optional feature
+				vk::DeviceDiagnosticsConfigCreateInfoNV
+			>();
 
-			vk::DeviceCreateInfo deviceCreateInfo = vk::DeviceCreateInfo{
-				{}, deviceQueueCreateInfo, m_RequiredDeviceLayerNames, m_RequiredDeviceExtensionNames, {}
-			};
-			deviceCreateInfo.pNext = &dynamicRenderingFeatures;
+			// Enable dynamic rendering
+			deviceCreateInfoChain.get<vk::PhysicalDeviceDynamicRenderingFeatures>().dynamicRendering = true;
+
+			// Enable ray tracing features
+			deviceCreateInfoChain.get<vk::PhysicalDeviceRayTracingPipelineFeaturesKHR>().rayTracingPipeline = true;
+			deviceCreateInfoChain.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress = true;
+			deviceCreateInfoChain.get<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>().accelerationStructure = true;
+
+			// Enable device diagnostics
+			const vk::DeviceDiagnosticsConfigFlagsNV aftermathFlags =
+				vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableResourceTracking |
+				vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableAutomaticCheckpoints |
+				vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableShaderDebugInfo;
+			deviceCreateInfoChain.get<vk::DeviceDiagnosticsConfigCreateInfoNV>().flags = aftermathFlags;
+
+			auto& deviceCreateInfo = deviceCreateInfoChain.get<vk::DeviceCreateInfo>()
+				.setQueueCreateInfos(queueCreateInfos)
+				.setPEnabledLayerNames(m_RequiredDeviceLayerNames)
+				.setPEnabledExtensionNames(m_RequiredDeviceExtensionNames);
 			pRenderCtx->device = pRenderCtx->physicalDevice.createDevice(deviceCreateInfo);
 
 			HPR_VKLOG_INFO("Created the logical device");
@@ -121,7 +155,7 @@ namespace Hyper
 			m_GraphicsQueue = VulkanQueue{
 				.queue = pRenderCtx->device.getQueue(graphicsQueueFamilyIndex, 0),
 				.familyIndex = graphicsQueueFamilyIndex,
-				.flags = vk::QueueFlagBits::eGraphics
+				.flags = vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute
 			};
 			pRenderCtx->graphicsQueue = m_GraphicsQueue;
 
@@ -135,10 +169,14 @@ namespace Hyper
 			createInfo.physicalDevice = pRenderCtx->physicalDevice;
 			createInfo.device = pRenderCtx->device;
 			createInfo.instance = pRenderCtx->instance;
+			createInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 			
 			VulkanUtils::VkCheck(vmaCreateAllocator(&createInfo, &m_Allocator));
 			m_pRenderCtx->allocator = m_Allocator;
 		}
+
+		// Load extensions
+		LoadVkExtensions(m_pRenderCtx->instance, vkGetInstanceProcAddr, m_pRenderCtx->device, vkGetDeviceProcAddr);
 	}
 
 	VulkanDevice::~VulkanDevice()

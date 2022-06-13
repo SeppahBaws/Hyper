@@ -27,7 +27,7 @@ namespace Hyper
         m_pVertexBuffer = std::make_unique<VulkanBuffer>(
         	m_pRenderCtx,
         	vertices.size() * sizeof(VertexPosNormTex),
-        	vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
+        	vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
         	VMA_MEMORY_USAGE_GPU_ONLY,
         	m_Name);
         

@@ -2,16 +2,19 @@
 #include <glm/vec3.hpp>
 
 #include "Material.h"
+#include "Mesh.h"
 #include "RenderContext.h"
 
 namespace Hyper
 {
-	class Mesh;
-
 	class Model
 	{
 	public:
 		explicit Model(RenderContext* pRenderCtx, const std::filesystem::path& filePath);
+		Model(const Model& other) = delete;
+		Model& operator=(const Model& other) = delete;
+		Model(Model&& other) noexcept;
+		Model& operator=(Model&& other) noexcept;
 
 		void Draw(const vk::CommandBuffer& cmd, const vk::PipelineLayout& pipelineLayout) const;
 
@@ -28,6 +31,11 @@ namespace Hyper
 		void SetScale(const glm::vec3& scale)
 		{
 			m_Scale = scale;
+		}
+
+		const std::vector<std::unique_ptr<Mesh>>& GetMeshes() const
+		{
+			return m_Meshes;
 		}
 
 	private:

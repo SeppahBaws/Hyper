@@ -6,6 +6,7 @@
 #include "Model.h"
 #include "Texture.h"
 #include "Hyper/Core/Subsystem.h"
+#include "Hyper/Scene/Scene.h"
 #include "Vulkan/VulkanCommands.h"
 #include "Vulkan/VulkanDescriptors.h"
 #include "Vulkan/VulkanDevice.h"
@@ -50,8 +51,6 @@ namespace Hyper
 		std::unique_ptr<VulkanShader> m_pShader;
 		std::unique_ptr<VulkanPipeline> m_pPipeline;
 
-		std::unique_ptr<Model> m_pModel;
-
 		u32 m_FrameIdx = 0;
 		u64 m_FrameNumber = 0;
 
@@ -63,6 +62,8 @@ namespace Hyper
 		vk::RenderPass m_RenderPass;
 
 		std::unique_ptr<FlyCamera> m_pCamera;
+
+		std::unique_ptr<Scene> m_pScene;
 		
 		std::vector<FrameData> m_FrameDatas;
 		std::unique_ptr<vk::DescriptorSetLayout> m_pGlobalSetLayout{};

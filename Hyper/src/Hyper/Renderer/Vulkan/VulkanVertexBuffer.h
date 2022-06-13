@@ -14,6 +14,8 @@ namespace Hyper
 
         void Bind(const vk::CommandBuffer& cmd) const;
 
+        [[nodiscard]] VulkanBuffer* GetBuffer() const { return m_pVertexBuffer.get(); }
+
     private:
         RenderContext* m_pRenderCtx{};
 

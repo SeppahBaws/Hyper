@@ -15,4 +15,8 @@ namespace Hyper::IO
 	// The file will be created if it doesn't exist yet.
 	// Default write mode is overwrite.
 	bool WriteFileSync(const std::filesystem::path& filePath, const std::string& contents, WriteMode mode = WriteMode::Overwrite);
+
+	// Writes a binary vector to a file.
+	// The file will be created if it doesn't exist yet.
+	bool WriteFileSync(const std::filesystem::path& filePath, const std::vector<u32>& contents, WriteMode mode = WriteMode::Overwrite);
 }

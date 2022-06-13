@@ -13,6 +13,7 @@ namespace Hyper
 	{
 		vk::Instance instance;
 		vk::PhysicalDevice physicalDevice;
+		vk::PhysicalDeviceRayTracingPipelinePropertiesKHR rtProperties;
 		vk::Device device;
 		VulkanQueue graphicsQueue;
 		VulkanCommandPool* commandPool;

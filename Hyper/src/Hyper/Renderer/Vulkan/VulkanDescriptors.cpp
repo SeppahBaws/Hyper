@@ -160,6 +160,19 @@ namespace Hyper
 		m_DescriptorWrites.push_back(setWrite);
 	}
 
+	void DescriptorWriter::WriteAccelStructure(const vk::WriteDescriptorSetAccelerationStructureKHR* accelInfo, u32 dstBinding)
+	{
+		vk::WriteDescriptorSet setWrite = {};
+		setWrite.pNext = accelInfo;
+
+		setWrite.dstBinding = dstBinding;
+		setWrite.dstSet = m_DescriptorSet;
+		setWrite.descriptorCount = 1;
+		setWrite.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
+
+		m_DescriptorWrites.push_back(setWrite);
+	}
+
 	void DescriptorWriter::Write()
 	{
 		m_Device.updateDescriptorSets(m_DescriptorWrites, {});

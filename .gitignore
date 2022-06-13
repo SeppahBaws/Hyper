@@ -13,3 +13,11 @@ bin-int/
 
 # Log files
 *.log
+
+# Compiled shaders
+Hyper/res/shaders/compiled/
+
+# Nvidia Aftermath files
+*.nv-gpudmp
+*.nv-gpudmp.json
+*.nvdbg

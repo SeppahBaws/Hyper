@@ -10,6 +10,9 @@ namespace Hyper
 	{
 		Vertex = vk::ShaderStageFlagBits::eVertex,
 		Fragment = vk::ShaderStageFlagBits::eFragment,
+		RayGen = vk::ShaderStageFlagBits::eRaygenKHR,
+		Miss = vk::ShaderStageFlagBits::eMissKHR,
+		ClosestHit = vk::ShaderStageFlagBits::eClosestHitKHR,
 	};
 
 	struct ShaderModule
@@ -44,8 +47,9 @@ namespace Hyper
 		[[nodiscard]] const std::vector<vk::PushConstantRange>& GetAllPushConstantRanges() const { return m_PushConstRanges; }
 
 	private:
-		std::pair<vk::ShaderModule, std::vector<u32>> CompileStage(ShaderStageType stage, const std::filesystem::path& filePath);
-		void Reflect(ShaderStageType stage, const std::vector<u32>& spirvBytes);
+		std::string PreProcessStage(ShaderStageType stage, const std::string& shaderCode, const std::string& shaderName);
+		std::pair<vk::ShaderModule, std::vector<u32>> CompileStage(ShaderStageType stage, const std::string& shaderCode, const std::string& shaderName);
+		void Reflect(ShaderStageType stage, const std::vector<u32>& spirvBytes, const std::string& moduleName);
 
 	private:
 		RenderContext* m_pRenderCtx;

@@ -8,8 +8,9 @@
 namespace Hyper
 {
 	VulkanBuffer::VulkanBuffer(RenderContext* pRenderCtx, const void* data, vk::DeviceSize size,
-		vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, const std::string& name)
-		: VulkanBuffer(pRenderCtx, size, bufferUsage, memoryUsage, name)
+		vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, const std::string& name,
+		vk::BufferCreateFlags flags)
+		: VulkanBuffer(pRenderCtx, size, bufferUsage, memoryUsage, name, flags)
 	{
 		// Copy the data into the buffer
 		void* mapped = Map();
@@ -128,5 +129,12 @@ namespace Hyper
 		m_pRenderCtx->graphicsQueue.Submit({}, {}, {}, cmd, nullptr);
 		m_pRenderCtx->graphicsQueue.WaitIdle();
 		m_pRenderCtx->commandPool->FreeCommandBuffer(cmd);
+	}
+
+	u64 VulkanBuffer::GetDeviceAddress() const
+	{
+		vk::BufferDeviceAddressInfo info{};
+		info.buffer = m_Buffer;
+		return m_pRenderCtx->device.getBufferAddressKHR(info);
 	}
 }

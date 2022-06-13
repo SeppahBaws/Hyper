@@ -29,7 +29,7 @@ namespace Hyper
         m_pIndexBuffer = std::make_unique<VulkanBuffer>(
             m_pRenderCtx,
             indices.size() * sizeof(u32),
-            vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
+            vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
             VMA_MEMORY_USAGE_GPU_ONLY,
             m_Name);
 
@@ -51,7 +51,7 @@ namespace Hyper
         m_pIndexBuffer = std::make_unique<VulkanBuffer>(
             m_pRenderCtx,
             indices.size() * sizeof(u16),   
-            vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
+            vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
             VMA_MEMORY_USAGE_GPU_ONLY,
             m_Name);
 

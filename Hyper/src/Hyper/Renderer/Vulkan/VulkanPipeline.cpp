@@ -2,6 +2,7 @@
 #include "VulkanPipeline.h"
 
 #include "Vertex.h"
+#include "VulkanDebug.h"
 #include "VulkanShader.h"
 
 namespace Hyper
@@ -59,38 +60,53 @@ namespace Hyper
 	{
 	}
 
-	void PipelineBuilder::SetShader(VulkanShader* pShader)
+	PipelineBuilder& PipelineBuilder::SetDebugName(const std::string& debugName)
 	{
-		m_pShader = pShader;
+		m_DebugName = debugName;
+
+		return *this;
 	}
 
-	void PipelineBuilder::SetInputAssembly(vk::PrimitiveTopology topology, bool primitiveRestartEnable)
+	PipelineBuilder& PipelineBuilder::SetShader(VulkanShader* pShader)
+	{
+		m_pShader = pShader;
+
+		return *this;
+	}
+
+	PipelineBuilder& PipelineBuilder::SetInputAssembly(vk::PrimitiveTopology topology, bool primitiveRestartEnable)
 	{
 		m_InputAssembly = vk::PipelineInputAssemblyStateCreateInfo{
 			{},
 			topology,
 			primitiveRestartEnable
 		};
+
+		return *this;
 	}
 
-	void PipelineBuilder::SetViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+	PipelineBuilder& PipelineBuilder::SetViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
 	{
 		m_Viewport = vk::Viewport{
 			x, y,
 			width, height,
 			minDepth, maxDepth
 		};
+
+		return *this;
 	}
 
-	void PipelineBuilder::SetScissor(const vk::Offset2D& offset, const vk::Extent2D& extent)
+	PipelineBuilder& PipelineBuilder::SetScissor(const vk::Offset2D& offset, const vk::Extent2D& extent)
 	{
 		m_Scissor = vk::Rect2D{
 			offset,
 			extent
 		};
+
+		return *this;
 	}
 
-	void PipelineBuilder::SetRasterizer(vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode, vk::FrontFace frontFace)
+	PipelineBuilder& PipelineBuilder::SetRasterizer(vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode, vk::FrontFace frontFace)
 	{
 		m_Rasterizer = vk::PipelineRasterizationStateCreateInfo{};
 		m_Rasterizer.depthClampEnable = false;
@@ -103,9 +119,11 @@ namespace Hyper
 		m_Rasterizer.depthBiasConstantFactor = 0.0f;
 		m_Rasterizer.depthBiasClamp = 0.0f;
 		m_Rasterizer.depthBiasSlopeFactor = 0.0f;
+
+		return *this;
 	}
 
-	void PipelineBuilder::SetMultisampling()
+	PipelineBuilder& PipelineBuilder::SetMultisampling()
 	{
 		m_Multisampling = vk::PipelineMultisampleStateCreateInfo{};
 		m_Multisampling.sampleShadingEnable = false;
@@ -114,9 +132,11 @@ namespace Hyper
 		m_Multisampling.pSampleMask = nullptr;
 		m_Multisampling.alphaToCoverageEnable = false;
 		m_Multisampling.alphaToOneEnable = false;
+
+		return *this;
 	}
 
-	void PipelineBuilder::SetDepthStencil(bool depthTest, bool depthWrite, vk::CompareOp compareOp)
+	PipelineBuilder& PipelineBuilder::SetDepthStencil(bool depthTest, bool depthWrite, vk::CompareOp compareOp)
 	{
 		m_DepthStencil = vk::PipelineDepthStencilStateCreateInfo{};
 		m_DepthStencil.depthTestEnable = depthTest;
@@ -126,13 +146,16 @@ namespace Hyper
 		m_DepthStencil.minDepthBounds = 0.0f;
 		m_DepthStencil.maxDepthBounds = 1.0f;
 		m_DepthStencil.stencilTestEnable = false;
+
+		return *this;
 	}
 
-	void PipelineBuilder::SetColorBlend(bool blendEnable, vk::BlendOp colorBlendOp, vk::BlendOp alphaBlendOp,
+	PipelineBuilder& PipelineBuilder::SetColorBlend(bool blendEnable, vk::BlendOp colorBlendOp, vk::BlendOp alphaBlendOp,
 		bool logicOpEnable, vk::LogicOp logicOp)
 	{
 		m_ColorBlendAttachment = vk::PipelineColorBlendAttachmentState{};
-		m_ColorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
+		m_ColorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+			vk::ColorComponentFlagBits::eA;
 		m_ColorBlendAttachment.blendEnable = blendEnable;
 		m_ColorBlendAttachment.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha;
 		m_ColorBlendAttachment.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha;
@@ -146,9 +169,11 @@ namespace Hyper
 		m_ColorBlending.logicOp = logicOp;
 		m_ColorBlending.setAttachments(m_ColorBlendAttachment);
 		m_ColorBlending.setBlendConstants({ 0.0f, 0.0f, 0.0f, 0.0f });
+
+		return *this;
 	}
 
-	void PipelineBuilder::SetDescriptorSetLayout(const std::vector<vk::DescriptorSetLayout>& layouts,
+	PipelineBuilder& PipelineBuilder::SetDescriptorSetLayout(const std::vector<vk::DescriptorSetLayout>& layouts,
 		const std::vector<vk::PushConstantRange>& pushConstants)
 	{
 		m_PipelineLayoutInfo = vk::PipelineLayoutCreateInfo{};
@@ -157,14 +182,32 @@ namespace Hyper
 
 		m_PipelineLayoutInfo.pushConstantRangeCount = static_cast<u32>(pushConstants.size());
 		m_PipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
+
+		return *this;
 	}
 
-	void PipelineBuilder::SetDynamicStates(const std::vector<vk::DynamicState>& dynamicStates)
+	PipelineBuilder& PipelineBuilder::SetDynamicStates(const std::vector<vk::DynamicState>& dynamicStates)
 	{
 		m_DynamicStates = dynamicStates;
+
+		return *this;
 	}
 
-	VulkanPipeline PipelineBuilder::BuildGraphics()
+	PipelineBuilder& PipelineBuilder::SetRayTracingShaderGroups(const std::vector<vk::RayTracingShaderGroupCreateInfoKHR>& shaderGroupCreateInfos)
+	{
+		m_RayTracingShaderGroups = shaderGroupCreateInfos;
+
+		return *this;
+	}
+
+	PipelineBuilder& PipelineBuilder::SetMaxRayRecursionDepth(u32 maxRayRecursionDepth)
+	{
+		m_MaxRayRecursionDepth = maxRayRecursionDepth;
+
+		return *this;
+	}
+
+	VulkanPipeline PipelineBuilder::BuildGraphics(vk::PipelineCreateFlags flags)
 	{
 		auto bindingDescription = VertexPosNormTex::GetBindingDescription();
 		auto attributeDescriptions = VertexPosNormTex::GetAttributeDescriptions();
@@ -198,6 +241,7 @@ namespace Hyper
 		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = m_pShader->GetAllShaderStages();
 		vk::GraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.pNext = &pipelineRendering;
+		pipelineInfo.flags = flags;
 		pipelineInfo.setStages(shaderStages);
 
 		vk::PipelineDynamicStateCreateInfo dynamicStateInfo{};
@@ -211,7 +255,7 @@ namespace Hyper
 		{
 			pipelineInfo.pDynamicState = nullptr;
 		}
-		
+
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &m_InputAssembly;
 		pipelineInfo.pViewportState = &viewportState;
@@ -230,6 +274,63 @@ namespace Hyper
 		if (pipelineResult.result != vk::Result::eSuccess)
 		{
 			throw std::runtime_error("Failed to create graphics pipeline");
+		}
+
+		if (!m_DebugName.empty())
+		{
+			VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::ePipeline, pipelineResult.value, m_DebugName);
+		}
+
+		return VulkanPipeline(m_pRenderCtx, pipelineResult.value, cache, layout);
+	}
+
+	VulkanPipeline PipelineBuilder::BuildRaytracing(vk::PipelineCreateFlags flags)
+	{
+		// First, create the pipeline layout
+		vk::PipelineLayout layout{};
+
+		try
+		{
+			layout = m_pRenderCtx->device.createPipelineLayout(m_PipelineLayoutInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to create pipeline layout: "s + e.what());
+		}
+
+		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = m_pShader->GetAllShaderStages();
+
+		vk::RayTracingPipelineCreateInfoKHR pipelineInfo{};
+		pipelineInfo.flags = flags;
+
+		vk::PipelineDynamicStateCreateInfo dynamicStateInfo{};
+		dynamicStateInfo.setDynamicStates(m_DynamicStates);
+
+		if (!m_DynamicStates.empty())
+		{
+			pipelineInfo.setPDynamicState(&dynamicStateInfo);
+		}
+		else
+		{
+			pipelineInfo.pDynamicState = nullptr;
+		}
+
+		pipelineInfo.setStages(shaderStages);
+		pipelineInfo.setGroups(m_RayTracingShaderGroups);
+		pipelineInfo.maxPipelineRayRecursionDepth = m_MaxRayRecursionDepth;
+		pipelineInfo.layout = layout;
+
+		const vk::PipelineCache cache = m_pRenderCtx->device.createPipelineCache(vk::PipelineCacheCreateInfo{});
+		const vk::ResultValue<vk::Pipeline> pipelineResult = m_pRenderCtx->device.createRayTracingPipelineKHR({}, cache, pipelineInfo);
+
+		if (pipelineResult.result != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to create raytracing pipeline");
+		}
+
+		if (!m_DebugName.empty())
+		{
+			VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::ePipeline, pipelineResult.value, m_DebugName);
 		}
 
 		return VulkanPipeline(m_pRenderCtx, pipelineResult.value, cache, layout);

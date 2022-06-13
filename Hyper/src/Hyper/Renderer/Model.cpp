@@ -26,6 +26,28 @@ namespace Hyper
 		Import(path);
 	}
 
+	Model::Model(Model&& other) noexcept: m_pRenderCtx(other.m_pRenderCtx),
+		m_Position(std::move(other.m_Position)),
+		m_Rotation(std::move(other.m_Rotation)),
+		m_Scale(std::move(other.m_Scale)),
+		m_Meshes(std::move(other.m_Meshes)),
+		m_Materials(std::move(other.m_Materials))
+	{
+	}
+
+	Model& Model::operator=(Model&& other) noexcept
+	{
+		if (this == &other)
+			return *this;
+		m_pRenderCtx = other.m_pRenderCtx;
+		m_Position = std::move(other.m_Position);
+		m_Rotation = std::move(other.m_Rotation);
+		m_Scale = std::move(other.m_Scale);
+		m_Meshes = std::move(other.m_Meshes);
+		m_Materials = std::move(other.m_Materials);
+		return *this;
+	}
+
 	void Model::Draw(const vk::CommandBuffer& cmd, const vk::PipelineLayout& pipelineLayout) const
 	{
 		HPR_PROFILE_SCOPE();
@@ -74,7 +96,7 @@ namespace Hyper
 			const aiMaterial* pMat = scene->mMaterials[m];
 			const std::string materialName = pMat->GetName().C_Str();
 
-			HPR_CORE_LOG_INFO("Material '{}'", pMat->GetName().C_Str());
+			HPR_CORE_LOG_DEBUG("Material '{}'", pMat->GetName().C_Str());
 			// for (u32 p = 0; p < pMat->mNumProperties; p++)
 			// {
 			// 	const aiMaterialProperty* property = pMat->mProperties[p];
@@ -87,28 +109,28 @@ namespace Hyper
 			{
 				switch (number)
 				{
-case aiTextureType_NONE: return "aiTextureType_NONE";
-case aiTextureType_DIFFUSE: return "aiTextureType_DIFFUSE";
-case aiTextureType_SPECULAR: return "aiTextureType_SPECULAR";
-case aiTextureType_AMBIENT: return "aiTextureType_AMBIENT";
-case aiTextureType_EMISSIVE: return "aiTextureType_EMISSIVE";
-case aiTextureType_HEIGHT: return "aiTextureType_HEIGHT";
-case aiTextureType_NORMALS: return "aiTextureType_NORMALS";
-case aiTextureType_SHININESS: return "aiTextureType_SHININESS";
-case aiTextureType_OPACITY: return "aiTextureType_OPACITY";
-case aiTextureType_DISPLACEMENT: return "aiTextureType_DISPLACEMENT";
-case aiTextureType_LIGHTMAP: return "aiTextureType_LIGHTMAP";
-case aiTextureType_REFLECTION: return "aiTextureType_REFLECTION";
-case aiTextureType_BASE_COLOR: return "aiTextureType_BASE_COLOR";
-case aiTextureType_NORMAL_CAMERA: return "aiTextureType_NORMAL_CAMERA";
-case aiTextureType_EMISSION_COLOR: return "aiTextureType_EMISSION_COLOR";
-case aiTextureType_METALNESS: return "aiTextureType_METALNESS";
-case aiTextureType_DIFFUSE_ROUGHNESS: return "aiTextureType_DIFFUSE_ROUGHNESS";
-case aiTextureType_AMBIENT_OCCLUSION: return "aiTextureType_AMBIENT_OCCLUSION";
-case aiTextureType_SHEEN: return "aiTextureType_SHEEN";
-case aiTextureType_CLEARCOAT: return "aiTextureType_CLEARCOAT";
-case aiTextureType_TRANSMISSION: return "aiTextureType_TRANSMISSION";
-case aiTextureType_UNKNOWN: return "aiTextureType_UNKNOWN";
+				case aiTextureType_NONE: return "aiTextureType_NONE";
+				case aiTextureType_DIFFUSE: return "aiTextureType_DIFFUSE";
+				case aiTextureType_SPECULAR: return "aiTextureType_SPECULAR";
+				case aiTextureType_AMBIENT: return "aiTextureType_AMBIENT";
+				case aiTextureType_EMISSIVE: return "aiTextureType_EMISSIVE";
+				case aiTextureType_HEIGHT: return "aiTextureType_HEIGHT";
+				case aiTextureType_NORMALS: return "aiTextureType_NORMALS";
+				case aiTextureType_SHININESS: return "aiTextureType_SHININESS";
+				case aiTextureType_OPACITY: return "aiTextureType_OPACITY";
+				case aiTextureType_DISPLACEMENT: return "aiTextureType_DISPLACEMENT";
+				case aiTextureType_LIGHTMAP: return "aiTextureType_LIGHTMAP";
+				case aiTextureType_REFLECTION: return "aiTextureType_REFLECTION";
+				case aiTextureType_BASE_COLOR: return "aiTextureType_BASE_COLOR";
+				case aiTextureType_NORMAL_CAMERA: return "aiTextureType_NORMAL_CAMERA";
+				case aiTextureType_EMISSION_COLOR: return "aiTextureType_EMISSION_COLOR";
+				case aiTextureType_METALNESS: return "aiTextureType_METALNESS";
+				case aiTextureType_DIFFUSE_ROUGHNESS: return "aiTextureType_DIFFUSE_ROUGHNESS";
+				case aiTextureType_AMBIENT_OCCLUSION: return "aiTextureType_AMBIENT_OCCLUSION";
+				case aiTextureType_SHEEN: return "aiTextureType_SHEEN";
+				case aiTextureType_CLEARCOAT: return "aiTextureType_CLEARCOAT";
+				case aiTextureType_TRANSMISSION: return "aiTextureType_TRANSMISSION";
+				case aiTextureType_UNKNOWN: return "aiTextureType_UNKNOWN";
 				}
 
 				return "unknown value";
@@ -120,11 +142,7 @@ case aiTextureType_UNKNOWN: return "aiTextureType_UNKNOWN";
 				auto textureType = getTextureType(t);
 				if (AI_SUCCESS == pMat->GetTexture(static_cast<aiTextureType>(t), 0, &tempPath))
 				{
-					HPR_CORE_LOG_INFO("  {} - YES - {}", textureType, std::string(tempPath.C_Str()));
-				}
-				else
-				{
-					HPR_CORE_LOG_WARN("  {} - No texture", textureType);
+					HPR_CORE_LOG_DEBUG("  {} - {}", textureType, std::string(tempPath.C_Str()));
 				}
 			}
 
@@ -193,7 +211,7 @@ case aiTextureType_UNKNOWN: return "aiTextureType_UNKNOWN";
 				}
 			}
 
-			m_Meshes.emplace_back(std::make_unique<Mesh>(m_pRenderCtx, mesh->mMaterialIndex, vertices, indices));
+			m_Meshes.emplace_back(std::make_unique<Mesh>(m_pRenderCtx, mesh->mMaterialIndex, vertices, indices, mesh->mNumFaces));
 		}
 
 		// Sort meshes based on their material idx

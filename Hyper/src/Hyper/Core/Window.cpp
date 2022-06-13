@@ -50,7 +50,7 @@ namespace Hyper
 		return true;
 	}
 
-	void Window::OnTick(f32 dt)
+	void Window::OnTick(f32 /*dt*/)
 	{
 		HPR_PROFILE_SCOPE();
 		

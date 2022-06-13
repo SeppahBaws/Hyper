@@ -10,7 +10,7 @@ namespace Hyper
 	{
 	public:
 		VulkanBuffer(RenderContext* pRenderCtx, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, const std::string& name, vk::BufferCreateFlags flags = {});
-		VulkanBuffer(RenderContext* pRenderCtx, const void* data, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, const std::string& name);
+		VulkanBuffer(RenderContext* pRenderCtx, const void* data, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage, const std::string& name, vk::BufferCreateFlags flags = {});
 		~VulkanBuffer();
 		// Make sure we can't copy the buffer
 		VulkanBuffer(const VulkanBuffer& other) = delete;
@@ -28,6 +28,7 @@ namespace Hyper
 		[[nodiscard]] vk::Buffer GetBuffer() const { return m_Buffer; }
 
 		void CopyFrom(const VulkanBuffer& srcBuffer);
+		u64 GetDeviceAddress() const;
 
 	private:
 		RenderContext* m_pRenderCtx{};

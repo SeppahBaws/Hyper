@@ -16,7 +16,7 @@ namespace Hyper
 
 	private:
 		vk::Device m_Device;
-		std::vector<vk::DescriptorSetLayoutBinding> m_Bindings;
+		std::vector<vk::DescriptorSetLayoutBinding> m_Bindings{};
 	};
 
 	class DescriptorPool
@@ -34,9 +34,9 @@ namespace Hyper
 
 		private:
 			vk::Device m_Device;
-			u32 m_MaxSets;
-			std::vector<vk::DescriptorPoolSize> m_Sizes;
-			vk::DescriptorPoolCreateFlags m_Flags;
+			u32 m_MaxSets{};
+			std::vector<vk::DescriptorPoolSize> m_Sizes{};
+			vk::DescriptorPoolCreateFlags m_Flags{};
 		};
 
 		DescriptorPool(vk::Device device, const std::vector<vk::DescriptorPoolSize>& sizes, u32 maxSets, vk::DescriptorPoolCreateFlags flags);
@@ -63,11 +63,12 @@ namespace Hyper
 
 		void WriteBuffer(const vk::DescriptorBufferInfo& bufferInfo, u32 dstBinding, vk::DescriptorType type);
 		void WriteImage(const vk::DescriptorImageInfo& imageInfo, u32 dstBinding, vk::DescriptorType type);
+		void WriteAccelStructure(const vk::WriteDescriptorSetAccelerationStructureKHR* accelInfo, u32 dstBinding);
 		void Write();
 
 	private:
 		vk::Device m_Device;
-		vk::DescriptorSet m_DescriptorSet;
-		std::vector<vk::WriteDescriptorSet> m_DescriptorWrites;
+		vk::DescriptorSet m_DescriptorSet{};
+		std::vector<vk::WriteDescriptorSet> m_DescriptorWrites{};
 	};
 }

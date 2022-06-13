@@ -11,13 +11,16 @@ IncludeDir["VkMemAlloc"] = "%{wks.location}/Hyper/dependencies/VulkanMemoryAlloc
 IncludeDir["Optick"] = "%{wks.location}/Hyper/dependencies/Optick/src"
 IncludeDir["assimp"] = "%{wks.location}/Hyper/dependencies/assimp/include"
 IncludeDir["stb"] = "%{wks.location}/Hyper/dependencies/stb/include"
+IncludeDir["NvidiaAftermath"] = "%{wks.location}/Hyper/dependencies/NvidiaAftermath/include"
 
 LibDir = {}
 LibDir["Vulkan"] = "%{VULKAN_SDK}/Lib"
 LibDir["assimp"] = "%{wks.location}/Hyper/dependencies/assimp/lib"
+LibDir["NvidiaAftermath"] = "%{wks.location}/Hyper/dependencies/NvidiaAftermath/lib"
 
 Library = {}
 Library["Vulkan"] = "%{LibDir.Vulkan}/vulkan-1.lib"
+Library["NvidiaAftermath"] = "%{LibDir.NvidiaAftermath}/GFSDK_Aftermath_Lib.x64.lib"
 
 BinDir = {}
 BinDir["assimp"] = "%{wks.location}/Hyper/dependencies/assimp/bin"

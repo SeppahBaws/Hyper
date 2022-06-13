@@ -29,13 +29,15 @@ project "Hyper"
         "%{IncludeDir.VkMemAlloc}",
         "%{IncludeDir.Optick}",
         "%{IncludeDir.assimp}",
-        "%{IncludeDir.stb}"
+        "%{IncludeDir.stb}",
+        "%{IncludeDir.NvidiaAftermath}"
     }
 
     libdirs
     {
         "%{LibDir.Vulkan}",
         "%{LibDir.assimp}",
+        "%{LibDir.NvidiaAftermath}"
     }
 
     links
@@ -43,7 +45,8 @@ project "Hyper"
         "GLFW",
         "Optick",
         "%{Library.Vulkan}",
-        "stb"
+        "stb",
+        "%{Library.NvidiaAftermath}"
     }
 
     if (_OPTIONS["use-vld"]) then
@@ -96,7 +99,11 @@ project "Hyper"
 
         postbuildcommands
         {
-            "{COPY} %{BinDir.assimp}/assimp-vc143-mtd.* %{cfg.targetdir}"
+            "{COPY} %{BinDir.assimp}/assimp-vc143-mtd.* %{cfg.targetdir}",
+
+            -- Aftermath
+            "{COPY} %{LibDir.NvidiaAftermath}/GFSDK_Aftermath_Lib.x64.dll %{cfg.targetdir}",
+            "{COPY} %{LibDir.NvidiaAftermath}/llvm_7_0_1.dll %{cfg.targetdir}",
         }
 
     filter "configurations:Release"
@@ -124,5 +131,9 @@ project "Hyper"
 
         postbuildcommands
         {
-            "{COPY} %{BinDir.assimp}/assimp-vc143-mt.* %{cfg.targetdir}"
+            "{COPY} %{BinDir.assimp}/assimp-vc143-mt.* %{cfg.targetdir}",
+
+            -- Aftermath
+            "{COPY} %{LibDir.NvidiaAftermath}/GFSDK_Aftermath_Lib.x64.dll %{cfg.targetdir}",
+            "{COPY} %{LibDir.NvidiaAftermath}/llvm_7_0_1.dll %{cfg.targetdir}",
         }

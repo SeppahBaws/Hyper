@@ -11,7 +11,7 @@ namespace Hyper
 		virtual ~Subsystem() = default;
 
 		virtual bool OnInitialize() { return true; }
-		virtual void OnTick(f32 dt) {}
+		virtual void OnTick(f32 /*dt*/) {}
 		virtual void OnShutdown() {}
 
 	protected:

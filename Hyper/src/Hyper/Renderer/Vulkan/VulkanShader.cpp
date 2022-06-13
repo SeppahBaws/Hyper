@@ -33,6 +33,9 @@ namespace Hyper
 		{
 		case ShaderStageType::Vertex: return shaderc_shader_kind::shaderc_vertex_shader;
 		case ShaderStageType::Fragment: return shaderc_shader_kind::shaderc_fragment_shader;
+		case ShaderStageType::RayGen: return shaderc_shader_kind::shaderc_raygen_shader;
+		case ShaderStageType::Miss: return shaderc_shader_kind::shaderc_miss_shader;
+		case ShaderStageType::ClosestHit: return shaderc_shader_kind::shaderc_closesthit_shader;
 		}
 
 		throw std::runtime_error("Unsupported shader type!");
@@ -43,13 +46,34 @@ namespace Hyper
 	{
 		for (const auto& [stage, path] : shaders)
 		{
-			auto [shaderModule, spirvBytes] = CompileStage(stage, path);
+			std::string shaderCode{};
+			if (!IO::ReadFileSync(path, shaderCode))
+			{
+				throw std::runtime_error("Failed to read shader file: "s + path.string());
+			}
+
+			shaderCode = PreProcessStage(stage, shaderCode, path.string());
+			auto [shaderModule, spirvBytes] = CompileStage(stage, shaderCode, path.string());
 			m_ShaderModules.insert_or_assign(stage, ShaderModule{
 				path,
 				shaderModule
 			});
 
-			Reflect(stage, spirvBytes);
+			// Write shader spirv to file (mainly for debugging purposes)
+			const std::filesystem::path compiledPath = path.parent_path() / "compiled";
+			// Create the compiled directory if it doesn't exist yet
+			if (!std::filesystem::exists(compiledPath))
+			{
+				std::filesystem::create_directory(compiledPath);
+			}
+			std::filesystem::path spvPath = compiledPath / path.filename();
+			spvPath = fmt::format("{}.spv", spvPath.string());
+			if (!IO::WriteFileSync(spvPath, spirvBytes))
+			{
+				HPR_VKLOG_ERROR("Failed to write spirv shader to '{}'", spvPath.string());
+			}
+
+			Reflect(stage, spirvBytes, path.string());
 		}
 
 		for (const auto& descriptorSet : m_DescriptorSetBindings)
@@ -59,7 +83,7 @@ namespace Hyper
 			{
 				builder = builder.AddBinding(descType, binding, 1, stageFlags);
 			}
-		
+
 			m_DescriptorLayouts.push_back(builder.Build());
 		}
 
@@ -104,22 +128,43 @@ namespace Hyper
 		return infos;
 	}
 
-	std::pair<vk::ShaderModule, std::vector<u32>> VulkanShader::CompileStage(ShaderStageType stage, const std::filesystem::path& filePath)
+	std::string VulkanShader::PreProcessStage(ShaderStageType stage, const std::string& shaderCode, const std::string& shaderName)
 	{
-		std::string shaderCode;
-		if (!IO::ReadFileSync(filePath, shaderCode))
+		std::string outputShaderCode{};
+
+		shaderc::Compiler compiler{};
+		shaderc::CompileOptions options{};
+
+		const auto result = compiler.PreprocessGlsl(shaderCode, GetShadercShaderKind(stage), shaderName.c_str(), options);
+
+		const shaderc_compilation_status status = result.GetCompilationStatus();
+		std::string shaderId = shaderName;
+		size_t numWarnings = result.GetNumWarnings();
+		size_t numErrors = result.GetNumErrors();
+
+		if (result.GetCompilationStatus() == shaderc_compilation_status_success)
 		{
-			throw std::runtime_error("Failed to read shader file: "s + filePath.string());
+			outputShaderCode = { result.begin(), result.end() };
+		}
+		else
+		{
+			HPR_VKLOG_ERROR("Failed to preprocess shader {} : {}, {} warning(s) and {} error(s):", shaderId, ToString(status), numWarnings, numErrors);
+			HPR_VKLOG_ERROR("Errors:\n{}", result.GetErrorMessage());
 		}
 
-		// TODO: compiled shader caching system.
+		return outputShaderCode;
+	}
 
+	std::pair<vk::ShaderModule, std::vector<u32>> VulkanShader::CompileStage(ShaderStageType stage, const std::string& shaderCode, const std::string& shaderName)
+	{
 		// Compile GLSL code to SPIR-V
 		std::vector<u32> shaderBinary{};
 
 		shaderc::Compiler compiler{};
 		shaderc::CompileOptions options;
 		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+		options.SetTargetSpirv(shaderc_spirv_version_1_6);
+		options.SetForcedVersionProfile(460, shaderc_profile_core); // Somehow it doesn't want to infer these from the actual shader itself (??)
 		options.SetWarningsAsErrors();
 		options.SetGenerateDebugInfo();
 
@@ -128,10 +173,10 @@ namespace Hyper
 			throw std::runtime_error("Shader compiler is invalid!");
 		}
 
-		const auto result = compiler.CompileGlslToSpv(shaderCode, GetShadercShaderKind(stage), filePath.string().c_str(), options);
+		const auto result = compiler.CompileGlslToSpv(shaderCode, GetShadercShaderKind(stage), shaderName.c_str(), options);
 
 		const shaderc_compilation_status status = result.GetCompilationStatus();
-		std::string shaderId = filePath.string();
+		std::string shaderId = shaderName;
 		size_t numWarnings = result.GetNumWarnings();
 		size_t numErrors = result.GetNumErrors();
 
@@ -147,6 +192,7 @@ namespace Hyper
 		{
 			HPR_VKLOG_ERROR("Failed to compile shader {} : {}, {} warning(s) and {} error(s):", shaderId, ToString(status), numWarnings, numErrors);
 			HPR_VKLOG_ERROR("Errors:\n{}", result.GetErrorMessage());
+			throw std::runtime_error("Failed to compile shader");
 		}
 
 		// Create shader module
@@ -168,10 +214,26 @@ namespace Hyper
 		return { module, shaderBinary };
 	}
 
-	void VulkanShader::Reflect(ShaderStageType stage, const std::vector<u32>& spirvBytes)
+	void VulkanShader::Reflect(ShaderStageType stage, const std::vector<u32>& spirvBytes, const std::string& moduleName)
 	{
 		spirv_cross::Compiler compiler(spirvBytes);
 		auto resources = compiler.get_shader_resources();
+
+		HPR_VKLOG_INFO("===[ {} reflection ]===", moduleName);
+		HPR_VKLOG_TRACE("  uniform_buffers: {}", resources.uniform_buffers.size());
+		HPR_VKLOG_TRACE("  storage_buffers: {}", resources.storage_buffers.size());
+		HPR_VKLOG_TRACE("  stage_inputs: {}", resources.stage_inputs.size());
+		HPR_VKLOG_TRACE("  stage_outputs: {}", resources.stage_outputs.size());
+		HPR_VKLOG_TRACE("  subpass_inputs: {}", resources.subpass_inputs.size());
+		HPR_VKLOG_TRACE("  storage_images: {}", resources.storage_images.size());
+		HPR_VKLOG_TRACE("  sampled_images: {}", resources.sampled_images.size());
+		HPR_VKLOG_TRACE("  atomic_counters: {}", resources.atomic_counters.size());
+		HPR_VKLOG_TRACE("  acceleration_structures: {}", resources.acceleration_structures.size());
+		HPR_VKLOG_TRACE("  push_constant_buffers: {}", resources.push_constant_buffers.size());
+		HPR_VKLOG_TRACE("  separate_images: {}", resources.separate_images.size());
+		HPR_VKLOG_TRACE("  separate_samplers: {}", resources.separate_samplers.size());
+		HPR_VKLOG_TRACE("  builtin_inputs: {}", resources.builtin_inputs.size());
+		HPR_VKLOG_TRACE("  builtin_outputs: {}", resources.builtin_outputs.size());
 
 		// Uniform buffers
 		for (const auto& resource : resources.uniform_buffers)
@@ -211,6 +273,66 @@ namespace Hyper
 			set.stageFlags = static_cast<vk::ShaderStageFlagBits>(stage);
 
 			HPR_VKLOG_INFO("Sampler: '{}'", name);
+			HPR_VKLOG_INFO("  binding: {}", binding);
+			HPR_VKLOG_INFO("  set: {}", descriptorSet);
+		}
+
+		// Storage images
+		for (const auto& resource : resources.storage_images)
+		{
+			const auto& name = resource.name;
+			u32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			u32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+
+			if (descriptorSet >= m_DescriptorSetBindings.size())
+				m_DescriptorSetBindings.resize(descriptorSet + 1);
+
+			auto& set = m_DescriptorSetBindings[descriptorSet].emplace_back();
+			set.binding = binding;
+			set.descType = vk::DescriptorType::eStorageImage;
+			set.stageFlags = static_cast<vk::ShaderStageFlagBits>(stage);
+
+			HPR_VKLOG_INFO("Storage image: '{}'", name);
+			HPR_VKLOG_INFO("  binding: {}", binding);
+			HPR_VKLOG_INFO("  set: {}", descriptorSet);
+		}
+
+		// Storage buffers
+		for (const auto& resource : resources.storage_buffers)
+		{
+			const auto& name = resource.name;
+			u32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			u32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+
+			if (descriptorSet >= m_DescriptorSetBindings.size())
+				m_DescriptorSetBindings.resize(descriptorSet + 1);
+
+			auto& set = m_DescriptorSetBindings[descriptorSet].emplace_back();
+			set.binding = binding;
+			set.descType = vk::DescriptorType::eStorageBuffer;
+			set.stageFlags = static_cast<vk::ShaderStageFlagBits>(stage);
+
+			HPR_VKLOG_INFO("Storage buffer: '{}'", name);
+			HPR_VKLOG_INFO("  binding: {}", binding);
+			HPR_VKLOG_INFO("  set: {}", descriptorSet);
+		}
+
+		// Acceleration structures
+		for (const auto& resource : resources.acceleration_structures)
+		{
+			const auto& name = resource.name;
+			u32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			u32 descriptorSet = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+
+			if (descriptorSet >= m_DescriptorSetBindings.size())
+				m_DescriptorSetBindings.resize(descriptorSet + 1);
+
+			auto& set = m_DescriptorSetBindings[descriptorSet].emplace_back();
+			set.binding = binding;
+			set.descType = vk::DescriptorType::eAccelerationStructureKHR;
+			set.stageFlags = static_cast<vk::ShaderStageFlagBits>(stage);
+
+			HPR_VKLOG_INFO("Acceleration structure: '{}'", name);
 			HPR_VKLOG_INFO("  binding: {}", binding);
 			HPR_VKLOG_INFO("  set: {}", descriptorSet);
 		}

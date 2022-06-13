@@ -23,6 +23,8 @@
 //*********************************************************
 
 #include "HyperPCH.h"
+
+#ifdef HYPER_USE_AFTERMATH
 #include <fstream>
 #include <iomanip>
 #include <string>
@@ -376,3 +378,4 @@ void GpuCrashTracker::ShaderSourceDebugInfoLookupCallback(
     GpuCrashTracker* pGpuCrashTracker = reinterpret_cast<GpuCrashTracker*>(pUserData);
     pGpuCrashTracker->OnShaderSourceDebugInfoLookup(*pShaderDebugName, setShaderBinary);
 }
+#endif

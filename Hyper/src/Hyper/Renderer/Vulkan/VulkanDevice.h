@@ -58,7 +58,9 @@ namespace Hyper
 		vk::CommandPool m_CommandPool;
 		VmaAllocator m_Allocator;
 
+#ifdef HYPER_USE_AFTERMATH
 		GpuCrashTracker::MarkerMap m_MarkerMap;
 		GpuCrashTracker m_GpuCrashTracker;
+#endif
 	};
 }

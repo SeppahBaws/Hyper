@@ -23,6 +23,9 @@
 //*********************************************************
 
 #include "HyperPCH.h"
+
+#ifdef HYPER_USE_AFTERMATH
+
 #include <fstream>
 #include <iomanip>
 
@@ -146,3 +149,5 @@ bool ShaderDatabase::FindShaderBinaryWithDebugData(const GFSDK_Aftermath_ShaderD
     shader = i_shader->second;
     return true;
 }
+
+#endif

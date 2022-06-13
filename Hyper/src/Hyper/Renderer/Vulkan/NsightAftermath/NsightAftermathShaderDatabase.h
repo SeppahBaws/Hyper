@@ -24,6 +24,8 @@
 
 #pragma once
 
+#ifdef HYPER_USE_AFTERMATH
+
 #include <vector>
 #include <map>
 #include <mutex>
@@ -62,3 +64,5 @@ private:
     // List of available shader binaries with source debug information by ShaderDebugName.
     std::map<GFSDK_Aftermath_ShaderDebugName, std::vector<uint8_t>> m_shaderBinariesWithDebugInfo;
 };
+
+#endif

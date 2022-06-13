@@ -29,15 +29,13 @@ project "Hyper"
         "%{IncludeDir.VkMemAlloc}",
         "%{IncludeDir.Optick}",
         "%{IncludeDir.assimp}",
-        "%{IncludeDir.stb}",
-        "%{IncludeDir.NvidiaAftermath}"
+        "%{IncludeDir.stb}"
     }
 
     libdirs
     {
         "%{LibDir.Vulkan}",
-        "%{LibDir.assimp}",
-        "%{LibDir.NvidiaAftermath}"
+        "%{LibDir.assimp}"
     }
 
     links
@@ -45,8 +43,7 @@ project "Hyper"
         "GLFW",
         "Optick",
         "%{Library.Vulkan}",
-        "stb",
-        "%{Library.NvidiaAftermath}"
+        "stb"
     }
 
     if (_OPTIONS["use-vld"]) then
@@ -62,6 +59,27 @@ project "Hyper"
         links
         {
             "vld"
+        }
+    end
+
+    if (_OPTIONS["use-aftermath"]) then
+        defines { "HYPER_USE_AFTERMATH" }
+        includedirs
+        {
+            "%{IncludeDir.NvidiaAftermath}"
+        }
+        libdirs
+        {
+            "%{LibDir.NvidiaAftermath}"
+        }
+        links
+        {
+            "%{Library.NvidiaAftermath}"
+        }
+        postbuildcommands
+        {
+            "{COPY} %{LibDir.NvidiaAftermath}/GFSDK_Aftermath_Lib.x64.dll %{cfg.targetdir}",
+            "{COPY} %{LibDir.NvidiaAftermath}/llvm_7_0_1.dll %{cfg.targetdir}",
         }
     end
 
@@ -99,11 +117,7 @@ project "Hyper"
 
         postbuildcommands
         {
-            "{COPY} %{BinDir.assimp}/assimp-vc143-mtd.* %{cfg.targetdir}",
-
-            -- Aftermath
-            "{COPY} %{LibDir.NvidiaAftermath}/GFSDK_Aftermath_Lib.x64.dll %{cfg.targetdir}",
-            "{COPY} %{LibDir.NvidiaAftermath}/llvm_7_0_1.dll %{cfg.targetdir}",
+            "{COPY} %{BinDir.assimp}/assimp-vc143-mtd.* %{cfg.targetdir}"
         }
 
     filter "configurations:Release"
@@ -131,9 +145,5 @@ project "Hyper"
 
         postbuildcommands
         {
-            "{COPY} %{BinDir.assimp}/assimp-vc143-mt.* %{cfg.targetdir}",
-
-            -- Aftermath
-            "{COPY} %{LibDir.NvidiaAftermath}/GFSDK_Aftermath_Lib.x64.dll %{cfg.targetdir}",
-            "{COPY} %{LibDir.NvidiaAftermath}/llvm_7_0_1.dll %{cfg.targetdir}",
+            "{COPY} %{BinDir.assimp}/assimp-vc143-mt.* %{cfg.targetdir}"
         }

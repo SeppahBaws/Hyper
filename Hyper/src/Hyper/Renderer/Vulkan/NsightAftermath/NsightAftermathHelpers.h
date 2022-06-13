@@ -24,6 +24,8 @@
 
 #pragma once
 
+#ifdef HYPER_USE_AFTERMATH
+
 #include <iomanip>
 #include <string>
 #include <sstream>
@@ -160,4 +162,6 @@ inline std::string  AftermathErrorMessage(GFSDK_Aftermath_Result result)
         exit(1);                                                                                        \
     }                                                                                                   \
 }()
+#endif
+
 #endif

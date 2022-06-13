@@ -24,6 +24,8 @@
 
 #pragma once
 
+#ifdef HYPER_USE_AFTERMATH
+
 #include <map>
 #include <mutex>
 
@@ -163,3 +165,5 @@ private:
     // App-managed marker tracking
     const MarkerMap& m_markerMap;
 };
+
+#endif

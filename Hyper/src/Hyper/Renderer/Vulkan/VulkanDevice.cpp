@@ -9,8 +9,10 @@ namespace Hyper
 {
 	VulkanDevice::VulkanDevice(RenderContext* pRenderCtx)
 		: m_pRenderCtx(pRenderCtx)
+#ifdef HYPER_USE_AFTERMATH
 		, m_MarkerMap{}
 		, m_GpuCrashTracker{m_MarkerMap}
+#endif
 	{
 		if (HYPER_VALIDATE)
 		{
@@ -71,7 +73,10 @@ namespace Hyper
 			VkDebug::Setup(pRenderCtx);
 		}
 
+#ifdef HYPER_USE_AFTERMATH
+		// Initialize the Aftermath GPU crash tracker
 		m_GpuCrashTracker.Initialize();
+#endif
 
 		// Create device
 		{

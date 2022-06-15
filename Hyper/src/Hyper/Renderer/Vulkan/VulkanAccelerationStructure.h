@@ -3,6 +3,7 @@
 #include "VulkanDescriptors.h"
 #include "VulkanImage.h"
 #include "VulkanPipeline.h"
+#include "Hyper/Renderer/RenderTarget.h"
 
 namespace Hyper
 {
@@ -78,6 +79,8 @@ namespace Hyper
 
 		void RayTrace(vk::CommandBuffer cmd);
 
+		[[nodiscard]] RenderTarget* GetOutputImage() const { return m_pOutputImage.get(); }
+
 	private:
 		void CreateBlas(const Mesh* pMesh);
 		void CreateTlas();
@@ -99,7 +102,7 @@ namespace Hyper
 
 		const u32 m_OutputWidth = 1920;
 		const u32 m_OutputHeight = 1080;
-		std::unique_ptr<VulkanImage> m_pOutputImage;
+		std::unique_ptr<RenderTarget> m_pOutputImage;
 		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_ShaderGroups;
 		std::unique_ptr<VulkanShader> m_pShader;
 		std::unique_ptr<VulkanPipeline> m_RtPipeline;

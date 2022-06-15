@@ -4,6 +4,7 @@
 #include "FlyCamera.h"
 #include "Mesh.h"
 #include "Model.h"
+#include "RenderTarget.h"
 #include "Texture.h"
 #include "Hyper/Core/Subsystem.h"
 #include "Hyper/Scene/Scene.h"
@@ -48,8 +49,19 @@ namespace Hyper
 		std::unique_ptr<VulkanDevice> m_pDevice;
 		std::unique_ptr<VulkanCommandPool> m_pCommandPool;
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
-		std::unique_ptr<VulkanShader> m_pShader;
-		std::unique_ptr<VulkanPipeline> m_pPipeline;
+
+		std::vector<FrameData> m_GeometryFrameDatas;
+		std::unique_ptr<RenderTarget> m_pGeometryRenderTarget{};
+		std::unique_ptr<DescriptorPool> m_pGeometryDescriptorPool{};
+		std::unique_ptr<vk::DescriptorSetLayout> m_pGeometryGlobalSetLayout{};
+		std::unique_ptr<VulkanShader> m_pGeometryShader;
+		std::unique_ptr<VulkanPipeline> m_pGeometryPipeline;
+
+		std::unique_ptr<DescriptorPool> m_pCompositeDescriptorPool{};
+		vk::DescriptorSet m_CompositeDescriptorSet{};
+		std::unique_ptr<vk::DescriptorSetLayout> m_pCompositeSetLayout{};
+		std::unique_ptr<VulkanShader> m_pCompositeShader;
+		std::unique_ptr<VulkanPipeline> m_pCompositePipeline;
 
 		u32 m_FrameIdx = 0;
 		u64 m_FrameNumber = 0;
@@ -64,9 +76,5 @@ namespace Hyper
 		std::unique_ptr<FlyCamera> m_pCamera;
 
 		std::unique_ptr<Scene> m_pScene;
-		
-		std::vector<FrameData> m_FrameDatas;
-		std::unique_ptr<vk::DescriptorSetLayout> m_pGlobalSetLayout{};
-		std::unique_ptr<DescriptorPool> m_pDescriptorPool{};
 	};
 }

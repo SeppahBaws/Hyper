@@ -14,8 +14,7 @@ namespace Hyper
 	VulkanAccelerationStructure::VulkanAccelerationStructure(RenderContext* pRenderCtx)
 		: m_pRenderCtx(pRenderCtx)
 	{
-		m_pOutputImage = std::make_unique<VulkanImage>(m_pRenderCtx, vk::Format::eR8G8B8A8Unorm, vk::ImageType::e2D, vk::ImageUsageFlagBits::eStorage,
-			vk::ImageAspectFlagBits::eColor, "Raytracing output image", m_OutputWidth, m_OutputHeight);
+		m_pOutputImage = std::make_unique<RenderTarget>(m_pRenderCtx, "Raytracing output image", m_OutputWidth, m_OutputHeight);
 	}
 
 	VulkanAccelerationStructure::~VulkanAccelerationStructure()
@@ -63,7 +62,7 @@ namespace Hyper
 
 	void VulkanAccelerationStructure::RayTrace(vk::CommandBuffer cmd)
 	{
-		m_pOutputImage->TransitionLayout(cmd, vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite, vk::ImageLayout::eGeneral,
+		m_pOutputImage->GetColorImage()->TransitionLayout(cmd, vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite, vk::ImageLayout::eGeneral,
 			vk::PipelineStageFlagBits::eRayTracingShaderKHR);
 
 		cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, m_RtPipeline->GetPipeline());
@@ -314,7 +313,7 @@ namespace Hyper
 
 		vk::DescriptorImageInfo imageInfo = {};
 		imageInfo.sampler = vk::Sampler{};
-		imageInfo.imageView = m_pOutputImage->GetImageView();
+		imageInfo.imageView = m_pOutputImage->GetColorImage()->GetImageView();
 		imageInfo.imageLayout = vk::ImageLayout::eGeneral; // ImageLayout NEEDS to be VK_IMAGE_LAYOUT_GENERAL when StorageImage
 
 		DescriptorWriter writer(m_pRenderCtx->device, m_Desc);

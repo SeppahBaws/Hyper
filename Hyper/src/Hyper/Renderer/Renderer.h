@@ -13,6 +13,7 @@
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanSwapChain.h"
+#include "Vulkan/VulkanRaytracer.h"
 
 namespace Hyper
 {
@@ -49,6 +50,8 @@ namespace Hyper
 		std::unique_ptr<VulkanDevice> m_pDevice;
 		std::unique_ptr<VulkanCommandPool> m_pCommandPool;
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
+
+		std::unique_ptr<VulkanRaytracer> m_pRayTracer;
 
 		std::vector<FrameData> m_GeometryFrameDatas;
 		std::unique_ptr<RenderTarget> m_pGeometryRenderTarget{};

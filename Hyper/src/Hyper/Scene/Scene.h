@@ -20,7 +20,6 @@ namespace Hyper
 		void BuildAccelerationStructure();
 
 		void Draw(const vk::CommandBuffer& cmd, const vk::PipelineLayout& pipelineLayout);
-		void RayTrace(const vk::CommandBuffer& cmd);
 
 		[[nodiscard]] VulkanAccelerationStructure* GetAccelerationStructure() const { return m_pAcceleration.get(); }
 

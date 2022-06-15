@@ -44,9 +44,12 @@ namespace Hyper
 
 			// m_pScene->AddModel("res/models/Cuub.fbx");
 			m_pScene->AddModel("res/sponza/sponza.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+			// m_pScene->AddModel("res/Bistro/Exterior/exterior.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
 			m_pScene->BuildAccelerationStructure();
 			m_pCamera->Setup();
 		}
+
+		m_pRayTracer = std::make_unique<VulkanRaytracer>(m_pRenderContext.get(), m_pScene->GetAccelerationStructure()->GetTLAS().handle);
 
 		// Initialize the geometry pass
 		{
@@ -168,7 +171,7 @@ namespace Hyper
 					geometryInfo.sampler = m_pGeometryRenderTarget->GetColorSampler();
 
 					vk::DescriptorImageInfo rtInfo = {};
-					const auto* rtOutput = m_pScene->GetAccelerationStructure()->GetOutputImage();
+					const auto* rtOutput = m_pRayTracer->GetOutputImage();
 					rtInfo.imageLayout = vk::ImageLayout::eGeneral;
 					rtInfo.imageView = rtOutput->GetColorImage()->GetImageView();
 					rtInfo.sampler = rtOutput->GetColorSampler();
@@ -263,6 +266,7 @@ namespace Hyper
 			{
 				m_pRenderContext->device.waitIdle();
 				m_pSwapChain->Resize(width, height);
+				m_pRayTracer->Resize(width, height);
 				m_pGeometryRenderTarget->Resize(width, height);
 			}
 		}
@@ -350,8 +354,8 @@ namespace Hyper
 		{
 			VkDebug::BeginRegion(cmd, "RT Pass", { 0.3f, 0.3f, 0.8f, 1.0f });
 
-			// Trace rays (for the love of god please just work kthx)
-			m_pScene->RayTrace(cmd);
+			// Trace them rays
+			m_pRayTracer->RayTrace(cmd);
 
 			VkDebug::EndRegion(cmd);
 		}
@@ -454,6 +458,8 @@ namespace Hyper
 			m_pRenderContext->device.destroyFence(m_InFlightFences[i]);
 			m_pRenderContext->device.destroySemaphore(m_RenderFinishedSemaphores[i]);
 		}
+
+		m_pRayTracer.reset();
 
 		m_pGeometryDescriptorPool.reset();
 		m_pRenderContext->device.destroyDescriptorSetLayout(*m_pGeometryGlobalSetLayout);

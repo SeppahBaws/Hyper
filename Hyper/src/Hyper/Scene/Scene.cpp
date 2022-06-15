@@ -48,9 +48,4 @@ namespace Hyper
 			model.Draw(cmd, pipelineLayout);
 		}
 	}
-
-	void Scene::RayTrace(const vk::CommandBuffer& cmd)
-	{
-		m_pAcceleration->RayTrace(cmd);
-	}
 }

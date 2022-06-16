@@ -1,19 +1,35 @@
 ﻿#pragma once
+#include <glm/mat4x4.hpp>
+
+#include "VulkanBuffer.h"
 
 namespace Hyper
 {
+	class FlyCamera;
 	class VulkanAccelerationStructure;
 	class DescriptorPool;
 	class RenderTarget;
 	class VulkanShader;
 	class VulkanPipeline;
-	class VulkanBuffer;
 	struct RenderContext;
+
+	struct RTCameraData
+	{
+		glm::mat4 viewInv{ 1.0f };
+		glm::mat4 projInv{ 1.0f };
+	};
+
+	struct RTFrameData
+	{
+		VulkanBuffer rtCameraUniform;
+		vk::DescriptorSet descriptorSet;
+	};
 
 	enum class RaytracerBindings : u32
 	{
 		Acceleration = 0,
 		OutputImage = 1,
+		CameraBuffer = 2,
 	};
 
 	enum class RaytracerShaderStageIndices : u32
@@ -45,10 +61,10 @@ namespace Hyper
 	class VulkanRaytracer
 	{
 	public:
-		VulkanRaytracer(RenderContext* pRenderCtx, vk::AccelerationStructureKHR tlas);
+		VulkanRaytracer(RenderContext* pRenderCtx, vk::AccelerationStructureKHR tlas, u32 numFrames);
 		~VulkanRaytracer();
 
-		void RayTrace(vk::CommandBuffer cmd);
+		void RayTrace(vk::CommandBuffer cmd, FlyCamera* pCamera, u32 frameIdx);
 		void Resize(u32 width, u32 height);
 
 		[[nodiscard]] const RenderTarget* GetOutputImage() const { return m_pOutputImage.get(); }
@@ -58,14 +74,17 @@ namespace Hyper
 		void CreatePipeline();
 		void CreateShaderBindingTable();
 
+		void UpdateDescriptors(u32 frameIdx);
+
 	private:
 		RenderContext* m_pRenderCtx;
-
-		vk::AccelerationStructureKHR m_Tlas;
+		const vk::AccelerationStructureKHR m_Tlas;
+		const u32 m_NumFrames;
 
 		vk::DescriptorSetLayout m_DescLayout;
 		std::unique_ptr<DescriptorPool> m_pPool;
-		vk::DescriptorSet m_Desc;
+		RTCameraData m_CameraData;
+		std::vector<RTFrameData> m_FrameDatas;
 
 		u32 m_OutputWidth = 1920;
 		u32 m_OutputHeight = 1080;

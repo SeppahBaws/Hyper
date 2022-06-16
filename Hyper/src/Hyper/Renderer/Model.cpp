@@ -75,6 +75,13 @@ namespace Hyper
 		}
 	}
 
+	glm::mat4 Model::GetTransformMatrix() const
+	{
+		return glm::translate(glm::mat4(1.0f), m_Position)
+			* glm::toMat4(glm::quat(glm::radians(m_Rotation)))
+			* glm::scale(glm::mat4(1.0f), m_Scale);
+	}
+
 	void Model::Import(const std::filesystem::path& path)
 	{
 		HPR_CORE_LOG_INFO("Importing model '{}'...", path.filename().string());

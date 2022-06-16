@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include <glm/mat4x4.hpp>
+
 #include "VulkanBuffer.h"
 
 namespace Hyper
@@ -12,6 +14,7 @@ namespace Hyper
 			vk::AccelerationStructureKHR handle;
 			u64 deviceAddress = 0;
 			std::unique_ptr<VulkanBuffer> pBuffer;
+			glm::mat4 transform;
 		};
 
 		struct RayTracingScratchBuffer
@@ -31,13 +34,13 @@ namespace Hyper
 		VulkanAccelerationStructure(RenderContext* pRenderCtx);
 		~VulkanAccelerationStructure();
 
-		void AddMesh(const Mesh* mesh);
+		void AddMesh(const Mesh* mesh, const glm::mat4& transform);
 		void Build();
 
 		[[nodiscard]] const Accel& GetTLAS() const { return m_Tlas; }
 
 	private:
-		void CreateBlas(const Mesh* pMesh);
+		void CreateBlas(const Mesh* pMesh, const glm::mat4& transform);
 		void CreateTlas();
 
 	private:
@@ -46,6 +49,6 @@ namespace Hyper
 		std::vector<Accel> m_BLASes{};
 		Accel m_Tlas{};
 
-		std::vector<const Mesh*> m_StagedMeshes;
+		std::vector<std::pair<const Mesh*, glm::mat4>> m_StagedMeshes;
 	};
 }

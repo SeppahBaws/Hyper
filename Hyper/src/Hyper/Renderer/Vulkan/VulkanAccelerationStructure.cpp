@@ -23,16 +23,16 @@ namespace Hyper
 		}
 	}
 
-	void VulkanAccelerationStructure::AddMesh(const Mesh* mesh)
+	void VulkanAccelerationStructure::AddMesh(const Mesh* mesh, const glm::mat4& transform)
 	{
-		m_StagedMeshes.push_back(mesh);
+		m_StagedMeshes.push_back(std::pair(mesh, transform));
 	}
 
 	void VulkanAccelerationStructure::Build()
 	{
-		for (const Mesh* mesh : m_StagedMeshes)
+		for (auto&[mesh, transform] : m_StagedMeshes)
 		{
-			CreateBlas(mesh);
+			CreateBlas(mesh, transform);
 		}
 		HPR_CORE_LOG_INFO("Created all BLASes!");
 
@@ -40,9 +40,10 @@ namespace Hyper
 		HPR_CORE_LOG_INFO("Created TLAS!");
 	}
 
-	void VulkanAccelerationStructure::CreateBlas(const Mesh* pMesh)
+	void VulkanAccelerationStructure::CreateBlas(const Mesh* pMesh, const glm::mat4& transform)
 	{
 		Accel bottomLevelAS;
+		bottomLevelAS.transform = transform;
 
 		vk::DeviceAddress vertexBufferDeviceAddress{};
 		vk::DeviceAddress indexBufferDeviceAddress{};
@@ -130,17 +131,23 @@ namespace Hyper
 	void VulkanAccelerationStructure::CreateTlas()
 	{
 		// TODO: support model's transforms
-		vk::TransformMatrixKHR transformMatrix = std::array{
-			std::array{ 1.0f, 0.0f, 0.0f, 0.0f },
-			std::array{ 0.0f, 1.0f, 0.0f, 0.0f },
-			std::array{ 0.0f, 0.0f, 1.0f, 0.0f }
-		};
+		// vk::TransformMatrixKHR transformMatrix = std::array{
+		// 	std::array{ 1.0f, 0.0f, 0.0f, 0.0f },
+		// 	std::array{ 0.0f, 1.0f, 0.0f, 0.0f },
+		// 	std::array{ 0.0f, 0.0f, 1.0f, 0.0f }
+		// };
 
 		std::vector<vk::AccelerationStructureInstanceKHR> tlas;
 		tlas.reserve(m_BLASes.size());
 
 		for (auto& blas : m_BLASes)
 		{
+			// GLM is column-major, but VkTransformMatrixKHR is row-major, so we need to convert.
+			vk::TransformMatrixKHR transformMatrix = std::array{
+				std::array{blas.transform[0][0], blas.transform[1][0], blas.transform[2][0], blas.transform[3][0]},
+				std::array{blas.transform[0][1], blas.transform[1][1], blas.transform[2][1], blas.transform[3][1]},
+				std::array{blas.transform[0][2], blas.transform[1][2], blas.transform[2][2], blas.transform[3][2]},
+			};
 			auto& instance = tlas.emplace_back(vk::AccelerationStructureInstanceKHR{});
 			instance.transform = transformMatrix;
 			instance.instanceCustomIndex = 0;

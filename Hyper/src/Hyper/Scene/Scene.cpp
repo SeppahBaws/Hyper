@@ -34,7 +34,7 @@ namespace Hyper
 		{
 			for (auto& mesh : model.GetMeshes())
 			{
-				m_pAcceleration->AddMesh(mesh.get());
+				m_pAcceleration->AddMesh(mesh.get(), model.GetTransformMatrix());
 			}
 		}
 

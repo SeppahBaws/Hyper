@@ -38,7 +38,7 @@ namespace Hyper
 	class VulkanShader
 	{
 	public:
-		VulkanShader(RenderContext* pRenderCtx, std::unordered_map<ShaderStageType, std::filesystem::path> shaders);
+		VulkanShader(RenderContext* pRenderCtx, std::unordered_map<ShaderStageType, std::filesystem::path> shaders, bool doReflection = true);
 		~VulkanShader();
 
 		[[nodiscard]] std::vector<vk::PipelineShaderStageCreateInfo> GetAllShaderStages() const;
@@ -54,6 +54,7 @@ namespace Hyper
 	private:
 		RenderContext* m_pRenderCtx;
 
+		const bool m_DoReflection;
 		std::unordered_map<ShaderStageType, ShaderModule> m_ShaderModules;
 
 		std::vector<std::vector<ShaderDescriptorBinding>> m_DescriptorSetBindings;

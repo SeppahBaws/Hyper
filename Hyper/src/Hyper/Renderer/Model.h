@@ -38,6 +38,8 @@ namespace Hyper
 			return m_Meshes;
 		}
 
+		glm::mat4 GetTransformMatrix() const;
+
 	private:
 		void Import(const std::filesystem::path& filePath);
 

@@ -41,8 +41,8 @@ namespace Hyper
 		throw std::runtime_error("Unsupported shader type!");
 	}
 
-	VulkanShader::VulkanShader(RenderContext* pRenderCtx, std::unordered_map<ShaderStageType, std::filesystem::path> shaders)
-		: m_pRenderCtx(pRenderCtx)
+	VulkanShader::VulkanShader(RenderContext* pRenderCtx, std::unordered_map<ShaderStageType, std::filesystem::path> shaders, bool doReflection)
+		: m_pRenderCtx(pRenderCtx), m_DoReflection(doReflection)
 	{
 		for (const auto& [stage, path] : shaders)
 		{
@@ -73,26 +73,32 @@ namespace Hyper
 				HPR_VKLOG_ERROR("Failed to write spirv shader to '{}'", spvPath.string());
 			}
 
-			Reflect(stage, spirvBytes, path.string());
+			if (m_DoReflection)
+			{
+				Reflect(stage, spirvBytes, path.string());
+			}
 		}
 
-		for (const auto& descriptorSet : m_DescriptorSetBindings)
+		if (m_DoReflection)
 		{
-			auto builder = DescriptorSetLayoutBuilder(m_pRenderCtx->device);
-			for (const auto& [descType, binding, stageFlags] : descriptorSet)
+			for (const auto& descriptorSet : m_DescriptorSetBindings)
 			{
-				builder = builder.AddBinding(descType, binding, 1, stageFlags);
+				auto builder = DescriptorSetLayoutBuilder(m_pRenderCtx->device);
+				for (const auto& [descType, binding, stageFlags] : descriptorSet)
+				{
+					builder = builder.AddBinding(descType, binding, 1, stageFlags);
+				}
+
+				m_DescriptorLayouts.push_back(builder.Build());
 			}
 
-			m_DescriptorLayouts.push_back(builder.Build());
-		}
-
-		for (const auto& [offset, size, stageFlags] : m_PushConstants)
-		{
-			auto& range = m_PushConstRanges.emplace_back();
-			range.offset = offset;
-			range.size = size;
-			range.stageFlags = stageFlags;
+			for (const auto& [offset, size, stageFlags] : m_PushConstants)
+			{
+				auto& range = m_PushConstRanges.emplace_back();
+				range.offset = offset;
+				range.size = size;
+				range.stageFlags = stageFlags;
+			}
 		}
 
 		HPR_VKLOG_INFO("Successfully created shaders");

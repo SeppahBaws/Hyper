@@ -5,13 +5,14 @@
 #include "VulkanDebug.h"
 #include "VulkanPipeline.h"
 #include "VulkanUtility.h"
+#include "Hyper/Renderer/FlyCamera.h"
 #include "Hyper/Renderer/RenderContext.h"
 #include "Hyper/Renderer/RenderTarget.h"
 
 namespace Hyper
 {
-	VulkanRaytracer::VulkanRaytracer(RenderContext* pRenderCtx, vk::AccelerationStructureKHR accel)
-		: m_pRenderCtx(pRenderCtx), m_Tlas(accel)
+	VulkanRaytracer::VulkanRaytracer(RenderContext* pRenderCtx, vk::AccelerationStructureKHR accel, u32 numFrames)
+		: m_pRenderCtx(pRenderCtx), m_Tlas(accel), m_NumFrames(numFrames)
 	{
 		m_pOutputImage = std::make_unique<RenderTarget>(m_pRenderCtx, "Raytracing output image", m_OutputWidth, m_OutputHeight);
 
@@ -22,6 +23,8 @@ namespace Hyper
 
 	VulkanRaytracer::~VulkanRaytracer()
 	{
+		m_FrameDatas.clear();
+
 		m_SbtBuffer.reset();
 		m_RtPipeline.reset();
 		m_pShader.reset();
@@ -30,13 +33,17 @@ namespace Hyper
 		m_pRenderCtx->device.destroyDescriptorSetLayout(m_DescLayout);
 	}
 
-	void VulkanRaytracer::RayTrace(vk::CommandBuffer cmd)
+	void VulkanRaytracer::RayTrace(vk::CommandBuffer cmd, FlyCamera* pCamera, u32 frameIdx)
 	{
+		m_CameraData.viewInv = pCamera->GetViewInverse();
+		m_CameraData.projInv = pCamera->GetProjectionInverse();
+		UpdateDescriptors(frameIdx);
+
 		m_pOutputImage->GetColorImage()->TransitionLayout(cmd, vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite, vk::ImageLayout::eGeneral,
 			vk::PipelineStageFlagBits::eRayTracingShaderKHR);
 
 		cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, m_RtPipeline->GetPipeline());
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, m_RtPipeline->GetLayout(), 0, { m_Desc }, {});
+		cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, m_RtPipeline->GetLayout(), 0, { m_FrameDatas[frameIdx].descriptorSet }, {});
 		cmd.traceRaysKHR(m_RGenRegion, m_MissRegion, m_HitRegion, m_CallRegion, m_OutputWidth, m_OutputHeight, 1);
 
 		VkDebug::EndRegion(cmd);
@@ -53,47 +60,46 @@ namespace Hyper
 	{
 		// Create descriptor set layout
 		m_DescLayout = DescriptorSetLayoutBuilder(m_pRenderCtx->device)
-			.AddBinding(vk::DescriptorType::eAccelerationStructureKHR, static_cast<u32>(RaytracerBindings::Acceleration), 1, vk::ShaderStageFlagBits::eRaygenKHR)
+			.AddBinding(vk::DescriptorType::eAccelerationStructureKHR, static_cast<u32>(RaytracerBindings::Acceleration), 1, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR)
 			.AddBinding(vk::DescriptorType::eStorageImage, static_cast<u32>(RaytracerBindings::OutputImage), 1, vk::ShaderStageFlagBits::eRaygenKHR)
+			.AddBinding(vk::DescriptorType::eUniformBuffer, static_cast<u32>(RaytracerBindings::CameraBuffer), 1, vk::ShaderStageFlagBits::eRaygenKHR)
 			.Build();
-
-		constexpr u32 maxSets = 1;
 
 		// Create descriptor pool
 		m_pPool = std::make_unique<DescriptorPool>(DescriptorPool::Builder(m_pRenderCtx->device)
-			.AddSize(vk::DescriptorType::eAccelerationStructureKHR, 1 * maxSets)
-			.AddSize(vk::DescriptorType::eStorageImage, 1 * maxSets)
-			.SetMaxSets(maxSets)
+			.AddSize(vk::DescriptorType::eAccelerationStructureKHR, 1 * m_NumFrames)
+			.AddSize(vk::DescriptorType::eStorageImage, 1 * m_NumFrames)
+			.AddSize(vk::DescriptorType::eUniformBuffer, 1 * m_NumFrames)
+			.SetMaxSets(m_NumFrames)
 			.SetFlags({})
 			.Build());
 
 		// Allocate descriptor set
-		m_Desc = m_pPool->Allocate({ m_DescLayout })[0];
+		for (u32 i = 0; i < m_NumFrames; i++)
+		{
+			auto descriptorSets = m_pPool->Allocate({ m_DescLayout });
+			m_FrameDatas.emplace_back(VulkanBuffer{
+				m_pRenderCtx, sizeof(RTCameraData), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU, "RT Camera buffer"
+				},
+				descriptorSets[0]
+			);
 
-		// Write descriptor set
-		vk::WriteDescriptorSetAccelerationStructureKHR descASInfo{};
-		descASInfo.setAccelerationStructures(m_Tlas);
-
-		vk::DescriptorImageInfo imageInfo = {};
-		imageInfo.sampler = vk::Sampler{};
-		imageInfo.imageView = m_pOutputImage->GetColorImage()->GetImageView();
-		imageInfo.imageLayout = vk::ImageLayout::eGeneral; // ImageLayout NEEDS to be VK_IMAGE_LAYOUT_GENERAL when StorageImage
-
-		DescriptorWriter writer(m_pRenderCtx->device, m_Desc);
-		writer.WriteAccelStructure(&descASInfo, static_cast<u32>(RaytracerBindings::Acceleration));
-		writer.WriteImage(imageInfo, static_cast<u32>(RaytracerBindings::OutputImage), vk::DescriptorType::eStorageImage);
-		writer.Write();
+			UpdateDescriptors(i);
+		}
 
 		HPR_CORE_LOG_INFO("Created ray tracing descriptor set!");
 	}
 
 	void VulkanRaytracer::CreatePipeline()
 	{
-		m_pShader = std::make_unique<VulkanShader>(m_pRenderCtx, std::unordered_map<ShaderStageType, std::filesystem::path>{
-			{ ShaderStageType::RayGen, "res/shaders/RTAO.rgen" },
-			{ ShaderStageType::Miss, "res/shaders/RTAO.rmiss" },
-			{ ShaderStageType::ClosestHit, "res/shaders/RTAO.rchit" },
-		});
+		m_pShader = std::make_unique<VulkanShader>(
+			m_pRenderCtx,
+			std::unordered_map<ShaderStageType, std::filesystem::path>{
+				{ ShaderStageType::RayGen, "res/shaders/RTAO.rgen" },
+				{ ShaderStageType::Miss, "res/shaders/RTAO.rmiss" },
+				{ ShaderStageType::ClosestHit, "res/shaders/RTAO.rchit" },
+			},
+			false);
 
 		vk::RayTracingShaderGroupCreateInfoKHR group = {};
 		group.anyHitShader = VK_SHADER_UNUSED_KHR;
@@ -123,8 +129,9 @@ namespace Hyper
 		// pushConst.offset = 0;
 		// pushConst.size = sizeof(RaytracerPushConstants);
 
-		const std::vector descriptorLayouts = m_pShader->GetAllDescriptorSetLayouts();
-		const std::vector pushConstants = m_pShader->GetAllPushConstantRanges();
+		// Automatic shader reflection has issues with RT shaders, so we'll just use our custom one here.
+		const std::vector descriptorLayouts = { m_DescLayout };
+		const std::vector<vk::PushConstantRange> pushConstants = {};
 
 		PipelineBuilder builder(m_pRenderCtx);
 		builder.SetShader(m_pShader.get());
@@ -167,7 +174,7 @@ namespace Hyper
 			vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR | vk::BufferUsageFlagBits::eShaderBindingTableKHR,
 			VMA_MEMORY_USAGE_CPU_TO_GPU,
 			"SBT"
-		);
+			);
 
 		// Find the SBT addresses of each group
 		vk::DeviceAddress sbtAddress = m_SbtBuffer->GetDeviceAddress();
@@ -203,5 +210,36 @@ namespace Hyper
 		m_SbtBuffer->Unmap();
 
 		HPR_CORE_LOG_INFO("Created ray tracing SBT!");
+	}
+
+	void VulkanRaytracer::UpdateDescriptors(u32 frameIdx)
+	{
+		// Write descriptor set
+		vk::WriteDescriptorSetAccelerationStructureKHR descASInfo{};
+		descASInfo.setAccelerationStructures(m_Tlas);
+
+		vk::DescriptorImageInfo imageInfo = {};
+		imageInfo.sampler = vk::Sampler{};
+		imageInfo.imageView = m_pOutputImage->GetColorImage()->GetImageView();
+		imageInfo.imageLayout = vk::ImageLayout::eGeneral; // ImageLayout NEEDS to be VK_IMAGE_LAYOUT_GENERAL when StorageImage
+
+		RTFrameData& frameData = m_FrameDatas[frameIdx];
+		{
+			// hacky workaround - TODO: make this not hacky :)
+			void* mapped = frameData.rtCameraUniform.Map();
+			memcpy(mapped, &m_CameraData, sizeof(RTCameraData));
+			frameData.rtCameraUniform.Unmap();
+		}
+
+		vk::DescriptorBufferInfo cameraInfo = {};
+		cameraInfo.buffer = frameData.rtCameraUniform.GetBuffer();
+		cameraInfo.offset = 0;
+		cameraInfo.range = sizeof(RTCameraData);
+
+		DescriptorWriter writer(m_pRenderCtx->device, frameData.descriptorSet);
+		writer.WriteAccelStructure(&descASInfo, static_cast<u32>(RaytracerBindings::Acceleration));
+		writer.WriteImage(imageInfo, static_cast<u32>(RaytracerBindings::OutputImage), vk::DescriptorType::eStorageImage);
+		writer.WriteBuffer(cameraInfo, static_cast<u32>(RaytracerBindings::CameraBuffer), vk::DescriptorType::eUniformBuffer);
+		writer.Write();
 	}
 }

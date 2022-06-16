@@ -105,11 +105,16 @@ namespace Hyper
 	{
 		m_View = glm::lookAtRH(m_Position, m_Position + m_Forward, glm::vec3(0.0f, 0.0f, 1.0f));
 		m_ViewProjection = m_Projection * m_View;
+
+		m_ViewI = glm::inverse(m_View);
+		m_ViewProjectionI = glm::inverse(m_ViewProjection);
 	}
 
 	void FlyCamera::ComputeProjection()
 	{
 		m_Projection = glm::perspective(glm::radians(m_FovDegrees), static_cast<f32>(m_Width) / static_cast<f32>(m_Height), m_ZNear, m_ZFar);
 		m_Projection[1][1] *= -1;
+
+		m_ProjectionI = glm::inverse(m_Projection);
 	}
 }

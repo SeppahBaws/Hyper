@@ -49,7 +49,7 @@ namespace Hyper
 			m_pCamera->Setup();
 		}
 
-		m_pRayTracer = std::make_unique<VulkanRaytracer>(m_pRenderContext.get(), m_pScene->GetAccelerationStructure()->GetTLAS().handle);
+		m_pRayTracer = std::make_unique<VulkanRaytracer>(m_pRenderContext.get(), m_pScene->GetAccelerationStructure()->GetTLAS().handle, m_pSwapChain->GetNumFrames());
 
 		// Initialize the geometry pass
 		{
@@ -355,7 +355,7 @@ namespace Hyper
 			VkDebug::BeginRegion(cmd, "RT Pass", { 0.3f, 0.3f, 0.8f, 1.0f });
 
 			// Trace them rays
-			m_pRayTracer->RayTrace(cmd);
+			m_pRayTracer->RayTrace(cmd, m_pCamera.get(), m_FrameIdx);
 
 			VkDebug::EndRegion(cmd);
 		}

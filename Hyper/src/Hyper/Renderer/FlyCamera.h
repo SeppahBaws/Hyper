@@ -20,8 +20,11 @@ namespace Hyper
 		void ComputeViewProjection();
 
 		[[nodiscard]] glm::mat4 GetView() const { return m_View; }
+		[[nodiscard]] glm::mat4 GetViewInverse() const { return m_ViewI; }
 		[[nodiscard]] glm::mat4 GetProjection() const { return m_Projection; }
+		[[nodiscard]] glm::mat4 GetProjectionInverse() const { return m_ProjectionI; }
 		[[nodiscard]] glm::mat4 GetViewProjection() const { return m_ViewProjection; }
+		[[nodiscard]] glm::mat4 GetViewProjectionInverse() const { return m_ViewProjectionI; }
 
 	private:
 		Context* m_pContext;
@@ -42,8 +45,11 @@ namespace Hyper
 		f32 m_Yaw{ 90.0f }, m_Pitch{};
 
 		glm::mat4 m_View{};
+		glm::mat4 m_ViewI{};
 		glm::mat4 m_Projection{};
+		glm::mat4 m_ProjectionI{};
 		glm::mat4 m_ViewProjection{};
+		glm::mat4 m_ViewProjectionI{};
 		f32 m_MoveSpeed{ 10.0f };
 		f32 m_LookSpeed{ 10.0f };
 	};

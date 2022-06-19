@@ -1,6 +1,7 @@
 ﻿#include "HyperPCH.h"
 #include "VulkanCommands.h"
 
+#include "VulkanUtility.h"
 #include "Hyper/Renderer/RenderContext.h"
 
 namespace Hyper
@@ -12,14 +13,7 @@ namespace Hyper
 		info.flags=vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 		info.queueFamilyIndex = m_pRenderCtx->graphicsQueue.familyIndex;
 		
-		try
-		{
-			m_Pool = m_pRenderCtx->device.createCommandPool(info);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to create command pool: "s + e.what());
-		}
+		m_Pool = VulkanUtils::Check(m_pRenderCtx->device.createCommandPool(info));
 
 		m_pRenderCtx->commandPool = this;
 
@@ -38,15 +32,7 @@ namespace Hyper
 		allocInfo.level = level;
 		allocInfo.commandBufferCount = count;
 
-		std::vector<vk::CommandBuffer> buffers;
-		try
-		{
-			buffers = m_pRenderCtx->device.allocateCommandBuffers(allocInfo);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to allocate command buffer: "s + e.what());
-		}
+		std::vector<vk::CommandBuffer> buffers = VulkanUtils::Check(m_pRenderCtx->device.allocateCommandBuffers(allocInfo));
 
 		return buffers;
 	}
@@ -73,26 +59,12 @@ namespace Hyper
 			vk::CommandBufferBeginInfo info = {};
 			info.flags = flags;
 
-			try
-			{
-				cmd.begin(info);
-			}
-			catch (vk::SystemError& e)
-			{
-				throw std::runtime_error("Failed to begin command buffer: "s + e.what());
-			}
+			VulkanUtils::Check(cmd.begin(info));
 		}
 
 		void End(vk::CommandBuffer cmd)
 		{
-			try
-			{
-				cmd.end();
-			}
-			catch (vk::SystemError& e)
-			{
-				throw std::runtime_error("Failed to end command buffer: "s + e.what());
-			}
+			VulkanUtils::Check(cmd.end());
 		}
 	}
 }

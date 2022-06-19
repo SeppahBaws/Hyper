@@ -36,7 +36,7 @@ namespace Hyper
 		VkBuffer tempBuffer;
 		VmaAllocation tempAlloc;
 		
-		VulkanUtils::VkCheck(vmaCreateBuffer(
+		VulkanUtils::Check(vmaCreateBuffer(
 			pRenderCtx->allocator,
 			reinterpret_cast<VkBufferCreateInfo*>(&bufferInfo),
 			&allocInfo,
@@ -86,7 +86,7 @@ namespace Hyper
 	void* VulkanBuffer::Map()
 	{
 		void* data;
-		VulkanUtils::VkCheck(vmaMapMemory(m_pRenderCtx->allocator, m_Allocation, &data));
+		VulkanUtils::Check(vmaMapMemory(m_pRenderCtx->allocator, m_Allocation, &data));
 
 		return data;
 	}

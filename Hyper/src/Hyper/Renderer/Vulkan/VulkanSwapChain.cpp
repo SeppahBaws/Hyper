@@ -59,7 +59,7 @@ namespace Hyper
 			return AcquireNextImage();
 		}
 
-		VulkanUtils::VkCheck(result);
+		VulkanUtils::Check(result);
 
 		return m_SemaphoreIdx;
 	}
@@ -108,7 +108,7 @@ namespace Hyper
 		// Create surface.
 		{
 			VkSurfaceKHR surface;
-			VulkanUtils::VkCheck(glfwCreateWindowSurface(m_pRenderCtx->instance, m_pWindow->GetHandle(), nullptr, &surface));
+			VulkanUtils::Check(glfwCreateWindowSurface(m_pRenderCtx->instance, m_pWindow->GetHandle(), nullptr, &surface));
 			m_Surface = surface;
 
 			HPR_VKLOG_INFO("Created the surface");
@@ -119,7 +119,7 @@ namespace Hyper
 
 		// Detect surface format and color space
 		{
-			const auto availableFormats = m_pRenderCtx->physicalDevice.getSurfaceFormatsKHR(m_Surface);
+			const auto availableFormats = VulkanUtils::Check(m_pRenderCtx->physicalDevice.getSurfaceFormatsKHR(m_Surface));
 			for (const auto& availableFormat : availableFormats)
 			{
 				if (availableFormat.format == vk::Format::eR8G8B8A8Unorm &&
@@ -166,15 +166,8 @@ namespace Hyper
 			createInfo.clipped = true;
 			createInfo.oldSwapchain = nullptr;
 
-			try
-			{
-				m_SwapChain = m_pRenderCtx->device.createSwapchainKHR(createInfo);
-				VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::eSwapchainKHR, m_SwapChain, "Swapchain");
-			}
-			catch (vk::SystemError& e)
-			{
-				throw std::runtime_error("Failed to create the swapchain: "s + e.what());
-			}
+			m_SwapChain = VulkanUtils::Check(m_pRenderCtx->device.createSwapchainKHR(createInfo));
+			VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::eSwapchainKHR, m_SwapChain, "Swapchain");
 
 			HPR_VKLOG_INFO("Created the swap chain");
 		}
@@ -182,15 +175,7 @@ namespace Hyper
 		// Get swap chain images and create image views
 		{
 			// Get swapchain images
-			try
-			{
-				m_Images = m_pRenderCtx->device.getSwapchainImagesKHR(m_SwapChain);
-			}
-			catch (vk::SystemError& e)
-			{
-				throw std::runtime_error("Failed to acquire the swapchain images: "s + e.what());
-			}
-
+			m_Images = VulkanUtils::Check(m_pRenderCtx->device.getSwapchainImagesKHR(m_SwapChain));
 			HPR_VKLOG_INFO("Acquired swap chain images ({})", m_Images.size());
 
 			// Create image views
@@ -202,16 +187,7 @@ namespace Hyper
 				viewInfo.format = m_ImageFormat;
 				viewInfo.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
 
-				vk::ImageView imageView;
-
-				try
-				{
-					imageView = m_pRenderCtx->device.createImageView(viewInfo);
-				}
-				catch (vk::SystemError& e)
-				{
-					throw std::runtime_error("Failed to create image view: "s + e.what());
-				}
+				const vk::ImageView imageView = VulkanUtils::Check(m_pRenderCtx->device.createImageView(viewInfo));
 				m_ImageViews.push_back(imageView);
 			}
 
@@ -233,7 +209,7 @@ namespace Hyper
 
 			for (u32 i = 0; i < imageCount; i++)
 			{
-				m_ImageAcquiredSemaphores.emplace_back(m_pRenderCtx->device.createSemaphore(semaphoreInfo));
+				m_ImageAcquiredSemaphores.emplace_back(VulkanUtils::Check(m_pRenderCtx->device.createSemaphore(semaphoreInfo)));
 				VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::eSemaphore, m_ImageAcquiredSemaphores[i], fmt::format("Swapchain semaphore {}", i));
 			}
 		}

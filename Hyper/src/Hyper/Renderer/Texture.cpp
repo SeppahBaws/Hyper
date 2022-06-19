@@ -5,6 +5,7 @@
 #include "stb_image.h"
 #include "Vulkan/VulkanBuffer.h"
 #include "Vulkan/VulkanDebug.h"
+#include "Vulkan/VulkanUtility.h"
 
 namespace Hyper
 {
@@ -65,14 +66,7 @@ namespace Hyper
 			samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
 			samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
 
-			try
-			{
-				m_Sampler = m_pRenderCtx->device.createSampler(samplerInfo);
-			}
-			catch (vk::SystemError& e)
-			{
-				throw std::runtime_error("Failed to create image sampler: "s + e.what());
-			}
+			m_Sampler = VulkanUtils::Check(m_pRenderCtx->device.createSampler(samplerInfo));
 		}
 	}
 

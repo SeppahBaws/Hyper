@@ -18,7 +18,7 @@ namespace Hyper
 		info.setSignalSemaphores(signalSemaphores);
 		info.setCommandBuffers(cmd);
 
-		VulkanUtils::VkCheck(queue.submit(1, &info, fence));
+		VulkanUtils::Check(queue.submit(1, &info, fence));
 	}
 
 	void VulkanQueue::WaitIdle()

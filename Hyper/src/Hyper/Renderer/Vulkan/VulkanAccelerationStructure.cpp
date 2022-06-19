@@ -2,6 +2,7 @@
 #include "VulkanAccelerationStructure.h"
 
 #include "VulkanDebug.h"
+#include "VulkanUtility.h"
 #include "Hyper/Renderer/Mesh.h"
 
 namespace Hyper
@@ -87,7 +88,7 @@ namespace Hyper
 		accelerationStructureCreateInfo.buffer = bottomLevelAS.pBuffer->GetBuffer();
 		accelerationStructureCreateInfo.size = accelerationStructureBuildSizesInfo.accelerationStructureSize;
 		accelerationStructureCreateInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
-		bottomLevelAS.handle = m_pRenderCtx->device.createAccelerationStructureKHR(accelerationStructureCreateInfo);
+		bottomLevelAS.handle = VulkanUtils::Check(m_pRenderCtx->device.createAccelerationStructureKHR(accelerationStructureCreateInfo));
 
 		// Create a scratch buffer that will be used during the build of the BLAS.
 		RayTracingScratchBuffer scratchBuffer{};
@@ -226,7 +227,7 @@ namespace Hyper
 		);
 		m_Tlas.deviceAddress = m_Tlas.pBuffer->GetDeviceAddress();
 		createInfo.buffer = m_Tlas.pBuffer->GetBuffer();
-		m_Tlas.handle = m_pRenderCtx->device.createAccelerationStructureKHR(createInfo);
+		m_Tlas.handle = VulkanUtils::Check(m_pRenderCtx->device.createAccelerationStructureKHR(createInfo));
 
 		// Allocate scratch memory
 		RayTracingScratchBuffer scratchBuffer = {};

@@ -16,6 +16,7 @@
 
 #include "Vulkan/VulkanAccelerationStructure.h"
 #include "Vulkan/VulkanDebug.h"
+#include "Vulkan/VulkanUtility.h"
 
 namespace Hyper
 {
@@ -69,42 +70,28 @@ namespace Hyper
 					.AddSize(vk::DescriptorType::eCombinedImageSampler, 1000)
 					.SetMaxSets(10 * m_pSwapChain->GetNumFrames())
 					.Build());
-
-				try
+				
+				for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
 				{
-					for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
-					{
-						std::vector<vk::DescriptorSet> descriptorSets = m_pGeometryDescriptorPool->Allocate({ *m_pGeometryGlobalSetLayout });
-						m_GeometryFrameDatas.emplace_back<FrameData>(FrameData{
-							VulkanBuffer(m_pRenderContext.get(), sizeof(CameraData), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU,
-								fmt::format("Camera buffer {}", i)),
-							descriptorSets[0]
-						});
-					}
-				}
-				catch (vk::SystemError& e)
-				{
-					throw std::runtime_error("Failed to create descriptor sets: "s + e.what());
+					std::vector<vk::DescriptorSet> descriptorSets = m_pGeometryDescriptorPool->Allocate({ *m_pGeometryGlobalSetLayout });
+					m_GeometryFrameDatas.emplace_back<FrameData>(FrameData{
+						VulkanBuffer(m_pRenderContext.get(), sizeof(CameraData), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU,
+							fmt::format("Camera buffer {}", i)),
+						descriptorSets[0]
+					});
 				}
 
-				try
+				for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
 				{
-					for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
-					{
-						DescriptorWriter writer{ m_pRenderContext->device, m_GeometryFrameDatas[i].descriptor };
+					DescriptorWriter writer{ m_pRenderContext->device, m_GeometryFrameDatas[i].descriptor };
 
-						vk::DescriptorBufferInfo bufferInfo = {};
-						bufferInfo.buffer = m_GeometryFrameDatas[i].cameraBuffer.GetBuffer();
-						bufferInfo.offset = 0;
-						bufferInfo.range = sizeof(CameraData);
+					vk::DescriptorBufferInfo bufferInfo = {};
+					bufferInfo.buffer = m_GeometryFrameDatas[i].cameraBuffer.GetBuffer();
+					bufferInfo.offset = 0;
+					bufferInfo.range = sizeof(CameraData);
 
-						writer.WriteBuffer(bufferInfo, 0, vk::DescriptorType::eUniformBuffer);
-						writer.Write();
-					}
-				}
-				catch (vk::SystemError& e)
-				{
-					throw std::runtime_error("Failed to update descriptor sets: "s + e.what());
+					writer.WriteBuffer(bufferInfo, 0, vk::DescriptorType::eUniformBuffer);
+					writer.Write();
 				}
 			}
 
@@ -152,38 +139,24 @@ namespace Hyper
 					.SetMaxSets(10 * m_pSwapChain->GetNumFrames())
 					.Build());
 
-				try
-				{
-					m_CompositeDescriptorSet = m_pCompositeDescriptorPool->Allocate({ *m_pCompositeSetLayout })[0];
-				}
-				catch (vk::SystemError& e)
-				{
-					throw std::runtime_error("Failed to create descriptor sets: "s + e.what());
-				}
+				m_CompositeDescriptorSet = m_pCompositeDescriptorPool->Allocate({ *m_pCompositeSetLayout })[0];
+				
+				DescriptorWriter writer{ m_pRenderContext->device, m_CompositeDescriptorSet };
 
-				try
-				{
-					DescriptorWriter writer{ m_pRenderContext->device, m_CompositeDescriptorSet };
+				vk::DescriptorImageInfo geometryInfo = {};
+				geometryInfo.imageLayout = m_pGeometryRenderTarget->GetColorImage()->GetImageLayout();
+				geometryInfo.imageView = m_pGeometryRenderTarget->GetColorImage()->GetImageView();
+				geometryInfo.sampler = m_pGeometryRenderTarget->GetColorSampler();
 
-					vk::DescriptorImageInfo geometryInfo = {};
-					geometryInfo.imageLayout = m_pGeometryRenderTarget->GetColorImage()->GetImageLayout();
-					geometryInfo.imageView = m_pGeometryRenderTarget->GetColorImage()->GetImageView();
-					geometryInfo.sampler = m_pGeometryRenderTarget->GetColorSampler();
+				vk::DescriptorImageInfo rtInfo = {};
+				const auto* rtOutput = m_pRayTracer->GetOutputImage();
+				rtInfo.imageLayout = vk::ImageLayout::eGeneral;
+				rtInfo.imageView = rtOutput->GetColorImage()->GetImageView();
+				rtInfo.sampler = rtOutput->GetColorSampler();
 
-					vk::DescriptorImageInfo rtInfo = {};
-					const auto* rtOutput = m_pRayTracer->GetOutputImage();
-					rtInfo.imageLayout = vk::ImageLayout::eGeneral;
-					rtInfo.imageView = rtOutput->GetColorImage()->GetImageView();
-					rtInfo.sampler = rtOutput->GetColorSampler();
-
-					writer.WriteImage(geometryInfo, 0, vk::DescriptorType::eCombinedImageSampler);
-					writer.WriteImage(rtInfo, 1, vk::DescriptorType::eCombinedImageSampler);
-					writer.Write();
-				}
-				catch (vk::SystemError& e)
-				{
-					throw std::runtime_error("Failed to update descriptor sets: "s + e.what());
-				}
+				writer.WriteImage(geometryInfo, 0, vk::DescriptorType::eCombinedImageSampler);
+				writer.WriteImage(rtInfo, 1, vk::DescriptorType::eCombinedImageSampler);
+				writer.Write();
 			}
 
 			// Create the composite pipeline
@@ -225,17 +198,10 @@ namespace Hyper
 			const vk::SemaphoreCreateInfo semaphoreInfo{};
 			const vk::FenceCreateInfo fenceInfo{ vk::FenceCreateFlagBits::eSignaled };
 
-			try
+			for (u32 i = 0; i < m_pRenderContext->imagesInFlight; i++)
 			{
-				for (u32 i = 0; i < m_pRenderContext->imagesInFlight; i++)
-				{
-					m_RenderFinishedSemaphores[i] = m_pRenderContext->device.createSemaphore(semaphoreInfo);
-					m_InFlightFences[i] = m_pRenderContext->device.createFence(fenceInfo);
-				}
-			}
-			catch (vk::SystemError& e)
-			{
-				throw std::runtime_error("Failed to create sync objects: "s + e.what());
+				m_RenderFinishedSemaphores[i] = VulkanUtils::Check(m_pRenderContext->device.createSemaphore(semaphoreInfo));
+				m_InFlightFences[i] = VulkanUtils::Check(m_pRenderContext->device.createFence(fenceInfo));
 			}
 		}
 

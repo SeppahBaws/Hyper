@@ -107,7 +107,7 @@ namespace Hyper
 		// alloc.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		alloc.requiredFlags = static_cast<VkMemoryPropertyFlags>(vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-		VulkanUtils::VkCheck(
+		VulkanUtils::Check(
 			vmaCreateImage(m_pRenderCtx->allocator, reinterpret_cast<VkImageCreateInfo*>(&imageInfo), &alloc, reinterpret_cast<VkImage*>(&m_Image), &m_Allocation,
 				nullptr)
 		);
@@ -133,15 +133,8 @@ namespace Hyper
 		imageViewInfo.subresourceRange.baseArrayLayer = 0;
 		imageViewInfo.subresourceRange.layerCount = 1;
 		imageViewInfo.subresourceRange.aspectMask = m_AspectFlags;
-
-		try
-		{
-			m_ImageView = m_pRenderCtx->device.createImageView(imageViewInfo);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to create ImageView: "s + e.what());
-		}
+		
+		m_ImageView = VulkanUtils::Check(m_pRenderCtx->device.createImageView(imageViewInfo));
 
 		VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::eImage, m_Image, m_DebugName);
 		VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::eImageView, m_ImageView, fmt::format("{} image view", m_DebugName));

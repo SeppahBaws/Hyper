@@ -45,6 +45,11 @@ project "Hyper"
         "%{Library.Vulkan}",
         "stb"
     }
+    
+    defines
+    {
+        "VULKAN_HPP_NO_EXCEPTIONS"
+    }
 
     if (_OPTIONS["use-vld"]) then
         defines { "HYPER_USE_VLD" }

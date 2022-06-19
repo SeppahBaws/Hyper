@@ -2,6 +2,7 @@
 #include "RenderTarget.h"
 
 #include "RenderContext.h"
+#include "Vulkan/VulkanUtility.h"
 
 namespace Hyper
 {
@@ -40,14 +41,7 @@ namespace Hyper
 		samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
 		samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
 
-		try
-		{
-			m_ColorSampler = m_pRenderCtx->device.createSampler(samplerInfo);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to create image sampler: "s + e.what());
-		}
+		m_ColorSampler = VulkanUtils::Check(m_pRenderCtx->device.createSampler(samplerInfo));
 
 		vk::CommandBuffer cmd = m_pRenderCtx->commandPool->GetCommandBuffer();
 		VulkanCommandBuffer::Begin(cmd, vk::CommandBufferUsageFlagBits::eOneTimeSubmit);

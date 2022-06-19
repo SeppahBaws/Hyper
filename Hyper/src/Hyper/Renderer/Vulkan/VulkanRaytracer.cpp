@@ -164,7 +164,7 @@ namespace Hyper
 		// Get the shader group handles
 		u32 dataSize = handleCount * handleSize;
 		std::vector<u8> handles(dataSize);
-		VulkanUtils::VkCheck(m_pRenderCtx->device.getRayTracingShaderGroupHandlesKHR(m_RtPipeline->GetPipeline(), 0, handleCount, dataSize, handles.data()));
+		VulkanUtils::Check(m_pRenderCtx->device.getRayTracingShaderGroupHandlesKHR(m_RtPipeline->GetPipeline(), 0, handleCount, dataSize, handles.data()));
 
 		// Allocate a buffer for storing the SBT
 		vk::DeviceSize sbtSize = m_RGenRegion.size + m_MissRegion.size + m_HitRegion.size + m_CallRegion.size;

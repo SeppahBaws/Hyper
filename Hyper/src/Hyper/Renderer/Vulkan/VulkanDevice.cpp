@@ -51,18 +51,11 @@ namespace Hyper
 
 			if (HYPER_VALIDATE)
 			{
+				
 				createInfo.setPEnabledLayerNames(m_RequiredInstanceLayerNames);
 			}
 
-			try
-			{
-				pRenderCtx->instance = vk::createInstance(createInfo);
-				HPR_VKLOG_INFO("Successfully created Vulkan Instance!");
-			}
-			catch (vk::SystemError& e)
-			{
-				throw std::runtime_error("Failed to create Vulkan Instance:"s + e.what());
-			}
+			pRenderCtx->instance = VulkanUtils::Check(vk::createInstance(createInfo));
 
 			HPR_VKLOG_INFO("Created Vulkan Instance");
 		}
@@ -81,7 +74,7 @@ namespace Hyper
 		// Create device
 		{
 			// Find physical device
-			auto availableDevices = pRenderCtx->instance.enumeratePhysicalDevices();
+			auto availableDevices = VulkanUtils::Check(pRenderCtx->instance.enumeratePhysicalDevices());
 			const auto foundDevice = std::ranges::find_if(availableDevices, [](const vk::PhysicalDevice& device)
 				{
 					const vk::PhysicalDeviceProperties properties = device.getProperties();
@@ -152,7 +145,7 @@ namespace Hyper
 				.setQueueCreateInfos(queueCreateInfos)
 				.setPEnabledLayerNames(m_RequiredDeviceLayerNames)
 				.setPEnabledExtensionNames(m_RequiredDeviceExtensionNames);
-			pRenderCtx->device = pRenderCtx->physicalDevice.createDevice(deviceCreateInfo);
+			pRenderCtx->device = VulkanUtils::Check(pRenderCtx->physicalDevice.createDevice(deviceCreateInfo));
 
 			HPR_VKLOG_INFO("Created the logical device");
 
@@ -176,7 +169,7 @@ namespace Hyper
 			createInfo.instance = pRenderCtx->instance;
 			createInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 			
-			VulkanUtils::VkCheck(vmaCreateAllocator(&createInfo, &m_Allocator));
+			VulkanUtils::Check(vmaCreateAllocator(&createInfo, &m_Allocator));
 			m_pRenderCtx->allocator = m_Allocator;
 		}
 
@@ -201,8 +194,8 @@ namespace Hyper
 
 	bool VulkanDevice::CheckExtensionsAndLayersSupport() const
 	{
-		std::vector availableExtensions = vk::enumerateInstanceExtensionProperties();
-		std::vector availableLayers = vk::enumerateInstanceLayerProperties();
+		std::vector availableExtensions = VulkanUtils::Check(vk::enumerateInstanceExtensionProperties());
+		std::vector availableLayers = VulkanUtils::Check(vk::enumerateInstanceLayerProperties());
 
 		// Check if the required extensions are available
 		const bool hasRequiredExtensions = std::ranges::all_of(m_RequiredInstanceExtensionNames,

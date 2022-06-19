@@ -1,6 +1,8 @@
 ﻿#include "HyperPCH.h"
 #include "VulkanDescriptors.h"
 
+#include "VulkanUtility.h"
+
 namespace Hyper
 {
 	DescriptorSetLayoutBuilder::DescriptorSetLayoutBuilder(vk::Device device)
@@ -24,16 +26,7 @@ namespace Hyper
 		vk::DescriptorSetLayoutCreateInfo info = {};
 		info.setBindings(m_Bindings);
 
-		vk::DescriptorSetLayout layout;
-
-		try
-		{
-			layout = m_Device.createDescriptorSetLayout(info);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to create Descriptor Set Layout: "s + e.what());
-		}
+		const vk::DescriptorSetLayout layout = VulkanUtils::Check(m_Device.createDescriptorSetLayout(info));
 
 		return layout;
 	}
@@ -75,14 +68,7 @@ namespace Hyper
 		info.setPoolSizes(sizes);
 		info.flags = flags;
 
-		try
-		{
-			m_Pool = device.createDescriptorPool(info);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to create Descriptor Pool: "s + e.what());
-		}
+		m_Pool = VulkanUtils::Check(device.createDescriptorPool(info));
 	}
 
 	DescriptorPool::~DescriptorPool()
@@ -117,16 +103,7 @@ namespace Hyper
 		info.descriptorPool = m_Pool;
 		info.setSetLayouts(layouts);
 
-		std::vector<vk::DescriptorSet> sets{};
-
-		try
-		{
-			sets = m_Device.allocateDescriptorSets(info);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to allocate descriptor set: "s + e.what());
-		}
+		const std::vector<vk::DescriptorSet> sets = VulkanUtils::Check(m_Device.allocateDescriptorSets(info));
 
 		return sets;
 	}

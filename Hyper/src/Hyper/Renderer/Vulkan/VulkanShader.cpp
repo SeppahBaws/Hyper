@@ -6,6 +6,7 @@
 #include <spirv_cross/spirv_reflect.hpp>
 
 #include "VulkanDescriptors.h"
+#include "VulkanUtility.h"
 
 namespace Hyper
 {
@@ -207,14 +208,7 @@ namespace Hyper
 			vk::ShaderModuleCreateInfo createInfo = {};
 			createInfo.setCode(shaderBinary);
 
-			try
-			{
-				module = m_pRenderCtx->device.createShaderModule(createInfo);
-			}
-			catch (vk::SystemError& e)
-			{
-				throw std::runtime_error("Failed to create shader module: "s + e.what());
-			}
+			module = VulkanUtils::Check(m_pRenderCtx->device.createShaderModule(createInfo));
 		}
 
 		return { module, shaderBinary };

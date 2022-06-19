@@ -4,6 +4,7 @@
 #include "Vertex.h"
 #include "VulkanDebug.h"
 #include "VulkanShader.h"
+#include "VulkanUtility.h"
 
 namespace Hyper
 {
@@ -221,16 +222,7 @@ namespace Hyper
 		viewportState.setScissors(m_Scissor);
 
 		// First, create the pipeline layout
-		vk::PipelineLayout layout{};
-
-		try
-		{
-			layout = m_pRenderCtx->device.createPipelineLayout(m_PipelineLayoutInfo);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to create pipeline layout: "s + e.what());
-		}
+		vk::PipelineLayout layout = VulkanUtils::Check(m_pRenderCtx->device.createPipelineLayout(m_PipelineLayoutInfo));
 
 		vk::PipelineRenderingCreateInfo pipelineRendering{};
 		pipelineRendering.setColorAttachmentFormats(m_pRenderCtx->imageFormat);
@@ -287,16 +279,7 @@ namespace Hyper
 	VulkanPipeline PipelineBuilder::BuildRaytracing(vk::PipelineCreateFlags flags)
 	{
 		// First, create the pipeline layout
-		vk::PipelineLayout layout{};
-
-		try
-		{
-			layout = m_pRenderCtx->device.createPipelineLayout(m_PipelineLayoutInfo);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to create pipeline layout: "s + e.what());
-		}
+		vk::PipelineLayout layout = VulkanUtils::Check(m_pRenderCtx->device.createPipelineLayout(m_PipelineLayoutInfo));
 
 		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = m_pShader->GetAllShaderStages();
 

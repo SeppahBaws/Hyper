@@ -234,6 +234,27 @@ namespace Hyper
 				m_pSwapChain->Resize(width, height);
 				m_pRayTracer->Resize(width, height);
 				m_pGeometryRenderTarget->Resize(width, height);
+
+				// test: Update the composite pass descriptors
+				// TODO: this shouldn't have to be done manually like this.
+				{
+					DescriptorWriter writer{ m_pRenderContext->device, m_CompositeDescriptorSet };
+
+					vk::DescriptorImageInfo geometryInfo = {};
+					geometryInfo.imageLayout = vk::ImageLayout::eGeneral;
+					geometryInfo.imageView = m_pGeometryRenderTarget->GetColorImage()->GetImageView();
+					geometryInfo.sampler = m_pGeometryRenderTarget->GetColorSampler();
+
+					vk::DescriptorImageInfo rtInfo = {};
+					const auto* rtOutput = m_pRayTracer->GetOutputImage();
+					rtInfo.imageLayout = vk::ImageLayout::eGeneral;
+					rtInfo.imageView = rtOutput->GetColorImage()->GetImageView();
+					rtInfo.sampler = rtOutput->GetColorSampler();
+
+					writer.WriteImage(geometryInfo, 0, vk::DescriptorType::eCombinedImageSampler);
+					writer.WriteImage(rtInfo, 1, vk::DescriptorType::eCombinedImageSampler);
+					writer.Write();
+				}
 			}
 		}
 

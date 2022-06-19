@@ -17,7 +17,7 @@ namespace Hyper
 			vk::ImageType::e2D,
 			vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage,
 			vk::ImageAspectFlagBits::eColor,
-			debugName,
+			fmt::format("{} (color)", debugName),
 			width,
 			height
 		);
@@ -28,7 +28,7 @@ namespace Hyper
 			vk::ImageType::e2D,
 			vk::ImageUsageFlagBits::eDepthStencilAttachment,
 			vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil,
-			debugName,
+			fmt::format("{} (depth)", debugName),
 			width,
 			height
 		);
@@ -83,6 +83,12 @@ namespace Hyper
 
 	void RenderTarget::Resize(u32 newWidth, u32 newHeight)
 	{
+		if (newWidth == 0 || newHeight == 0)
+		{
+			return;
+		}
+
 		m_pColorImage->Resize(newWidth, newHeight);
+		m_pDepthImage->Resize(newWidth, newHeight);
 	}
 }

@@ -38,6 +38,8 @@ namespace Hyper
 		m_Height = height;
 		m_Depth = depth;
 
+		HPR_VKLOG_INFO("Resizing '{}' with dimensions: ({}, {}, {})", m_DebugName, m_Width, m_Height, m_Depth);
+
 		DestroyImageAndView();
 		CreateImageAndView();
 	}
@@ -104,7 +106,6 @@ namespace Hyper
 
 		VmaAllocationCreateInfo alloc{};
 		alloc.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-		// alloc.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		alloc.requiredFlags = static_cast<VkMemoryPropertyFlags>(vk::MemoryPropertyFlagBits::eDeviceLocal);
 
 		VulkanUtils::Check(

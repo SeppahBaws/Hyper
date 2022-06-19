@@ -51,6 +51,11 @@ namespace Hyper
 
 	void VulkanRaytracer::Resize(u32 width, u32 height)
 	{
+		if (width == 0 && height == 0)
+		{
+			return;
+		}
+
 		m_OutputWidth = width;
 		m_OutputHeight = height;
 		m_pOutputImage->Resize(width, height);

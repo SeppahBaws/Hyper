@@ -12,8 +12,6 @@
 #include "Vulkan/VulkanSwapChain.h"
 #include "Vulkan/VulkanTemp.h"
 
-#include <glm/gtx/transform.hpp>
-
 #include "Vulkan/VulkanAccelerationStructure.h"
 #include "Vulkan/VulkanDebug.h"
 #include "Vulkan/VulkanUtility.h"
@@ -55,7 +53,7 @@ namespace Hyper
 		// Initialize the geometry pass
 		{
 			// Render target
-			m_pGeometryRenderTarget = std::make_unique<RenderTarget>(m_pRenderContext.get(), "Geometry pass render target", pWindow->GetWidth(), pWindow->GetHeight());
+			m_pGeometryRenderTarget = std::make_unique<RenderTarget>(m_pRenderContext.get(), vk::Format::eR8G8B8A8Unorm, "Geometry pass render target", pWindow->GetWidth(), pWindow->GetHeight());
 
 			// Create the frame data
 			{
@@ -118,6 +116,9 @@ namespace Hyper
 				builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
 				builder.SetDescriptorSetLayout(descriptorSetLayouts, pushConstants);
 				builder.SetDynamicStates({ vk::DynamicState::eViewport, vk::DynamicState::eScissor });
+				std::vector colorFormats = {m_pGeometryRenderTarget->GetColorImage()->GetFormat()};
+				vk::Format depthFormat = m_pGeometryRenderTarget->GetDepthImage()->GetFormat();
+				builder.SetFormats(colorFormats, depthFormat);
 
 				m_pGeometryPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
 			}
@@ -180,6 +181,9 @@ namespace Hyper
 				builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
 				builder.SetDescriptorSetLayout(descriptorSetLayouts, pushConstants);
 				builder.SetDynamicStates({ vk::DynamicState::eViewport, vk::DynamicState::eScissor });
+				std::vector colorFormats = {m_pRenderContext->imageFormat};
+				vk::Format depthFormat = vk::Format::eD24UnormS8Uint; // temp.
+				builder.SetFormats(colorFormats, depthFormat);
 
 				m_pCompositePipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
 			}

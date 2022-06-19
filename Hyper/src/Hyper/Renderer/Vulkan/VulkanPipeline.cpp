@@ -194,6 +194,14 @@ namespace Hyper
 		return *this;
 	}
 
+	PipelineBuilder& PipelineBuilder::SetFormats(const std::vector<vk::Format>& colorFormats, vk::Format depthStencilFormat)
+	{
+		m_ColorFormats = colorFormats;
+		m_DepthStencilFormat = depthStencilFormat;
+
+		return *this;
+	}
+
 	PipelineBuilder& PipelineBuilder::SetRayTracingShaderGroups(const std::vector<vk::RayTracingShaderGroupCreateInfoKHR>& shaderGroupCreateInfos)
 	{
 		m_RayTracingShaderGroups = shaderGroupCreateInfos;
@@ -210,6 +218,36 @@ namespace Hyper
 
 	VulkanPipeline PipelineBuilder::BuildGraphics(vk::PipelineCreateFlags flags)
 	{
+		static auto containsDepth = [](vk::Format format)
+		{
+			switch (format)
+			{
+			case vk::Format::eD16UnormS8Uint:
+			case vk::Format::eX8D24UnormPack32:
+			case vk::Format::eD32Sfloat:
+			case vk::Format::eD16Unorm:
+			case vk::Format::eD24UnormS8Uint:
+			case vk::Format::eD32SfloatS8Uint:
+				return true;
+			default:
+				return false;
+			}
+		};
+
+		static auto containsStencil = [](vk::Format format)
+		{
+			switch (format)
+			{
+			case vk::Format::eS8Uint:
+			case vk::Format::eD16UnormS8Uint:
+			case vk::Format::eD24UnormS8Uint:
+			case vk::Format::eD32SfloatS8Uint:
+				return true;
+			default:
+				return false;
+			}
+		};
+
 		auto bindingDescription = VertexPosNormTex::GetBindingDescription();
 		auto attributeDescriptions = VertexPosNormTex::GetAttributeDescriptions();
 
@@ -225,10 +263,16 @@ namespace Hyper
 		vk::PipelineLayout layout = VulkanUtils::Check(m_pRenderCtx->device.createPipelineLayout(m_PipelineLayoutInfo));
 
 		vk::PipelineRenderingCreateInfo pipelineRendering{};
-		pipelineRendering.setColorAttachmentFormats(m_pRenderCtx->imageFormat);
+		pipelineRendering.setColorAttachmentFormats(m_ColorFormats);
 		// TODO: get these from the swap chain
-		pipelineRendering.depthAttachmentFormat = vk::Format::eD24UnormS8Uint;
-		pipelineRendering.stencilAttachmentFormat = vk::Format::eD24UnormS8Uint;
+		if (containsDepth(m_DepthStencilFormat))
+		{
+			pipelineRendering.depthAttachmentFormat = m_DepthStencilFormat;
+		}
+		if (containsStencil(m_DepthStencilFormat))
+		{
+			pipelineRendering.stencilAttachmentFormat = m_DepthStencilFormat;
+		}
 
 		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = m_pShader->GetAllShaderStages();
 		vk::GraphicsPipelineCreateInfo pipelineInfo{};
@@ -260,7 +304,7 @@ namespace Hyper
 		pipelineInfo.renderPass = nullptr;
 		pipelineInfo.subpass = 0;
 
-		const vk::PipelineCache cache = m_pRenderCtx->device.createPipelineCache(vk::PipelineCacheCreateInfo{});
+		const vk::PipelineCache cache = VulkanUtils::Check(m_pRenderCtx->device.createPipelineCache(vk::PipelineCacheCreateInfo{}));
 		const vk::ResultValue<vk::Pipeline> pipelineResult = m_pRenderCtx->device.createGraphicsPipeline(cache, pipelineInfo);
 
 		if (pipelineResult.result != vk::Result::eSuccess)
@@ -303,7 +347,7 @@ namespace Hyper
 		pipelineInfo.maxPipelineRayRecursionDepth = m_MaxRayRecursionDepth;
 		pipelineInfo.layout = layout;
 
-		const vk::PipelineCache cache = m_pRenderCtx->device.createPipelineCache(vk::PipelineCacheCreateInfo{});
+		const vk::PipelineCache cache = VulkanUtils::Check(m_pRenderCtx->device.createPipelineCache(vk::PipelineCacheCreateInfo{}));
 		const vk::ResultValue<vk::Pipeline> pipelineResult = m_pRenderCtx->device.createRayTracingPipelineKHR({}, cache, pipelineInfo);
 
 		if (pipelineResult.result != vk::Result::eSuccess)
@@ -318,8 +362,4 @@ namespace Hyper
 
 		return VulkanPipeline(m_pRenderCtx, pipelineResult.value, cache, layout);
 	}
-
-	// VulkanPipeline PipelineBuilder::BuildCompute()
-	// {
-	// }
 }

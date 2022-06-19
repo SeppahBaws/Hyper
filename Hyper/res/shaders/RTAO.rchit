@@ -12,9 +12,8 @@ layout(binding = 2, set = 0) uniform CameraProperties
 
 struct HitInfo
 {
-    vec3 color;
-    bool isSecondaryRay;
     float rayT;
+    bool isSecondaryRay;
 };
 layout(location = 0) rayPayloadInEXT HitInfo payload;
 hitAttributeEXT vec3 attribs;

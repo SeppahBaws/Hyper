@@ -42,6 +42,9 @@ namespace Hyper
 		PipelineBuilder& SetColorBlend(bool blendEnable, vk::BlendOp colorBlendOp, vk::BlendOp alphaBlendOp, bool logicOpEnable, vk::LogicOp logicOp);
 		PipelineBuilder& SetDescriptorSetLayout(const std::vector<vk::DescriptorSetLayout>& layouts, const std::vector<vk::PushConstantRange>& pushConstants);
 		PipelineBuilder& SetDynamicStates(const std::vector<vk::DynamicState>& dynamicStates);
+		PipelineBuilder& SetFormats(const std::vector<vk::Format>& colorFormats, vk::Format depthStencilFormat);
+
+		// Ray-tracing specific
 		PipelineBuilder& SetRayTracingShaderGroups(const std::vector<vk::RayTracingShaderGroupCreateInfoKHR>& shaderGroupCreateInfos);
 		PipelineBuilder& SetMaxRayRecursionDepth(u32 maxRayRecursionDepth);
 
@@ -64,7 +67,10 @@ namespace Hyper
 		vk::PipelineColorBlendStateCreateInfo m_ColorBlending{};
 		vk::PipelineLayoutCreateInfo m_PipelineLayoutInfo{};
 		std::vector<vk::DynamicState> m_DynamicStates{};
-		u32 m_MaxRayRecursionDepth{};
+		std::vector<vk::Format> m_ColorFormats{};
+		vk::Format m_DepthStencilFormat;
+
 		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_RayTracingShaderGroups{};
+		u32 m_MaxRayRecursionDepth{};
 	};
 }

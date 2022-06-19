@@ -6,14 +6,14 @@
 
 namespace Hyper
 {
-	RenderTarget::RenderTarget(RenderContext* pRenderCtx, const std::string& debugName, u32 width, u32 height)
+	RenderTarget::RenderTarget(RenderContext* pRenderCtx, vk::Format format, const std::string& debugName, u32 width, u32 height)
 		: m_pRenderCtx(pRenderCtx)
 	{
 		// Color Image
 		// TODO: allow for customization.
 		m_pColorImage = std::make_unique<VulkanImage>(
 			m_pRenderCtx,
-			vk::Format::eB8G8R8A8Unorm,
+			format,
 			vk::ImageType::e2D,
 			vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage,
 			vk::ImageAspectFlagBits::eColor,

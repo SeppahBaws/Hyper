@@ -11,9 +11,8 @@ layout(binding = 2, set = 0) uniform CameraProperties
 
 struct HitInfo
 {
-    vec3 color;
-    bool isSecondaryRay;
     float rayT;
+    bool isSecondaryRay;
 };
 layout(location = 0) rayPayloadInEXT HitInfo payload;
 
@@ -21,6 +20,5 @@ const float FLT_MAX = float(0x7F7FFFFF);
 
 void main()
 {
-    payload.color = vec3(0.0);
     payload.rayT = FLT_MAX;
 }

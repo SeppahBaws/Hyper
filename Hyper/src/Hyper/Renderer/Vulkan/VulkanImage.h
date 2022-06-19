@@ -16,6 +16,7 @@ namespace Hyper
 		[[nodiscard]] vk::Image GetImage() const { return m_Image; }
 		[[nodiscard]] vk::ImageView GetImageView() const { return m_ImageView; }
 		[[nodiscard]] vk::ImageLayout GetImageLayout() const { return m_Layout; }
+		[[nodiscard]] vk::Format GetFormat() const { return m_Format; }
 
 		void Resize(u32 width, u32 height, u32 depth = 1);
 

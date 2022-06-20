@@ -29,7 +29,8 @@ project "Hyper"
         "%{IncludeDir.VkMemAlloc}",
         "%{IncludeDir.Optick}",
         "%{IncludeDir.assimp}",
-        "%{IncludeDir.stb}"
+        "%{IncludeDir.stb}",
+        "%{IncludeDir.imgui}"
     }
 
     libdirs
@@ -43,7 +44,8 @@ project "Hyper"
         "GLFW",
         "Optick",
         "%{Library.Vulkan}",
-        "stb"
+        "stb",
+        "imgui"
     }
     
     defines

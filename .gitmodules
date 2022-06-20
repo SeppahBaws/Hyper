@@ -14,3 +14,7 @@
 [submodule "Hyper/dependencies/glm"]
 	path = Hyper/dependencies/glm
 	url = git@github.com:g-truc/glm.git
+[submodule "Hyper/dependencies/imgui"]
+	path = Hyper/dependencies/imgui
+	url = git@github.com:ocornut/imgui.git
+	branch = docking

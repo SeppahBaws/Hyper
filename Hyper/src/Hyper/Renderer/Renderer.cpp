@@ -1,19 +1,20 @@
 ﻿#include "HyperPCH.h"
 #include "Renderer.h"
 
+#include <imgui.h>
+
 #include "Hyper/Core/Context.h"
 #include "Hyper/Core/Window.h"
 #include "Hyper/Debug/Profiler.h"
+#include "Vulkan/VulkanAccelerationStructure.h"
 #include "Vulkan/VulkanCommands.h"
+#include "Vulkan/VulkanDebug.h"
 #include "Vulkan/VulkanDescriptors.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanShader.h"
 #include "Vulkan/VulkanSwapChain.h"
 #include "Vulkan/VulkanTemp.h"
-
-#include "Vulkan/VulkanAccelerationStructure.h"
-#include "Vulkan/VulkanDebug.h"
 #include "Vulkan/VulkanUtility.h"
 
 namespace Hyper
@@ -44,6 +45,7 @@ namespace Hyper
 			// m_pScene->AddModel("res/models/Cuub.fbx");
 			m_pScene->AddModel("res/sponza/sponza.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
 			// m_pScene->AddModel("res/Bistro/Exterior/exterior.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+			// m_pScene->AddModel("res/TrainStation/TrainStation.fbx", glm::vec3{ 0.0f }, glm::vec3{ 0.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
 			m_pScene->BuildAccelerationStructure();
 			m_pCamera->Setup();
 		}
@@ -189,10 +191,11 @@ namespace Hyper
 			}
 		}
 
+		// Setup Dear ImGui
+		m_pImGuiWrapper = std::make_unique<ImGuiWrapper>(m_pRenderContext.get(), pWindow->GetHandle(), m_pRenderContext->imageFormat);
+
 		// Get command buffers. 1 for each frame in flight.
-		{
-			m_CommandBuffers = m_pCommandPool->GetCommandBuffers(m_pSwapChain->GetNumFrames());
-		}
+		m_CommandBuffers = m_pCommandPool->GetCommandBuffers(m_pSwapChain->GetNumFrames());
 
 		// Create sync objects
 		{
@@ -234,7 +237,7 @@ namespace Hyper
 
 			if (width != m_pSwapChain->GetWidth() || height != m_pSwapChain->GetHeight() || !m_pSwapChain->IsPresentEnabled())
 			{
-				m_pRenderContext->device.waitIdle();
+				VulkanUtils::Check(m_pRenderContext->device.waitIdle());
 				m_pSwapChain->Resize(width, height);
 				m_pRayTracer->Resize(width, height);
 				m_pGeometryRenderTarget->Resize(width, height);
@@ -276,6 +279,9 @@ namespace Hyper
 		vk::CommandBuffer cmd = m_CommandBuffers[m_FrameIdx];
 		VulkanCommandBuffer::Begin(cmd);
 
+		// Begin Dear ImGui frame
+		m_pImGuiWrapper->NewFrame();
+
 		HPR_PROFILE_GPU_CONTEXT(cmd);
 
 		// Set viewport and scissor
@@ -283,8 +289,10 @@ namespace Hyper
 		const f32 imageHeight = static_cast<f32>(m_pRenderContext->imageExtent.height);
 		cmd.setViewport(0, vk::Viewport{ 0, 0, imageWidth, imageHeight, 0.0f, 1.0f });
 		cmd.setScissor(0, vk::Rect2D{ vk::Offset2D{ 0, 0 }, m_pRenderContext->imageExtent });
-		
-		
+
+
+		ImGui::ShowDemoWindow();
+
 		// Geometry pass.
 		{
 			VkDebug::BeginRegion(cmd, "Geometry pass", { 0.8f, 0.6f, 0.1f, 1.0f });
@@ -339,7 +347,7 @@ namespace Hyper
 			cmd.endRendering();
 
 			VkDebug::EndRegion(cmd);
-		}  
+		}
 
 		// RT pass.
 		{
@@ -388,7 +396,6 @@ namespace Hyper
 			renderingInfo.viewMask = 0;
 			renderingInfo.colorAttachmentCount = 1;
 			renderingInfo.setPColorAttachments(&attachments[0]);
-			renderingInfo.setPDepthAttachment(&attachments[1]);
 
 			cmd.beginRendering(renderingInfo);
 
@@ -396,6 +403,9 @@ namespace Hyper
 
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pCompositePipeline->GetLayout(), 0, {m_CompositeDescriptorSet}, {}, {});
 			cmd.draw(3, 1, 0, 0);
+
+			// Render Dear ImGui frame data
+			m_pImGuiWrapper->Draw(cmd);
 
 			// End rendering
 			cmd.endRendering();
@@ -409,11 +419,11 @@ namespace Hyper
 				vk::ImageLayout::ePresentSrcKHR,
 				vk::PipelineStageFlagBits::eColorAttachmentOutput,
 				vk::PipelineStageFlagBits::eBottomOfPipe,
-				vk::ImageSubresourceRange({
+				vk::ImageSubresourceRange(
 					vk::ImageAspectFlagBits::eColor,
 					0, 1,
 					0, 1
-				})
+				)
 			);
 
 			VkDebug::EndRegion(cmd);
@@ -442,7 +452,10 @@ namespace Hyper
 	void Renderer::OnShutdown()
 	{
 		// Wait till everything is finished.
-		m_pRenderContext->device.waitIdle();
+		VulkanUtils::Check(m_pRenderContext->device.waitIdle());
+
+		// Destroy Dear ImGui data
+		m_pImGuiWrapper.reset();
 
 		for (size_t i = 0; i < m_CommandBuffers.size(); i++)
 		{

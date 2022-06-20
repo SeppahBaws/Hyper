@@ -5,9 +5,9 @@
 #include "Mesh.h"
 #include "Model.h"
 #include "RenderTarget.h"
-#include "Texture.h"
 #include "Hyper/Core/Subsystem.h"
 #include "Hyper/Scene/Scene.h"
+#include "ImGui/ImGuiWrapper.h"
 #include "Vulkan/VulkanCommands.h"
 #include "Vulkan/VulkanDescriptors.h"
 #include "Vulkan/VulkanDevice.h"
@@ -50,6 +50,7 @@ namespace Hyper
 		std::unique_ptr<VulkanDevice> m_pDevice;
 		std::unique_ptr<VulkanCommandPool> m_pCommandPool;
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
+		std::unique_ptr<ImGuiWrapper> m_pImGuiWrapper;
 
 		std::unique_ptr<VulkanRaytracer> m_pRayTracer;
 

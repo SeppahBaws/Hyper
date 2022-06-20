@@ -12,6 +12,7 @@ IncludeDir["Optick"] = "%{wks.location}/Hyper/dependencies/Optick/src"
 IncludeDir["assimp"] = "%{wks.location}/Hyper/dependencies/assimp/include"
 IncludeDir["stb"] = "%{wks.location}/Hyper/dependencies/stb/include"
 IncludeDir["NvidiaAftermath"] = "%{wks.location}/Hyper/dependencies/NvidiaAftermath/include"
+IncludeDir["imgui"] = "%{wks.location}/Hyper/dependencies/imgui"
 
 LibDir = {}
 LibDir["Vulkan"] = "%{VULKAN_SDK}/Lib"

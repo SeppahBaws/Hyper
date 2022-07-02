@@ -34,13 +34,13 @@ namespace Hyper
 		VulkanAccelerationStructure(RenderContext* pRenderCtx);
 		~VulkanAccelerationStructure();
 
-		void AddMesh(const Mesh* mesh, const glm::mat4& transform);
+		void AddMesh(const Mesh* mesh, const glm::mat4& transform, const std::string& name = "");
 		void Build();
 
 		[[nodiscard]] const Accel& GetTLAS() const { return m_Tlas; }
 
 	private:
-		void CreateBlas(const Mesh* pMesh, const glm::mat4& transform);
+		void CreateBlas(const Mesh* pMesh, const glm::mat4& transform, const std::string& name);
 		void CreateTlas();
 
 	private:
@@ -49,6 +49,6 @@ namespace Hyper
 		std::vector<Accel> m_BLASes{};
 		Accel m_Tlas{};
 
-		std::vector<std::pair<const Mesh*, glm::mat4>> m_StagedMeshes;
+		std::vector<std::tuple<const Mesh*, glm::mat4, std::string>> m_StagedMeshes;
 	};
 }

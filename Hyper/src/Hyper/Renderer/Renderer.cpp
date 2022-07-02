@@ -42,10 +42,13 @@ namespace Hyper
 		{
 			m_pScene = std::make_unique<Scene>(m_pRenderContext.get());
 
-			// m_pScene->AddModel("res/models/Cuub.fbx");
-			m_pScene->AddModel("res/sponza/sponza.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
-			// m_pScene->AddModel("res/Bistro/Exterior/exterior.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
-			// m_pScene->AddModel("res/TrainStation/TrainStation.fbx", glm::vec3{ 0.0f }, glm::vec3{ 0.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+			// I recommend loading gltf or fbx. Obj files are currently broken, the rest is untested.
+			// TODO: look at fixing .obj files.
+			// m_pScene->ImportModel("res/TrainStation/TrainStation.fbx", glm::vec3{ 0.0f }, glm::vec3{ 0.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+			// m_pScene->ImportModel("res/TrainStation/TrainStation.gltf", glm::vec3{0.0f}, glm::vec3{ 90.0f, 0.0f, 0.0f });
+			m_pScene->ImportModel("res/NewSponza/Main/NewSponza_Main_Blender_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+			m_pScene->ImportModel("res/NewSponza/PKG_A_Curtains/NewSponza_Curtains_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+
 			m_pScene->BuildAccelerationStructure();
 			m_pCamera->Setup();
 		}
@@ -275,6 +278,7 @@ namespace Hyper
 
 		// Update camera just for test
 		m_pCamera->Update(dt);
+		m_pScene->Update(dt);
 
 		vk::CommandBuffer cmd = m_CommandBuffers[m_FrameIdx];
 		VulkanCommandBuffer::Begin(cmd);
@@ -291,7 +295,9 @@ namespace Hyper
 		cmd.setScissor(0, vk::Rect2D{ vk::Offset2D{ 0, 0 }, m_pRenderContext->imageExtent });
 
 
-		ImGui::ShowDemoWindow();
+		m_pCamera->DrawImGui();
+		// ImGui::ShowDemoWindow();
+
 
 		// Geometry pass.
 		{

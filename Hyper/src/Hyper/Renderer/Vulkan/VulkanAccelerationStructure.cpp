@@ -3,6 +3,8 @@
 
 #include "VulkanDebug.h"
 #include "VulkanUtility.h"
+#include "Hyper/Renderer/FlyCamera.h"
+#include "Hyper/Renderer/FlyCamera.h"
 #include "Hyper/Renderer/Mesh.h"
 
 namespace Hyper
@@ -24,16 +26,16 @@ namespace Hyper
 		}
 	}
 
-	void VulkanAccelerationStructure::AddMesh(const Mesh* mesh, const glm::mat4& transform)
+	void VulkanAccelerationStructure::AddMesh(const Mesh* mesh, const glm::mat4& transform, const std::string& name)
 	{
-		m_StagedMeshes.push_back(std::pair(mesh, transform));
+		m_StagedMeshes.push_back(std::tuple(mesh, transform, name));
 	}
 
 	void VulkanAccelerationStructure::Build()
 	{
-		for (auto&[mesh, transform] : m_StagedMeshes)
+		for (auto&[mesh, transform, name] : m_StagedMeshes)
 		{
-			CreateBlas(mesh, transform);
+			CreateBlas(mesh, transform, name);
 		}
 		HPR_CORE_LOG_INFO("Created all BLASes!");
 
@@ -41,7 +43,7 @@ namespace Hyper
 		HPR_CORE_LOG_INFO("Created TLAS!");
 	}
 
-	void VulkanAccelerationStructure::CreateBlas(const Mesh* pMesh, const glm::mat4& transform)
+	void VulkanAccelerationStructure::CreateBlas(const Mesh* pMesh, const glm::mat4& transform, const std::string& name)
 	{
 		Accel bottomLevelAS;
 		bottomLevelAS.transform = transform;
@@ -124,7 +126,7 @@ namespace Hyper
 
 		scratchBuffer.pBuffer.reset();
 
-		VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::eAccelerationStructureKHR, bottomLevelAS.handle, fmt::format("BLAS {}", m_BLASes.size()));
+		VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::eAccelerationStructureKHR, bottomLevelAS.handle, fmt::format("{}", name));
 
 		m_BLASes.push_back(std::move(bottomLevelAS));
 	}

@@ -14,6 +14,7 @@ namespace Hyper
 
 		void Setup();
 		void Update(f32 dt);
+		void DrawImGui();
 
 		// void ComputeView();
 		void ComputeProjection();

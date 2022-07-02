@@ -25,6 +25,10 @@ namespace Hyper
 	private:
 		RenderContext* m_pRenderCtx;
 
+		glm::vec3 m_Position;
+		glm::vec3 m_Rotation;
+		glm::vec3 m_Scale;
+
 		u32 m_MaterialIdx;
 		std::vector<VertexPosNormTex> m_Vertices;
 		std::vector<u32> m_Indices;

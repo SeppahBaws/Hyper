@@ -2,8 +2,9 @@
 #include <vulkan/vulkan.hpp>
 
 #include "FlyCamera.h"
+#include "MaterialLibrary.h"
 #include "Mesh.h"
-#include "Model.h"
+#include "RenderContext.h"
 #include "RenderTarget.h"
 #include "Hyper/Core/Subsystem.h"
 #include "Hyper/Scene/Scene.h"
@@ -12,8 +13,8 @@
 #include "Vulkan/VulkanDescriptors.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
-#include "Vulkan/VulkanSwapChain.h"
 #include "Vulkan/VulkanRaytracer.h"
+#include "Vulkan/VulkanSwapChain.h"
 
 namespace Hyper
 {
@@ -51,6 +52,7 @@ namespace Hyper
 		std::unique_ptr<VulkanCommandPool> m_pCommandPool;
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
 		std::unique_ptr<ImGuiWrapper> m_pImGuiWrapper;
+		std::unique_ptr<MaterialLibrary> m_pMaterialLibrary;
 
 		std::unique_ptr<VulkanRaytracer> m_pRayTracer;
 

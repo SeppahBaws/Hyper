@@ -4,12 +4,16 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
 
 #include "imgui.h"
-#include "Hyper/Renderer/Model.h"
+#include "Hyper/Core/Context.h"
+#include "Hyper/Renderer/MaterialLibrary.h"
+#include "Hyper/Renderer/Mesh.h"
+#include "Hyper/Renderer/RenderContext.h"
+#include "Hyper/Renderer/Vulkan/Vertex.h"
 #include "Hyper/Renderer/Vulkan/VulkanAccelerationStructure.h"
 
 namespace Hyper
@@ -22,7 +26,6 @@ namespace Hyper
 	Scene::~Scene()
 	{
 		m_pAcceleration.reset();
-		m_Models.clear();
 	}
 
 	void Scene::ImportModel(const std::filesystem::path& filePath, const glm::vec3& pos, const glm::vec3& rot, const glm::vec3& scale)
@@ -63,12 +66,14 @@ namespace Hyper
 			HPR_CORE_LOG_TRACE("  {} ({})", key.C_Str(), type);
 		}
 
+		m_TempMaterialMappings.clear();
+		LoadMaterials(scene, filePath);
+
 		m_RootNodes.push_back(LoadNode(scene, scene->mRootNode, filePath.filename().string()));
 		m_RootNodes.back()->m_Position = pos;
 		m_RootNodes.back()->m_Rotation = rot;
 		m_RootNodes.back()->m_Scale = scale;
 		m_RootNodes.back()->CalculateTransforms(true);
-		LoadMaterials(scene, filePath);
 	}
 
 	void Scene::BuildAccelerationStructure()
@@ -115,12 +120,9 @@ namespace Hyper
 	static Node* selectedNode = nullptr;
 	void Scene::Draw(const vk::CommandBuffer& cmd, const vk::PipelineLayout& pipelineLayout)
 	{
-		// Temp.
-		m_Materials[0].Bind(cmd, pipelineLayout);
-
 		for (const auto& node : m_RootNodes)
 		{
-			node->Draw(cmd, pipelineLayout);
+			node->Draw(m_pRenderCtx, cmd, pipelineLayout);
 		}
 
 		if (ImGui::Begin("Scene hierarchy"))
@@ -212,17 +214,17 @@ namespace Hyper
 		};
 		node->m_TransformDirty = true;
 
-		glm::vec3 pos;
-		glm::quat rot;
+		glm::vec3 translation;
+		glm::quat orientation;
 		glm::vec3 scale;
 		glm::vec3 skew;
-		glm::vec4 persp;
-		glm::decompose(transform, scale, rot, pos, skew, persp);
+		glm::vec4 perspective;
+		glm::decompose(transform, scale, orientation, translation, skew, perspective);
 
 		// Transform vertices from assimp's system to ours.
 		// Assimp uses right-handed y up, z out of screen: https://assimp-docs.readthedocs.io/en/master/usage/use_the_lib.html#introduction
-		node->m_Position = pos;
-		node->m_Rotation = glm::degrees(glm::eulerAngles(rot));
+		node->m_Position = translation;
+		node->m_Rotation = glm::degrees(glm::eulerAngles(orientation));
 		node->m_Scale = scale;
 
 		for (u32 m = 0; m < pNode->mNumMeshes; m++)
@@ -232,6 +234,7 @@ namespace Hyper
 
 			const u32 meshId = pNode->mMeshes[m];
 			const auto aiMesh = pScene->mMeshes[meshId];
+			const UUID materialId = m_TempMaterialMappings[aiMesh->mMaterialIndex];
 
 			// Load vertices
 			for (u32 v = 0; v < aiMesh->mNumVertices; v++)
@@ -263,7 +266,7 @@ namespace Hyper
 				}
 			}
 
-			node->m_Meshes.push_back(std::make_shared<Mesh>(m_pRenderCtx, aiMesh->mMaterialIndex, vertices, indices, aiMesh->mNumFaces));
+			node->m_Meshes.push_back(std::make_shared<Mesh>(m_pRenderCtx, materialId, vertices, indices, aiMesh->mNumFaces));
 		}
 
 		for (u32 c = 0; c < pNode->mNumChildren; c++)
@@ -278,6 +281,10 @@ namespace Hyper
 
 	void Scene::LoadMaterials(const aiScene* pScene, const std::filesystem::path& filePath)
 	{
+		MaterialLibrary* materialLibrary = m_pRenderCtx->pMaterialLibrary;
+
+		m_TempMaterialMappings.resize(pScene->mNumMaterials);
+
 		for (u32 m = 0; m < pScene->mNumMaterials; m++)
 		{
 			aiString texturePath;
@@ -328,10 +335,10 @@ namespace Hyper
 				}
 			}
 
-			Material& material = m_Materials.emplace_back(m_pRenderCtx, materialName);
+			Material& material = materialLibrary->CreateMaterial(materialName);
+			m_TempMaterialMappings[m] = material.GetId();
+			HPR_CORE_LOG_INFO("Created material with id '{}'", material.GetId());
 
-			// TODO: re-enable texture loading (was taking up a lot of loading time)
-#ifdef LOAD_MATERIALS
 			if (AI_SUCCESS == pMat->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath))
 			{
 				const auto absoluteTexturePath = filePath.parent_path() / std::filesystem::path(texturePath.C_Str());
@@ -351,10 +358,6 @@ namespace Hyper
 			{
 				material.LoadTexture(MaterialTextureType::Normal, "res/textures/default-normal.png");
 			}
-#else
-			material.LoadTexture(MaterialTextureType::Albedo, "res/textures/default-white.png");
-			material.LoadTexture(MaterialTextureType::Normal, "res/textures/default-normal.png");
-#endif
 
 			material.PostLoadInititalize();
 		}

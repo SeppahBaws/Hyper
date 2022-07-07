@@ -1,6 +1,7 @@
 ﻿#include "HyperPCH.h"
 #include "Material.h"
 
+#include "RenderContext.h"
 #include "Renderer.h"
 #include "Texture.h"
 #include "Vulkan/VulkanDebug.h"
@@ -30,6 +31,7 @@ namespace Hyper
 	}
 
 	Material::Material(Material&& other) noexcept: m_pRenderCtx(other.m_pRenderCtx),
+		m_Id(other.m_Id),
 		m_Name(std::move(other.m_Name)),
 		m_Textures(std::move(other.m_Textures)),
 		m_pLayout(std::move(other.m_pLayout)),
@@ -44,6 +46,7 @@ namespace Hyper
 		if (this == &other)
 			return *this;
 		m_pRenderCtx = other.m_pRenderCtx;
+		m_Id = other.m_Id;
 		m_Name = std::move(other.m_Name);
 		m_Textures = std::move(other.m_Textures);
 		m_pLayout = std::move(other.m_pLayout);

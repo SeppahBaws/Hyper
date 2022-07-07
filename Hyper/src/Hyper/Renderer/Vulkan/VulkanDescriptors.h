@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include "Hyper/Renderer/RenderContext.h"
 
 // These helpers are based on Brendan Galea's implementation in his littelVulkanEngine tutorial series:
 // https://github.com/blurrypiano/littleVulkanEngine/blob/master/littleVulkanEngine/tutorial20/lve_descriptors.hpp

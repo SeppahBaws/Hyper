@@ -1,9 +1,10 @@
 ﻿#pragma once
-#include "RenderContext.h"
 #include "Vulkan/VulkanDescriptors.h"
 
 namespace Hyper
 {
+	struct RenderContext;
+
 	class Texture;
 
 	enum class MaterialTextureType
@@ -23,6 +24,8 @@ namespace Hyper
 		Material(const Material& other) = delete;
 		Material& operator=(const Material& other) = delete;
 
+		UUID GetId() const { return m_Id; }
+
 		void LoadTexture(MaterialTextureType type, const std::filesystem::path& fileName);
 		void PostLoadInititalize();
 
@@ -30,7 +33,8 @@ namespace Hyper
 
 	private:
 		RenderContext* m_pRenderCtx;
-		
+
+		UUID m_Id;
 		std::string m_Name;
 		std::unordered_map<MaterialTextureType, std::unique_ptr<Texture>> m_Textures;
 

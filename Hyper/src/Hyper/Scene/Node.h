@@ -4,6 +4,7 @@
 
 namespace Hyper
 {
+	struct RenderContext;
 	class Mesh;
 
 	class Node
@@ -11,7 +12,7 @@ namespace Hyper
 	public:
 		Node(const std::string& name);
 		
-		void Draw(const vk::CommandBuffer& cmd, const vk::PipelineLayout& pipelineLayout);
+		void Draw(RenderContext* pRenderCtx, const vk::CommandBuffer& cmd, const vk::PipelineLayout& pipelineLayout);
 		void Update(float dt);
 
 		void DrawImGui();

@@ -3,6 +3,7 @@
 
 #include "VulkanAccelerationStructure.h"
 #include "VulkanDebug.h"
+#include "VulkanDescriptors.h"
 #include "VulkanPipeline.h"
 #include "VulkanUtility.h"
 #include "Hyper/Renderer/FlyCamera.h"

@@ -19,6 +19,7 @@ namespace Hyper
 		// Add subsystems. Order matters: first in, first initialized.
 		m_pContext->AddSubsystem<Window>();
 		m_pContext->AddSubsystem<Input>();
+		// TODO
 		m_pContext->AddSubsystem<Renderer>();
 
 

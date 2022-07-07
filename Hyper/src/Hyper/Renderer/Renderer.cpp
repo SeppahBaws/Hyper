@@ -3,6 +3,7 @@
 
 #include <imgui.h>
 
+#include "MaterialLibrary.h"
 #include "Hyper/Core/Context.h"
 #include "Hyper/Core/Window.h"
 #include "Hyper/Debug/Profiler.h"
@@ -34,6 +35,8 @@ namespace Hyper
 		m_pRenderContext = std::make_unique<RenderContext>();
 		m_pDevice = std::make_unique<VulkanDevice>(m_pRenderContext.get());
 		m_pCommandPool = std::make_unique<VulkanCommandPool>(m_pRenderContext.get());
+		m_pMaterialLibrary = std::make_unique<MaterialLibrary>(m_pRenderContext.get());
+		m_pRenderContext->pMaterialLibrary = m_pMaterialLibrary.get();
 
 		Window* pWindow = m_pContext->GetSubsystem<Window>();
 		m_pSwapChain = std::make_unique<VulkanSwapChain>(pWindow, m_pRenderContext.get(), pWindow->GetWidth(), pWindow->GetHeight());
@@ -490,6 +493,7 @@ namespace Hyper
 		m_pScene.reset();
 		m_pCamera.reset();
 
+		m_pMaterialLibrary.reset();
 		// TODO: automatically keep track of allocated command buffers and destroy them all.
 		m_pCommandPool->FreeCommandBuffers(m_CommandBuffers);
 		m_pCommandPool.reset();

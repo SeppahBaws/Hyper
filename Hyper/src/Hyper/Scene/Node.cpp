@@ -1,14 +1,16 @@
 ﻿#include "HyperPCH.h"
 #include "Node.h"
 
-#include "Hyper/Debug/Profiler.h"
-#include "Hyper/Renderer/Mesh.h"
-#include "Hyper/Renderer/Renderer.h"
-
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
 #include "imgui.h"
+#include "Hyper/Core/Context.h"
+#include "Hyper/Debug/Profiler.h"
+#include "Hyper/Renderer/MaterialLibrary.h"
+#include "Hyper/Renderer/Mesh.h"
+#include "Hyper/Renderer/RenderContext.h"
+#include "Hyper/Renderer/Renderer.h"
 
 namespace Hyper
 {
@@ -17,9 +19,11 @@ namespace Hyper
 	{
 	}
 
-	void Node::Draw(const vk::CommandBuffer& cmd, const vk::PipelineLayout& pipelineLayout)
+	void Node::Draw(RenderContext* pRenderCtx, const vk::CommandBuffer& cmd, const vk::PipelineLayout& pipelineLayout)
 	{
 		HPR_PROFILE_SCOPE();
+
+		MaterialLibrary* materialLibrary = pRenderCtx->pMaterialLibrary;
 
 		ModelMatrixPushConst pushConst{};
 		pushConst.modelMatrix = m_WorldTransform;
@@ -27,12 +31,15 @@ namespace Hyper
 
 		for (const auto& mesh : m_Meshes)
 		{
+			const Material& material = materialLibrary->GetMaterial(mesh->GetMaterialId());
+			material.Bind(cmd, pipelineLayout);
+
 			mesh->Draw(cmd);
 		}
 
 		for (const auto& child : m_pChildren)
 		{
-			child->Draw(cmd, pipelineLayout);
+			child->Draw(pRenderCtx, cmd, pipelineLayout);
 		}
 	}
 

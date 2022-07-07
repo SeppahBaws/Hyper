@@ -1,12 +1,13 @@
 ﻿#include "HyperPCH.h"
 #include "VulkanShader.h"
-#include "Hyper/IO/FileUtils.h"
 
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_reflect.hpp>
 
 #include "VulkanDescriptors.h"
 #include "VulkanUtility.h"
+#include "Hyper/IO/FileUtils.h"
+#include "Hyper/Renderer/RenderContext.h"
 
 namespace Hyper
 {

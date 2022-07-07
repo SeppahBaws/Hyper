@@ -5,6 +5,7 @@
 #include "VulkanDebug.h"
 #include "VulkanShader.h"
 #include "VulkanUtility.h"
+#include "Hyper/Renderer/RenderContext.h"
 
 namespace Hyper
 {

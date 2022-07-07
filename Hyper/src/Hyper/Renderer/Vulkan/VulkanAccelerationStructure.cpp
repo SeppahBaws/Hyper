@@ -4,8 +4,8 @@
 #include "VulkanDebug.h"
 #include "VulkanUtility.h"
 #include "Hyper/Renderer/FlyCamera.h"
-#include "Hyper/Renderer/FlyCamera.h"
 #include "Hyper/Renderer/Mesh.h"
+#include "Hyper/Renderer/RenderContext.h"
 
 namespace Hyper
 {

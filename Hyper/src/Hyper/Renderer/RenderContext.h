@@ -4,10 +4,11 @@
 
 #include "Hyper/Renderer/Vulkan/VulkanQueue.h"
 #include "Hyper/Renderer/Vulkan/VulkanCommands.h"
+// #include "Hyper/Renderer/MaterialLibrary.h"
 
 namespace Hyper
 {
-	class Renderer;
+	class MaterialLibrary;
 
 	struct RenderContext
 	{
@@ -22,5 +23,7 @@ namespace Hyper
 
 		vk::Format imageFormat;
 		vk::Extent2D imageExtent;
+
+		MaterialLibrary* pMaterialLibrary;
 	};
 }

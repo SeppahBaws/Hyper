@@ -1,11 +1,10 @@
 ﻿#pragma once
 #include <vulkan/vulkan.hpp>
 
-#include "VulkanDescriptors.h"
-#include "Hyper/Renderer/RenderContext.h"
-
 namespace Hyper
 {
+	struct RenderContext;
+
 	enum class ShaderStageType : VkShaderStageFlags
 	{
 		Vertex = vk::ShaderStageFlagBits::eVertex,

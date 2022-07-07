@@ -4,6 +4,7 @@
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include "imgui_impl_vulkan_dynamic_rendering.h"
+#include "Hyper/Renderer/RenderContext.h"
 #include "Hyper/Renderer/Vulkan/VulkanDebug.h"
 #include "Hyper/Renderer/Vulkan/VulkanDescriptors.h"
 #include "Hyper/Renderer/Vulkan/VulkanUtility.h"

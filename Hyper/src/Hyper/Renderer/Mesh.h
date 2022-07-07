@@ -9,12 +9,12 @@ namespace Hyper
 	class Mesh
 	{
 	public:
-		explicit Mesh(RenderContext* pRenderCtx, u32 materialIdx, const std::vector<VertexPosNormTex>& vertices, const std::vector<u32>& indices, u32 triCount);
+		explicit Mesh(RenderContext* pRenderCtx, const UUID& materialId, const std::vector<VertexPosNormTex>& vertices, const std::vector<u32>& indices, u32 triCount);
 		~Mesh();
 
 		void Draw(const vk::CommandBuffer& cmd) const;
 		
-		[[nodiscard]] u32 GetMaterialIdx() const { return m_MaterialIdx; }
+		[[nodiscard]] UUID GetMaterialId() const { return m_MaterialId; }
 
 		[[nodiscard]] VulkanVertexBuffer* GetVertexBuffer() const { return m_pVertexBuffer.get(); }
 		[[nodiscard]] VulkanIndexBuffer* GetIndexBuffer() const { return m_pIndexBuffer.get(); }
@@ -29,7 +29,7 @@ namespace Hyper
 		glm::vec3 m_Rotation;
 		glm::vec3 m_Scale;
 
-		u32 m_MaterialIdx;
+		UUID m_MaterialId;
 		std::vector<VertexPosNormTex> m_Vertices;
 		std::vector<u32> m_Indices;
 		u32 m_TriCount{};

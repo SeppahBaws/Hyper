@@ -13,6 +13,13 @@ namespace Hyper
 		: m_pRenderCtx(pRenderCtx)
 		, m_FilePath(filePath)
 	{
+		// Check if image exists.
+		if (!std::filesystem::exists(filePath))
+		{
+			HPR_CORE_LOG_ERROR("Image '{}' doesn't exist!", filePath.string());
+			throw std::runtime_error(fmt::format("Image '{}' doesn't exist!", filePath.string()));
+		}
+
 		stbi_uc* pixels;
 		i32 width, height, nrChannels;
 

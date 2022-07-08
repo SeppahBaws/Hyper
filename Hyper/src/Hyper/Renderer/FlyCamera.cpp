@@ -64,9 +64,11 @@ namespace Hyper
 			if (m_pInput->GetKey(Key::E))
 				movement.z += 1;
 
-			// Todo: parameterize look speed
 			m_Yaw += mouseMov.x * dt * m_LookSpeed;
 			m_Pitch += mouseMov.y * dt * m_LookSpeed;
+
+			m_MoveSpeed += m_pInput->GetScroll().y;
+			m_MoveSpeed = std::clamp(m_MoveSpeed, 1.0f, 50.0f);
 
 			m_pInput->SetCursorMode(CursorMode::Disabled);
 		}
@@ -111,9 +113,9 @@ namespace Hyper
 			ImGui::InputFloat("Yaw", &m_Yaw);
 			ImGui::InputFloat("Pitch", &m_Pitch);
 			ImGui::InputFloat3("Forward", (float*)&m_Forward, "%.3f", ImGuiInputTextFlags_ReadOnly);
+			ImGui::SliderFloat("Move speed", &m_MoveSpeed, 1.0f, 50.0f);
 		}
 		ImGui::End();
-
 	}
 
 	void FlyCamera::ComputeViewProjection()

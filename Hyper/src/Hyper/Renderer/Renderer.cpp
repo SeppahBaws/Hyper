@@ -78,7 +78,9 @@ namespace Hyper
 
 	bool Renderer::OnPostInitialize()
 	{
-		m_pRayTracer = std::make_unique<VulkanRaytracer>(m_pRenderContext.get(), m_pScene->GetAccelerationStructure()->GetTLAS().handle, m_pSwapChain->GetNumFrames());
+		Window* pWindow = m_pContext->GetSubsystem<Window>();
+
+		m_pRayTracer = std::make_unique<VulkanRaytracer>(m_pRenderContext.get(), m_pScene->GetAccelerationStructure()->GetTLAS().handle, m_pSwapChain->GetNumFrames(), pWindow->GetWidth(), pWindow->GetHeight());
 
 		// Initialize the geometry pass
 		{

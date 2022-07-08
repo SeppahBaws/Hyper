@@ -183,8 +183,9 @@ namespace Hyper
 
 		m_pRenderCtx = pRenderer->GetRenderContext();
 
-		ImportModel("res/NewSponza/Main/NewSponza_Main_Blender_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
-		ImportModel("res/NewSponza/PKG_A_Curtains/NewSponza_Curtains_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+		// ImportModel("res/NewSponza/Main/NewSponza_Main_Blender_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+		// ImportModel("res/NewSponza/PKG_A_Curtains/NewSponza_Curtains_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+		ImportModel("res/models/Sponza/Sponza.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
 
 		BuildAccelerationStructure();
 

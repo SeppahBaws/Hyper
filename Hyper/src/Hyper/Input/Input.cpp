@@ -16,7 +16,26 @@ namespace Hyper
 	bool Input::OnInitialize()
 	{
 		m_pWindow = m_pContext->GetSubsystem<Window>();
+		static Input* input = this;
+
+		glfwSetScrollCallback(m_pWindow->GetHandle(), [](GLFWwindow* window, double x, double y)
+		{
+			input->m_Scroll = { x, y };
+		});
 		return true;
+	}
+
+	void Input::OnTick(f32 f32)
+	{
+		if (m_ScrollDirty)
+		{
+			m_Scroll = { 0.0f, 0.0f };
+			m_ScrollDirty = false;
+		}
+		else if (m_Scroll.length() > 0.01f)
+		{
+			m_ScrollDirty = true;
+		}
 	}
 
 	bool Input::GetKey(Key key) const
@@ -43,6 +62,11 @@ namespace Hyper
 		const glm::vec2 mov = m_LastMousePos - currPos;
 		m_LastMousePos = currPos;
 		return mov;
+	}
+
+	glm::vec2 Input::GetScroll()
+	{
+		return m_Scroll;
 	}
 
 	void Input::SetCursorMode(CursorMode mode) const

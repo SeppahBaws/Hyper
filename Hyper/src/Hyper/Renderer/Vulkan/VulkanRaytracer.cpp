@@ -12,8 +12,8 @@
 
 namespace Hyper
 {
-	VulkanRaytracer::VulkanRaytracer(RenderContext* pRenderCtx, vk::AccelerationStructureKHR accel, u32 numFrames)
-		: m_pRenderCtx(pRenderCtx), m_Tlas(accel), m_NumFrames(numFrames)
+	VulkanRaytracer::VulkanRaytracer(RenderContext* pRenderCtx, vk::AccelerationStructureKHR accel, u32 numFrames, u32 outputWidth, u32 outputHeight)
+		: m_pRenderCtx(pRenderCtx), m_Tlas(accel), m_NumFrames(numFrames), m_OutputWidth(outputWidth), m_OutputHeight(outputHeight)
 	{
 		m_pOutputImage = std::make_unique<RenderTarget>(m_pRenderCtx, vk::Format::eR8Unorm, "Raytracing output image", m_OutputWidth, m_OutputHeight);
 

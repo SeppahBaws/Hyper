@@ -61,7 +61,7 @@ namespace Hyper
 	class VulkanRaytracer
 	{
 	public:
-		VulkanRaytracer(RenderContext* pRenderCtx, vk::AccelerationStructureKHR tlas, u32 numFrames);
+		VulkanRaytracer(RenderContext* pRenderCtx, vk::AccelerationStructureKHR tlas, u32 numFrames, u32 outputWidth, u32 outputHeight);
 		~VulkanRaytracer();
 
 		void RayTrace(vk::CommandBuffer cmd, FlyCamera* pCamera, u32 frameIdx);

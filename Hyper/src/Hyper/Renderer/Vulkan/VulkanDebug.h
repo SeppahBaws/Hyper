@@ -2,7 +2,10 @@
 #include <glm/vec4.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "Hyper/Renderer/RenderContext.h"
+namespace Hyper
+{
+	struct RenderContext;
+}
 
 namespace Hyper::VkDebug
 {

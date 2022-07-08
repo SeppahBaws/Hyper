@@ -7,8 +7,8 @@
 
 namespace Hyper
 {
-	Mesh::Mesh(RenderContext* pRenderCtx, u32 materialIdx, const std::vector<VertexPosNormTex>& vertices, const std::vector<u32>& indices, u32 triCount)
-		: m_pRenderCtx(pRenderCtx), m_MaterialIdx(materialIdx), m_Vertices(vertices), m_Indices(indices), m_TriCount(triCount)
+	Mesh::Mesh(RenderContext* pRenderCtx, const UUID& materialId, const std::vector<VertexPosNormTex>& vertices, const std::vector<u32>& indices, u32 triCount)
+		: m_pRenderCtx(pRenderCtx), m_MaterialId(materialId), m_Vertices(vertices), m_Indices(indices), m_TriCount(triCount)
 	{
 		// Vertex buffer
 		m_pVertexBuffer = std::make_unique<VulkanVertexBuffer>(m_pRenderCtx, "vertex buffer");

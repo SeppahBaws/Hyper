@@ -7,6 +7,7 @@
 #include "Hyper/Debug/Profiler.h"
 #include "Hyper/Input/Input.h"
 #include "Hyper/Renderer/Renderer.h"
+#include "Hyper/Scene/Scene.h"
 
 namespace Hyper
 {
@@ -20,6 +21,7 @@ namespace Hyper
 		m_pContext->AddSubsystem<Window>();
 		m_pContext->AddSubsystem<Input>();
 		m_pContext->AddSubsystem<Renderer>();
+		m_pContext->AddSubsystem<Scene>();
 
 
 		if (!m_pContext->OnInitialize())

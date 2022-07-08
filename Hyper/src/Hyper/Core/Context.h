@@ -45,6 +45,15 @@ namespace Hyper
 				}
 			}
 
+			for (auto& subsystem : m_Subsystems)
+			{
+				if (!subsystem->OnPostInitialize())
+				{
+					success = false;
+					break;
+				}
+			}
+
 			return success;
 		}
 

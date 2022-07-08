@@ -1,6 +1,7 @@
 ﻿#include "HyperPCH.h"
 #include "VulkanDebug.h"
-#include <spdlog/fmt/fmt.h>
+
+#include "Hyper/Renderer/RenderContext.h"
 
 static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerExt;
 static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerExt;

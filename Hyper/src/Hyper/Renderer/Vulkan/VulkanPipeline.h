@@ -2,10 +2,11 @@
 #include <vulkan/vulkan.hpp>
 
 #include "VulkanShader.h"
-#include "Hyper/Renderer/RenderContext.h"
 
 namespace Hyper
 {
+	struct RenderContext;
+
 	class VulkanPipeline
 	{
 	public:

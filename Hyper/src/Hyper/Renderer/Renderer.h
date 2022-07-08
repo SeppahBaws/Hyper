@@ -2,21 +2,23 @@
 #include <vulkan/vulkan.hpp>
 
 #include "FlyCamera.h"
+#include "MaterialLibrary.h"
 #include "Mesh.h"
-#include "Model.h"
+#include "RenderContext.h"
 #include "RenderTarget.h"
 #include "Hyper/Core/Subsystem.h"
-#include "Hyper/Scene/Scene.h"
 #include "ImGui/ImGuiWrapper.h"
 #include "Vulkan/VulkanCommands.h"
 #include "Vulkan/VulkanDescriptors.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanPipeline.h"
-#include "Vulkan/VulkanSwapChain.h"
 #include "Vulkan/VulkanRaytracer.h"
+#include "Vulkan/VulkanSwapChain.h"
 
 namespace Hyper
 {
+	class Scene;
+
 	struct ModelMatrixPushConst
 	{
 		glm::mat4 modelMatrix;
@@ -42,8 +44,13 @@ namespace Hyper
 		~Renderer() override = default;
 
 		bool OnInitialize() override;
+		bool OnPostInitialize() override;
 		void OnTick(f32 dt) override;
 		void OnShutdown() override;
+
+		void WaitIdle();
+
+		[[nodiscard]] RenderContext* GetRenderContext() const { return m_pRenderContext.get(); }
 
 	private:
 		std::unique_ptr<RenderContext> m_pRenderContext;
@@ -51,6 +58,7 @@ namespace Hyper
 		std::unique_ptr<VulkanCommandPool> m_pCommandPool;
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
 		std::unique_ptr<ImGuiWrapper> m_pImGuiWrapper;
+		std::unique_ptr<MaterialLibrary> m_pMaterialLibrary;
 
 		std::unique_ptr<VulkanRaytracer> m_pRayTracer;
 
@@ -79,6 +87,6 @@ namespace Hyper
 
 		std::unique_ptr<FlyCamera> m_pCamera;
 
-		std::unique_ptr<Scene> m_pScene;
+		Scene* m_pScene{};
 	};
 }

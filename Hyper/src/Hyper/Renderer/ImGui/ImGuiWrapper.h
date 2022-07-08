@@ -1,10 +1,11 @@
 ﻿#pragma once
 #include "GLFW/glfw3.h"
-#include "Hyper/Renderer/RenderContext.h"
 #include "Hyper/Renderer/Vulkan/VulkanDescriptors.h"
 
 namespace Hyper
 {
+	struct RenderContext;
+
 	class ImGuiWrapper
 	{
 	public:

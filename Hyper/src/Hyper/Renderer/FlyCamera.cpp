@@ -5,6 +5,8 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+#include <imgui.h>
+
 #include "Hyper/Core/Context.h"
 #include "Hyper/Core/Window.h"
 
@@ -99,6 +101,19 @@ namespace Hyper
 		}
 
 		ComputeViewProjection();
+	}
+
+	void FlyCamera::DrawImGui()
+	{
+		if (ImGui::Begin("Camera"))
+		{
+			ImGui::InputFloat3("position", (float*)&m_Position);
+			ImGui::InputFloat("Yaw", &m_Yaw);
+			ImGui::InputFloat("Pitch", &m_Pitch);
+			ImGui::InputFloat3("Forward", (float*)&m_Forward, "%.3f", ImGuiInputTextFlags_ReadOnly);
+		}
+		ImGui::End();
+
 	}
 
 	void FlyCamera::ComputeViewProjection()

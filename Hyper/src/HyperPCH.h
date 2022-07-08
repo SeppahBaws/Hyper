@@ -9,6 +9,7 @@
 #include <filesystem>
 
 #include "Hyper/Defines.h"
+#include "Hyper/Core/UUID.h"
 
 #include "Hyper/Core/Logger.h"
 

@@ -7,6 +7,7 @@
 #include "Hyper/Core/Context.h"
 #include "Hyper/Core/Window.h"
 #include "Hyper/Debug/Profiler.h"
+#include "Hyper/Scene/Scene.h"
 #include "Vulkan/VulkanAccelerationStructure.h"
 #include "Vulkan/VulkanCommands.h"
 #include "Vulkan/VulkanDebug.h"
@@ -32,6 +33,13 @@ namespace Hyper
 	{
 		HPR_PROFILE_SCOPE();
 
+		m_pScene = m_pContext->GetSubsystem<Scene>();
+		if (!m_pScene)
+		{
+			HPR_CORE_LOG_ERROR("Failed to get the scene");
+			throw std::runtime_error("Failed to get the scene");
+		}
+
 		m_pRenderContext = std::make_unique<RenderContext>();
 		m_pDevice = std::make_unique<VulkanDevice>(m_pRenderContext.get());
 		m_pCommandPool = std::make_unique<VulkanCommandPool>(m_pRenderContext.get());
@@ -41,27 +49,41 @@ namespace Hyper
 		Window* pWindow = m_pContext->GetSubsystem<Window>();
 		m_pSwapChain = std::make_unique<VulkanSwapChain>(pWindow, m_pRenderContext.get(), pWindow->GetWidth(), pWindow->GetHeight());
 
-		// Setup model and camera (Temp code)
+		// Setup camera
+		m_pCamera->Setup();
+
+		// Setup Dear ImGui
+		m_pImGuiWrapper = std::make_unique<ImGuiWrapper>(m_pRenderContext.get(), pWindow->GetHandle(), m_pRenderContext->imageFormat);
+
+		// Get command buffers. 1 for each frame in flight.
+		m_CommandBuffers = m_pCommandPool->GetCommandBuffers(m_pSwapChain->GetNumFrames());
+
+		// Create sync objects
 		{
-			m_pScene = std::make_unique<Scene>(m_pRenderContext.get());
+			m_RenderFinishedSemaphores.resize(m_pRenderContext->imagesInFlight);
+			m_InFlightFences.resize(m_pRenderContext->imagesInFlight);
 
-			// I recommend loading gltf or fbx. Obj files are currently broken, the rest is untested.
-			// TODO: look at fixing .obj files.
-			// m_pScene->ImportModel("res/TrainStation/TrainStation.fbx", glm::vec3{ 0.0f }, glm::vec3{ 0.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
-			// m_pScene->ImportModel("res/TrainStation/TrainStation.gltf", glm::vec3{0.0f}, glm::vec3{ 90.0f, 0.0f, 0.0f });
-			m_pScene->ImportModel("res/NewSponza/Main/NewSponza_Main_Blender_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
-			m_pScene->ImportModel("res/NewSponza/PKG_A_Curtains/NewSponza_Curtains_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+			const vk::SemaphoreCreateInfo semaphoreInfo{};
+			const vk::FenceCreateInfo fenceInfo{ vk::FenceCreateFlagBits::eSignaled };
 
-			m_pScene->BuildAccelerationStructure();
-			m_pCamera->Setup();
+			for (u32 i = 0; i < m_pRenderContext->imagesInFlight; i++)
+			{
+				m_RenderFinishedSemaphores[i] = VulkanUtils::Check(m_pRenderContext->device.createSemaphore(semaphoreInfo));
+				m_InFlightFences[i] = VulkanUtils::Check(m_pRenderContext->device.createFence(fenceInfo));
+			}
 		}
 
+		return true;
+	}
+
+	bool Renderer::OnPostInitialize()
+	{
 		m_pRayTracer = std::make_unique<VulkanRaytracer>(m_pRenderContext.get(), m_pScene->GetAccelerationStructure()->GetTLAS().handle, m_pSwapChain->GetNumFrames());
 
 		// Initialize the geometry pass
 		{
 			// Render target
-			m_pGeometryRenderTarget = std::make_unique<RenderTarget>(m_pRenderContext.get(), vk::Format::eR8G8B8A8Unorm, "Geometry pass render target", pWindow->GetWidth(), pWindow->GetHeight());
+			m_pGeometryRenderTarget = std::make_unique<RenderTarget>(m_pRenderContext.get(), vk::Format::eR8G8B8A8Unorm, "Geometry pass render target", m_pRenderContext->imageExtent.width, m_pRenderContext->imageExtent.height);
 
 			// Create the frame data
 			{
@@ -197,27 +219,6 @@ namespace Hyper
 			}
 		}
 
-		// Setup Dear ImGui
-		m_pImGuiWrapper = std::make_unique<ImGuiWrapper>(m_pRenderContext.get(), pWindow->GetHandle(), m_pRenderContext->imageFormat);
-
-		// Get command buffers. 1 for each frame in flight.
-		m_CommandBuffers = m_pCommandPool->GetCommandBuffers(m_pSwapChain->GetNumFrames());
-
-		// Create sync objects
-		{
-			m_RenderFinishedSemaphores.resize(m_pRenderContext->imagesInFlight);
-			m_InFlightFences.resize(m_pRenderContext->imagesInFlight);
-
-			const vk::SemaphoreCreateInfo semaphoreInfo{};
-			const vk::FenceCreateInfo fenceInfo{ vk::FenceCreateFlagBits::eSignaled };
-
-			for (u32 i = 0; i < m_pRenderContext->imagesInFlight; i++)
-			{
-				m_RenderFinishedSemaphores[i] = VulkanUtils::Check(m_pRenderContext->device.createSemaphore(semaphoreInfo));
-				m_InFlightFences[i] = VulkanUtils::Check(m_pRenderContext->device.createFence(fenceInfo));
-			}
-		}
-
 		return true;
 	}
 
@@ -281,7 +282,6 @@ namespace Hyper
 
 		// Update camera just for test
 		m_pCamera->Update(dt);
-		m_pScene->Update(dt);
 
 		vk::CommandBuffer cmd = m_CommandBuffers[m_FrameIdx];
 		VulkanCommandBuffer::Begin(cmd);
@@ -372,14 +372,6 @@ namespace Hyper
 		{
 			VkDebug::BeginRegion(cmd, "Composite pass.", { 0.2f, 0.9f, 0.4f, 1.0f });
 
-			// auto* rtImage = m_pScene->GetAccelerationStructure()->GetOutputImage();
-			// rtImage->GetColorImage()->TransitionLayout(
-			// 	cmd,
-			// 	vk::AccessFlagBits::eShaderRead,
-			// 	vk::ImageLayout::eShaderReadOnlyOptimal,
-			// 	vk::PipelineStageFlagBits::eFragmentShader
-			// );
-
 			InsertImageMemoryBarrier(
 				cmd,
 				m_pSwapChain->GetImage(),
@@ -460,9 +452,6 @@ namespace Hyper
 
 	void Renderer::OnShutdown()
 	{
-		// Wait till everything is finished.
-		VulkanUtils::Check(m_pRenderContext->device.waitIdle());
-
 		// Destroy Dear ImGui data
 		m_pImGuiWrapper.reset();
 
@@ -490,7 +479,6 @@ namespace Hyper
 
 		m_pSwapChain.reset();
 
-		m_pScene.reset();
 		m_pCamera.reset();
 
 		m_pMaterialLibrary.reset();
@@ -498,5 +486,10 @@ namespace Hyper
 		m_pCommandPool->FreeCommandBuffers(m_CommandBuffers);
 		m_pCommandPool.reset();
 		m_pDevice.reset();
+	}
+
+	void Renderer::WaitIdle()
+	{
+		VulkanUtils::Check(m_pRenderContext->device.waitIdle());
 	}
 }

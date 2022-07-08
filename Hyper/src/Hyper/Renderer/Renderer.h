@@ -7,7 +7,6 @@
 #include "RenderContext.h"
 #include "RenderTarget.h"
 #include "Hyper/Core/Subsystem.h"
-#include "Hyper/Scene/Scene.h"
 #include "ImGui/ImGuiWrapper.h"
 #include "Vulkan/VulkanCommands.h"
 #include "Vulkan/VulkanDescriptors.h"
@@ -18,6 +17,8 @@
 
 namespace Hyper
 {
+	class Scene;
+
 	struct ModelMatrixPushConst
 	{
 		glm::mat4 modelMatrix;
@@ -43,8 +44,13 @@ namespace Hyper
 		~Renderer() override = default;
 
 		bool OnInitialize() override;
+		bool OnPostInitialize() override;
 		void OnTick(f32 dt) override;
 		void OnShutdown() override;
+
+		void WaitIdle();
+
+		[[nodiscard]] RenderContext* GetRenderContext() const { return m_pRenderContext.get(); }
 
 	private:
 		std::unique_ptr<RenderContext> m_pRenderContext;
@@ -81,6 +87,6 @@ namespace Hyper
 
 		std::unique_ptr<FlyCamera> m_pCamera;
 
-		std::unique_ptr<Scene> m_pScene;
+		Scene* m_pScene{};
 	};
 }

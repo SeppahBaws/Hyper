@@ -4,7 +4,6 @@
 
 #include "Hyper/Renderer/Vulkan/VulkanQueue.h"
 #include "Hyper/Renderer/Vulkan/VulkanCommands.h"
-// #include "Hyper/Renderer/MaterialLibrary.h"
 
 namespace Hyper
 {

@@ -13,19 +13,20 @@
 #include "Hyper/Renderer/MaterialLibrary.h"
 #include "Hyper/Renderer/Mesh.h"
 #include "Hyper/Renderer/RenderContext.h"
+#include "Hyper/Renderer/Renderer.h"
 #include "Hyper/Renderer/Vulkan/Vertex.h"
 #include "Hyper/Renderer/Vulkan/VulkanAccelerationStructure.h"
 
 namespace Hyper
 {
-	Scene::Scene(RenderContext* pRenderCtx)
-		: m_pRenderCtx(pRenderCtx)
+	Scene::Scene(Context* pContext)
+		: Subsystem(pContext)
+		, m_pRenderCtx(nullptr)
 	{
 	}
 
 	Scene::~Scene()
 	{
-		m_pAcceleration.reset();
 	}
 
 	void Scene::ImportModel(const std::filesystem::path& filePath, const glm::vec3& pos, const glm::vec3& rot, const glm::vec3& scale)
@@ -118,7 +119,7 @@ namespace Hyper
 	}
 
 	static Node* selectedNode = nullptr;
-	void Scene::Draw(const vk::CommandBuffer& cmd, const vk::PipelineLayout& pipelineLayout)
+	void Scene::Draw(const vk::CommandBuffer& cmd, const vk::PipelineLayout& pipelineLayout) const
 	{
 		for (const auto& node : m_RootNodes)
 		{
@@ -176,7 +177,30 @@ namespace Hyper
 		}
 	}
 
-	void Scene::Update(float dt)
+	bool Scene::OnInitialize()
+	{
+		const Renderer* pRenderer = m_pContext->GetSubsystem<Renderer>();
+
+		m_pRenderCtx = pRenderer->GetRenderContext();
+
+		ImportModel("res/NewSponza/Main/NewSponza_Main_Blender_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+		ImportModel("res/NewSponza/PKG_A_Curtains/NewSponza_Curtains_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+
+		BuildAccelerationStructure();
+
+		return true;
+	}
+
+	void Scene::OnShutdown()
+	{
+		// Wait till the renderer is done processing all render commands.
+		m_pContext->GetSubsystem<Renderer>()->WaitIdle();
+
+		m_pAcceleration.reset();
+		m_RootNodes.clear();
+	}
+
+	void Scene::OnTick(f32 dt)
 	{
 		std::function<void(Node*)> updateNode = [&](Node* pNode)
 		{

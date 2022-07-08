@@ -48,32 +48,75 @@ namespace Hyper
 	{
 		for (const auto& [stage, path] : shaders)
 		{
-			std::string shaderCode{};
-			if (!IO::ReadFileSync(path, shaderCode))
-			{
-				throw std::runtime_error("Failed to read shader file: "s + path.string());
-			}
-
-			shaderCode = PreProcessStage(stage, shaderCode, path.string());
-			auto [shaderModule, spirvBytes] = CompileStage(stage, shaderCode, path.string());
-			m_ShaderModules.insert_or_assign(stage, ShaderModule{
-				path,
-				shaderModule
-			});
-
-			// Write shader spirv to file (mainly for debugging purposes)
 			const std::filesystem::path compiledPath = path.parent_path() / "compiled";
 			// Create the compiled directory if it doesn't exist yet
 			if (!std::filesystem::exists(compiledPath))
 			{
 				std::filesystem::create_directory(compiledPath);
 			}
-			std::filesystem::path spvPath = compiledPath / path.filename();
-			spvPath = fmt::format("{}.spv", spvPath.string());
-			if (!IO::WriteFileSync(spvPath, spirvBytes))
+
+			auto lastWrite = std::chrono::duration_cast<std::chrono::seconds>(std::filesystem::last_write_time(path).time_since_epoch()).count();
+			std::filesystem::path cachedPath = compiledPath / path.filename();
+			cachedPath = fmt::format("{}_{}.spv", cachedPath.string(), lastWrite);
+
+			vk::ShaderModule shaderModule;
+			std::vector<u32> spirvBytes;
+
+			if (std::filesystem::exists(cachedPath))
 			{
-				HPR_VKLOG_ERROR("Failed to write spirv shader to '{}'", spvPath.string());
+				HPR_CORE_LOG_INFO("Loading cached shader from '{}'", cachedPath.string());
+
+				// Load spirv
+				if (!IO::ReadFileSync(cachedPath, spirvBytes))
+				{
+					throw std::runtime_error("Failed to read cached shader!");
+				}
+
+				// Create shader module
+				vk::ShaderModuleCreateInfo createInfo = {};
+				createInfo.setCode(spirvBytes);
+
+				shaderModule = VulkanUtils::Check(m_pRenderCtx->device.createShaderModule(createInfo));
 			}
+			else
+			{
+				HPR_CORE_LOG_INFO("Shader wasn't compiled yet, will be cached now. '{}'", path.string());
+
+				// Check if previous version of the shader was cached (same file, different timestamp) and delete it
+				for (const auto& file : std::filesystem::directory_iterator(cachedPath.parent_path()))
+				{
+					if (file.path().filename().string().starts_with(path.filename().string()))
+					{
+						HPR_CORE_LOG_DEBUG("Cleaning up old cached shader: '{}'", file.path().filename().string());
+						std::filesystem::remove(file.path());
+					}
+				}
+
+				// Load shader source
+				std::string shaderCode{};
+				if (!IO::ReadFileSync(path, shaderCode))
+				{
+					throw std::runtime_error("Failed to read shader file: "s + path.string());
+				}
+
+				// Compile shader
+				shaderCode = PreProcessStage(stage, shaderCode, path.string());
+				auto [module, spirv] = CompileStage(stage, shaderCode, path.string());
+				shaderModule = module;
+				spirvBytes = spirv;
+
+				// Cache compiled output
+				if (!IO::WriteFileSync(cachedPath, spirvBytes))
+				{
+					HPR_CORE_LOG_ERROR("Failed to write spirv shader to '{}'", cachedPath.string());
+				}
+			}
+
+			// Store compiled shader and module
+			m_ShaderModules.insert_or_assign(stage, ShaderModule{
+				path,
+				shaderModule
+				});
 
 			if (m_DoReflection)
 			{

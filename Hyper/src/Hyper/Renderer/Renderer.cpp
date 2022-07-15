@@ -138,6 +138,7 @@ namespace Hyper
 				const auto pushConstants = m_pGeometryShader->GetAllPushConstantRanges();
 
 				PipelineBuilder builder{ m_pRenderContext.get() };
+				builder.SetDebugName("Geometry pipeline");
 				builder.SetShader(m_pGeometryShader.get());
 				builder.SetInputAssembly(vk::PrimitiveTopology::eTriangleList, false);
 				// builder.SetViewport(0.0f, 0.0f, static_cast<f32>(m_pRenderContext->imageExtent.width), static_cast<f32>(m_pRenderContext->imageExtent.height), 0.0f, 1.0f);
@@ -351,6 +352,10 @@ namespace Hyper
 				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pGeometryPipeline->GetLayout(), 0, { currentFrameData.descriptor }, {});
 			}
 
+			// TEMP pushconst garbage
+			const u32 offset = m_pGeometryShader->GetAllPushConstantRanges()[1].offset;
+			cmd.pushConstants<LightingSettings>(m_pGeometryPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment, offset, m_pScene->GetLightingSettings());
+
 			// Draw the model to the screen
 			m_pScene->Draw(cmd, m_pGeometryPipeline->GetLayout());
 
@@ -365,7 +370,7 @@ namespace Hyper
 			VkDebug::BeginRegion(cmd, "RT Pass", { 0.3f, 0.3f, 0.8f, 1.0f });
 
 			// Trace them rays
-			m_pRayTracer->RayTrace(cmd, m_pCamera.get(), m_FrameIdx);
+			m_pRayTracer->RayTrace(cmd, m_pCamera.get(), m_FrameIdx, m_pScene->GetLightingSettings());
 
 			VkDebug::EndRegion(cmd);
 		}
@@ -374,6 +379,7 @@ namespace Hyper
 		{
 			VkDebug::BeginRegion(cmd, "Composite pass.", { 0.2f, 0.9f, 0.4f, 1.0f });
 
+			// Transition swapchain image
 			InsertImageMemoryBarrier(
 				cmd,
 				m_pSwapChain->GetImage(),
@@ -413,6 +419,7 @@ namespace Hyper
 			// End rendering
 			cmd.endRendering();
 
+			// Transition swapchain image
 			InsertImageMemoryBarrier(
 				cmd,
 				m_pSwapChain->GetImage(),

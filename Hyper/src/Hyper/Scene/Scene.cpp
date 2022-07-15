@@ -175,6 +175,12 @@ namespace Hyper
 			}
 			ImGui::End();
 		}
+
+		if (ImGui::Begin("Lighting Settings"))
+		{
+			ImGui::SliderFloat3("Sun direction", (float*)&m_LightingSettings.sunDir, -1.0f, 1.0f);
+			ImGui::End();
+		}
 	}
 
 	bool Scene::OnInitialize()
@@ -182,10 +188,17 @@ namespace Hyper
 		const Renderer* pRenderer = m_pContext->GetSubsystem<Renderer>();
 
 		m_pRenderCtx = pRenderer->GetRenderContext();
+		m_LightingSettings = {
+			.sunDir = {0.2f, 0.1f, 0.7f}
+		};
 
 		// ImportModel("res/NewSponza/Main/NewSponza_Main_Blender_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
 		// ImportModel("res/NewSponza/PKG_A_Curtains/NewSponza_Curtains_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
 		ImportModel("res/models/Sponza/Sponza.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+		// ImportModel("res/models/Sponza/Sponza.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+		// ImportModel("res/Bistro/Exterior/exterior.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+		// ImportModel("res/Bistro/Interior/interior.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+		// ImportModel("res/TrainStation/TrainStation.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
 
 		BuildAccelerationStructure();
 

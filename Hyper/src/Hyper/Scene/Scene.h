@@ -13,6 +13,11 @@ namespace Hyper
 	class VulkanAccelerationStructure;
 	class Model;
 
+	struct LightingSettings
+	{
+		glm::vec3 sunDir;
+	};
+
 	class Scene : public Subsystem
 	{
 	public:
@@ -30,6 +35,7 @@ namespace Hyper
 		void OnTick(f32 dt) override;
 
 		[[nodiscard]] VulkanAccelerationStructure* GetAccelerationStructure() const { return m_pAcceleration.get(); }
+		[[nodiscard]] const LightingSettings& GetLightingSettings() const { return m_LightingSettings; }
 
 	private:
 		std::unique_ptr<Node> LoadNode(const aiScene* pScene, const aiNode* pNode, const std::string& overwriteName = "");
@@ -42,5 +48,7 @@ namespace Hyper
 		std::unique_ptr<VulkanAccelerationStructure> m_pAcceleration;
 
 		std::vector<UUID> m_TempMaterialMappings;
+
+		LightingSettings m_LightingSettings{};
 	};
 }

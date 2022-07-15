@@ -142,6 +142,12 @@ namespace Hyper
 				vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableShaderDebugInfo;
 			deviceCreateInfoChain.get<vk::DeviceDiagnosticsConfigCreateInfoNV>().flags = aftermathFlags;
 
+			if (HYPER_VALIDATE)
+			{
+				// Debug markers (for debugging)
+				m_RequiredDeviceExtensionNames.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+			}
+
 			auto& deviceCreateInfo = deviceCreateInfoChain.get<vk::DeviceCreateInfo>()
 				.setQueueCreateInfos(queueCreateInfos)
 				.setPEnabledLayerNames(m_RequiredDeviceLayerNames)

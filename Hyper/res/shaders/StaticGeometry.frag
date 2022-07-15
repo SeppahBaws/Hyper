@@ -9,11 +9,24 @@ layout(location = 0) out vec4 fragColor;
 layout(set = 1, binding = 0) uniform sampler2D texAlbedo;
 layout(set = 1, binding = 1) uniform sampler2D texNormal;
 
-//const vec3 gLightDir = vec3(0.577, -0.577, 0.577);
-const vec3 gLightDir = vec3(-1, 2, 3);
+layout(push_constant) uniform constants
+{
+    // Explicit offset to leave room for vertex shader push constant.
+    layout(offset = 64) vec3 sunDir;
+} LightingSettings;
 
 void main()
 {
-    vec3 texColor = texture(texAlbedo, vUV).xyz;
-    fragColor = vec4(texColor, 1.0);
+    vec3 albedo = texture(texAlbedo, vUV).xyz;
+
+    // TODO: transform the normal to be world-space
+    vec3 normal = texture(texNormal, vUV).xyz;
+
+    // Simple HalfLambert diffuse
+    float NdotL = max(0.0, dot(normal, normalize(LightingSettings.sunDir)));
+    float halfLambert = clamp(NdotL * 0.5 + 0.5, 0, 1);
+
+    vec3 outputColor = albedo * halfLambert;
+
+    fragColor = vec4(outputColor, 1.0);
 }

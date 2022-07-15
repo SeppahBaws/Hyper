@@ -19,7 +19,7 @@ namespace Hyper
 		[[nodiscard]] VulkanVertexBuffer* GetVertexBuffer() const { return m_pVertexBuffer.get(); }
 		[[nodiscard]] VulkanIndexBuffer* GetIndexBuffer() const { return m_pIndexBuffer.get(); }
 
-		[[nodiscard]] u32 GetVertexCount() const { return static_cast<u32>(m_Vertices.size()); }
+		[[nodiscard]] u32 GetVertexCount() const { return m_VertexCount; }
 		[[nodiscard]] u32 GetTriCount() const { return m_TriCount; }
 
 	private:
@@ -30,8 +30,8 @@ namespace Hyper
 		glm::vec3 m_Scale;
 
 		UUID m_MaterialId;
-		std::vector<VertexPosNormTex> m_Vertices;
-		std::vector<u32> m_Indices;
+		u32 m_VertexCount{};
+		u32 m_IndexCount{};
 		u32 m_TriCount{};
 
 		std::unique_ptr<VulkanVertexBuffer> m_pVertexBuffer{};

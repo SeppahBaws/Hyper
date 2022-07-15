@@ -316,6 +316,7 @@ namespace Hyper
 		if (!m_DebugName.empty())
 		{
 			VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::ePipeline, pipelineResult.value, m_DebugName);
+			VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::ePipelineLayout, layout, fmt::format("{} layout", m_DebugName));
 		}
 
 		return VulkanPipeline(m_pRenderCtx, pipelineResult.value, cache, layout);
@@ -359,6 +360,7 @@ namespace Hyper
 		if (!m_DebugName.empty())
 		{
 			VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::ePipeline, pipelineResult.value, m_DebugName);
+			VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::ePipelineLayout, layout, fmt::format("{} layout", m_DebugName));
 		}
 
 		return VulkanPipeline(m_pRenderCtx, pipelineResult.value, cache, layout);

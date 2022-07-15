@@ -33,9 +33,6 @@ namespace Hyper
 		std::vector<const char*> m_RequiredDeviceExtensionNames = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
 
-			// Debug markers (for debugging)
-			VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
-
 			// Ray tracing extensions
 			VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
 			VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,

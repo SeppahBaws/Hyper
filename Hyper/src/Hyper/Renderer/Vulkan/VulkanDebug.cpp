@@ -181,6 +181,9 @@ namespace Hyper::VkDebug
 
 	void BeginRegion(vk::CommandBuffer commandBuffer, const char* markerName, const glm::vec4& color)
 	{
+		if (!g_VkDebugEnabled)
+			return;
+
 		VkDebugMarkerMarkerInfoEXT debugMarkerInfo{};
 		debugMarkerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 		debugMarkerInfo.pMarkerName = markerName;
@@ -190,6 +193,9 @@ namespace Hyper::VkDebug
 
 	void Insert(vk::CommandBuffer commandBuffer, const char* markerName, const glm::vec4& color)
 	{
+		if (!g_VkDebugEnabled)
+			return;
+
 		VkDebugMarkerMarkerInfoEXT debugMarkerInfo{};
 		debugMarkerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 		debugMarkerInfo.pMarkerName = markerName;
@@ -199,6 +205,9 @@ namespace Hyper::VkDebug
 
 	void EndRegion(vk::CommandBuffer commandBuffer)
 	{
+		if (!g_VkDebugEnabled)
+			return;
+
 		pfnVkCmdDebugMarkerEndEXT(static_cast<VkCommandBuffer>(commandBuffer));
 	}
 }

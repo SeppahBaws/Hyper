@@ -16,6 +16,11 @@ struct HitInfo
 };
 layout(location = 0) rayPayloadEXT HitInfo payload;
 
+layout(push_constant) uniform constants
+{
+    vec3 sunDir;
+} LightingSettings;
+
 const float FLT_MAX = float(0x7F7FFFFF);
 
 void main()

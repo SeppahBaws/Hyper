@@ -1,6 +1,7 @@
 ﻿#include "HyperPCH.h"
 #include "VulkanRaytracer.h"
 
+#include "imgui.h"
 #include "VulkanAccelerationStructure.h"
 #include "VulkanDebug.h"
 #include "VulkanDescriptors.h"
@@ -9,6 +10,7 @@
 #include "Hyper/Renderer/FlyCamera.h"
 #include "Hyper/Renderer/RenderContext.h"
 #include "Hyper/Renderer/RenderTarget.h"
+#include "Hyper/Scene/Scene.h"
 
 namespace Hyper
 {
@@ -34,7 +36,7 @@ namespace Hyper
 		m_pRenderCtx->device.destroyDescriptorSetLayout(m_DescLayout);
 	}
 
-	void VulkanRaytracer::RayTrace(vk::CommandBuffer cmd, FlyCamera* pCamera, u32 frameIdx)
+	void VulkanRaytracer::RayTrace(vk::CommandBuffer cmd, FlyCamera* pCamera, u32 frameIdx, const LightingSettings& lightingSettings)
 	{
 		m_CameraData.viewInv = pCamera->GetViewInverse();
 		m_CameraData.projInv = pCamera->GetProjectionInverse();
@@ -43,8 +45,11 @@ namespace Hyper
 		m_pOutputImage->GetColorImage()->TransitionLayout(cmd, vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite, vk::ImageLayout::eGeneral,
 			vk::PipelineStageFlagBits::eRayTracingShaderKHR);
 
+		m_RtPushConstants.sunDirection = lightingSettings.sunDir;
+
 		cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, m_RtPipeline->GetPipeline());
 		cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, m_RtPipeline->GetLayout(), 0, { m_FrameDatas[frameIdx].descriptorSet }, {});
+		cmd.pushConstants<RTPushConstants>(m_RtPipeline->GetLayout(), vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR, 0, m_RtPushConstants);
 		cmd.traceRaysKHR(m_RGenRegion, m_MissRegion, m_HitRegion, m_CallRegion, m_OutputWidth, m_OutputHeight, 1);
 
 		VkDebug::EndRegion(cmd);
@@ -130,16 +135,17 @@ namespace Hyper
 		m_ShaderGroups.push_back(group);
 
 		// Push const (We're not using this atm)
-		// vk::PushConstantRange pushConst = {};
-		// pushConst.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR;
-		// pushConst.offset = 0;
-		// pushConst.size = sizeof(RaytracerPushConstants);
+		vk::PushConstantRange pushConst = {};
+		pushConst.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eMissKHR;
+		pushConst.offset = 0;
+		pushConst.size = sizeof(RTPushConstants);
 
 		// Automatic shader reflection has issues with RT shaders, so we'll just use our custom one here.
 		const std::vector descriptorLayouts = { m_DescLayout };
-		const std::vector<vk::PushConstantRange> pushConstants = {};
+		const std::vector<vk::PushConstantRange> pushConstants = {pushConst};
 
 		PipelineBuilder builder(m_pRenderCtx);
+		builder.SetDebugName("Raytracing pipeline");
 		builder.SetShader(m_pShader.get());
 		builder.SetDescriptorSetLayout(descriptorLayouts, pushConstants);
 		builder.SetMaxRayRecursionDepth(2 < m_pRenderCtx->rtProperties.maxRayRecursionDepth ? 2 : m_pRenderCtx->rtProperties.maxRayRecursionDepth);

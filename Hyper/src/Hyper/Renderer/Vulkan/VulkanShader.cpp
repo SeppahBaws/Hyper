@@ -392,7 +392,7 @@ namespace Hyper
 				bufferOffset = m_PushConstants.back().offset + m_PushConstants.back().size;
 
 			auto& pushConst = m_PushConstants.emplace_back();
-			pushConst.size = bufferSize - bufferOffset;
+			pushConst.size = bufferSize;
 			pushConst.offset = bufferOffset;
 			pushConst.stageFlags = static_cast<vk::ShaderStageFlagBits>(stage);
 

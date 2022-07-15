@@ -5,6 +5,7 @@
 
 namespace Hyper
 {
+	struct LightingSettings;
 	class FlyCamera;
 	class VulkanAccelerationStructure;
 	class DescriptorPool;
@@ -17,6 +18,11 @@ namespace Hyper
 	{
 		glm::mat4 viewInv{ 1.0f };
 		glm::mat4 projInv{ 1.0f };
+	};
+
+	struct RTPushConstants
+	{
+		glm::vec3 sunDirection;
 	};
 
 	struct RTFrameData
@@ -64,7 +70,7 @@ namespace Hyper
 		VulkanRaytracer(RenderContext* pRenderCtx, vk::AccelerationStructureKHR tlas, u32 numFrames, u32 outputWidth, u32 outputHeight);
 		~VulkanRaytracer();
 
-		void RayTrace(vk::CommandBuffer cmd, FlyCamera* pCamera, u32 frameIdx);
+		void RayTrace(vk::CommandBuffer cmd, FlyCamera* pCamera, u32 frameIdx, const LightingSettings& lightingSettings);
 		void Resize(u32 width, u32 height);
 
 		[[nodiscard]] const RenderTarget* GetOutputImage() const { return m_pOutputImage.get(); }
@@ -85,6 +91,8 @@ namespace Hyper
 		std::unique_ptr<DescriptorPool> m_pPool;
 		RTCameraData m_CameraData;
 		std::vector<RTFrameData> m_FrameDatas;
+
+		RTPushConstants m_RtPushConstants{};
 
 		u32 m_OutputWidth = 1920;
 		u32 m_OutputHeight = 1080;

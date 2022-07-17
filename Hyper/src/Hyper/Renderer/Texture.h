@@ -16,7 +16,6 @@ namespace Hyper
 		Texture& operator=(const Texture& other) = delete;
 
 		[[nodiscard]] VulkanImage* GetImage() const { return m_pImage.get(); }
-		[[nodiscard]] const vk::Sampler& GetSampler() const { return m_Sampler; }
 		[[nodiscard]] vk::DescriptorImageInfo GetDescriptorImageInfo() const;
 
 	private:
@@ -24,6 +23,5 @@ namespace Hyper
 
 		std::filesystem::path m_FilePath;
 		std::unique_ptr<VulkanImage> m_pImage;
-		vk::Sampler m_Sampler;
 	};
 }

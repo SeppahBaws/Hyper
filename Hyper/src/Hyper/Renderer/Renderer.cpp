@@ -46,6 +46,18 @@ namespace Hyper
 		m_pMaterialLibrary = std::make_unique<MaterialLibrary>(m_pRenderContext.get());
 		m_pRenderContext->pMaterialLibrary = m_pMaterialLibrary.get();
 
+		// Create the default sampler
+		{
+			vk::SamplerCreateInfo samplerInfo = {};
+			samplerInfo.minFilter = vk::Filter::eLinear;
+			samplerInfo.magFilter = vk::Filter::eLinear;
+			samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
+			samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
+			samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
+
+			m_pRenderContext->defaultSampler = VulkanUtils::Check(m_pRenderContext->device.createSampler(samplerInfo));
+		}
+
 		Window* pWindow = m_pContext->GetSubsystem<Window>();
 		m_pSwapChain = std::make_unique<VulkanSwapChain>(pWindow, m_pRenderContext.get(), pWindow->GetWidth(), pWindow->GetHeight());
 
@@ -304,6 +316,37 @@ namespace Hyper
 		m_pCamera->DrawImGui();
 		// ImGui::ShowDemoWindow();
 
+		// VMA memory stats
+		{
+			if (ImGui::Begin("GPU memory stats"))
+			{
+
+				VmaBudget budgets[VK_MAX_MEMORY_HEAPS];
+				vmaGetHeapBudgets(m_pRenderContext->allocator, budgets);
+
+				const char* items[VK_MAX_MEMORY_HEAPS] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16"};
+
+				static i32 selectedHeap = 0;
+				ImGui::Combo("Selected memory heap", &selectedHeap, items, VK_MAX_MEMORY_HEAPS);
+
+				// Convert bytes to megabytes
+				const f32 usageMB = budgets[selectedHeap].usage / 1000000.0f;
+				const f32 budgetMB = budgets[selectedHeap].budget / 1000000.0f;
+				ImGui::Text("Current memory usage:");
+				ImGui::Text("total usage: %.2f MB", usageMB);
+				ImGui::Text("total available: %.2f MB", budgetMB);
+				ImGui::ProgressBar(usageMB / budgetMB);
+				ImGui::Separator();
+				ImGui::Text("VmaAllocation objects: %d - occupying %.2f MB", budgets[selectedHeap].statistics.allocationCount, budgets[selectedHeap].statistics.allocationBytes / 1000000.0f);
+				ImGui::Text("VkDeviceMemory objects: %d - occupying %.2f MB", budgets[selectedHeap].statistics.blockCount, budgets[selectedHeap].statistics.blockBytes / 1000000.0f);
+
+				// ImGui::Text("Current memory usage:");
+				// ImGui::Text("%u allocations (%llu B)", budgets[0].statistics.allocationCount, budgets[0].statistics.allocationBytes);
+				// ImGui::Text("Total memory blocks available")
+			}
+			ImGui::End();
+		}
+
 
 		// Geometry pass.
 		{
@@ -489,6 +532,8 @@ namespace Hyper
 		m_pSwapChain.reset();
 
 		m_pCamera.reset();
+
+		m_pRenderContext->device.destroySampler(m_pRenderContext->defaultSampler);
 
 		m_pMaterialLibrary.reset();
 		// TODO: automatically keep track of allocated command buffers and destroy them all.

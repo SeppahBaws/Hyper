@@ -4,8 +4,6 @@
 #include "RenderContext.h"
 #include "stb_image.h"
 #include "Vulkan/VulkanBuffer.h"
-#include "Vulkan/VulkanDebug.h"
-#include "Vulkan/VulkanUtility.h"
 
 namespace Hyper
 {
@@ -63,33 +61,16 @@ namespace Hyper
 			m_pRenderCtx->graphicsQueue.WaitIdle();
 			m_pRenderCtx->commandPool->FreeCommandBuffer(cmd);
 		}
-
-		// Create sampler
-		{
-			vk::SamplerCreateInfo samplerInfo = {};
-			samplerInfo.minFilter = vk::Filter::eLinear;
-			samplerInfo.magFilter = vk::Filter::eLinear;
-			samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
-			samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
-			samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
-
-			m_Sampler = VulkanUtils::Check(m_pRenderCtx->device.createSampler(samplerInfo));
-		}
 	}
 
 	Texture::~Texture()
 	{
-		if (m_Sampler)
-			m_pRenderCtx->device.destroySampler(m_Sampler);
-
 		m_pImage.reset();
 	}
 
 	Texture::Texture(Texture&& other) noexcept: m_pRenderCtx(other.m_pRenderCtx),
-		m_pImage(std::move(other.m_pImage)),
-		m_Sampler(std::move(other.m_Sampler))
+		m_pImage(std::move(other.m_pImage))
 	{
-		other.m_Sampler = nullptr;
 	}
 
 	Texture& Texture::operator=(Texture&& other) noexcept
@@ -99,9 +80,6 @@ namespace Hyper
 
 		m_pRenderCtx = other.m_pRenderCtx;
 		m_pImage = std::move(other.m_pImage);
-		m_Sampler = std::move(other.m_Sampler);
-
-		other.m_Sampler = nullptr;
 		
 		return *this;
 	}
@@ -109,9 +87,9 @@ namespace Hyper
 	vk::DescriptorImageInfo Texture::GetDescriptorImageInfo() const
 	{
 		vk::DescriptorImageInfo imageInfo = {};
-		imageInfo.sampler = m_Sampler;
 		imageInfo.imageLayout = m_pImage->GetImageLayout();
 		imageInfo.imageView = m_pImage->GetImageView();
+		imageInfo.sampler = m_pRenderCtx->defaultSampler;
 
 		return imageInfo;
 	}

@@ -20,6 +20,8 @@ namespace Hyper
 		VmaAllocator allocator;
 		u32 imagesInFlight;
 
+		vk::Sampler defaultSampler;
+
 		vk::Format imageFormat;
 		vk::Extent2D imageExtent;
 

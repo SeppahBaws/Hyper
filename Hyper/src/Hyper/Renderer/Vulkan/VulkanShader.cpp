@@ -43,11 +43,57 @@ namespace Hyper
 		throw std::runtime_error("Unsupported shader type!");
 	}
 
-	VulkanShader::VulkanShader(RenderContext* pRenderCtx, std::unordered_map<ShaderStageType, std::filesystem::path> shaders, bool doReflection)
-		: m_pRenderCtx(pRenderCtx), m_DoReflection(doReflection)
+	VulkanShader::VulkanShader(RenderContext* pRenderCtx, std::unordered_map<ShaderStageType, std::filesystem::path> shaders)
+		: m_pRenderCtx(pRenderCtx), m_Id(UUID{})
 	{
 		for (const auto& [stage, path] : shaders)
 		{
+			m_ShaderModules[stage] = ShaderModule {
+				.shaderPath = path,
+				.module = VK_NULL_HANDLE
+			};
+		}
+
+		Create();
+	}
+
+	VulkanShader::~VulkanShader()
+	{
+		Destroy();
+	}
+
+	void VulkanShader::Reload()
+	{
+		VulkanUtils::CheckResult(m_pRenderCtx->device.waitIdle());
+
+		// TODO: handle shader compilation errors.
+		Destroy();
+		Create();
+
+		// TODO: somehow trigger pipeline re-creation.
+	}
+
+	std::vector<vk::PipelineShaderStageCreateInfo> VulkanShader::GetAllShaderStages() const
+	{
+		std::vector<vk::PipelineShaderStageCreateInfo> infos;
+
+		for (const auto& [stage, module] : m_ShaderModules)
+		{
+			auto& info = infos.emplace_back();
+			info.module = module.module;
+			info.stage = static_cast<vk::ShaderStageFlagBits>(stage);
+			info.pName = "main";
+		}
+
+		return infos;
+	}
+
+	void VulkanShader::Create()
+	{
+		for (const auto& [stage, module] : m_ShaderModules)
+		{
+			const std::filesystem::path& path = module.shaderPath;
+
 			const std::filesystem::path compiledPath = path.parent_path() / "compiled";
 			// Create the compiled directory if it doesn't exist yet
 			if (!std::filesystem::exists(compiledPath))
@@ -118,13 +164,27 @@ namespace Hyper
 				shaderModule
 				});
 
-			if (m_DoReflection)
+			bool doReflection = true;
+			switch (stage)
+			{
+				// We can't do reflection on RT shaders because of invalid validation errors about overlapping descriptors.
+			case ShaderStageType::RayGen:
+			case ShaderStageType::Miss:
+			case ShaderStageType::ClosestHit:
+				doReflection = false;
+				break;
+
+			default:
+				doReflection = true;
+				break;
+			}
+			if (doReflection)
 			{
 				Reflect(stage, spirvBytes, path.string());
 			}
 		}
 
-		if (m_DoReflection)
+		// Create descriptors if 
 		{
 			for (const auto& descriptorSet : m_DescriptorSetBindings)
 			{
@@ -149,7 +209,7 @@ namespace Hyper
 		HPR_VKLOG_INFO("Successfully created shaders");
 	}
 
-	VulkanShader::~VulkanShader()
+	void VulkanShader::Destroy()
 	{
 		for (auto& layout : m_DescriptorLayouts)
 		{
@@ -162,21 +222,11 @@ namespace Hyper
 			m_pRenderCtx->device.destroyShaderModule(module);
 			module = nullptr;
 		}
-	}
 
-	std::vector<vk::PipelineShaderStageCreateInfo> VulkanShader::GetAllShaderStages() const
-	{
-		std::vector<vk::PipelineShaderStageCreateInfo> infos;
-
-		for (const auto& [stage, module] : m_ShaderModules)
-		{
-			auto& info = infos.emplace_back();
-			info.module = module.module;
-			info.stage = static_cast<vk::ShaderStageFlagBits>(stage);
-			info.pName = "main";
-		}
-
-		return infos;
+		m_DescriptorSetBindings.clear();
+		m_PushConstants.clear();
+		m_DescriptorLayouts.clear();
+		m_PushConstRanges.clear();
 	}
 
 	std::string VulkanShader::PreProcessStage(ShaderStageType stage, const std::string& shaderCode, const std::string& shaderName)

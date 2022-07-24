@@ -3,6 +3,7 @@
 
 #include <imgui.h>
 
+#include "ShaderLibrary.h"
 #include "MaterialLibrary.h"
 #include "Hyper/Core/Context.h"
 #include "Hyper/Core/Window.h"
@@ -43,7 +44,9 @@ namespace Hyper
 		m_pRenderContext = std::make_unique<RenderContext>();
 		m_pDevice = std::make_unique<VulkanDevice>(m_pRenderContext.get());
 		m_pCommandPool = std::make_unique<VulkanCommandPool>(m_pRenderContext.get());
+		m_pShaderLibrary = std::make_unique<ShaderLibrary>(m_pRenderContext.get());
 		m_pMaterialLibrary = std::make_unique<MaterialLibrary>(m_pRenderContext.get());
+		m_pRenderContext->pShaderLibrary = m_pShaderLibrary.get();
 		m_pRenderContext->pMaterialLibrary = m_pMaterialLibrary.get();
 
 		// Create the default sampler
@@ -112,7 +115,7 @@ namespace Hyper
 					.AddSize(vk::DescriptorType::eCombinedImageSampler, 1000)
 					.SetMaxSets(10 * m_pSwapChain->GetNumFrames())
 					.Build());
-				
+
 				for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
 				{
 					std::vector<vk::DescriptorSet> descriptorSets = m_pGeometryDescriptorPool->Allocate({ *m_pGeometryGlobalSetLayout });
@@ -120,7 +123,7 @@ namespace Hyper
 						VulkanBuffer(m_pRenderContext.get(), sizeof(CameraData), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU,
 							fmt::format("Camera buffer {}", i)),
 						descriptorSets[0]
-					});
+						});
 				}
 
 				for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
@@ -139,33 +142,26 @@ namespace Hyper
 
 			// Create the pipeline
 			{
-				m_pGeometryShader = std::make_unique<VulkanShader>(
-					m_pRenderContext.get(),
-					std::unordered_map<ShaderStageType, std::filesystem::path>{
-						{ ShaderStageType::Vertex, "res/shaders/StaticGeometry.vert" },
-						{ ShaderStageType::Fragment, "res/shaders/StaticGeometry.frag" }
-					});
+				m_pGeometryShader = m_pShaderLibrary->GetShader("StaticGeometry");
 
-				const auto descriptorSetLayouts = m_pGeometryShader->GetAllDescriptorSetLayouts();
-				const auto pushConstants = m_pGeometryShader->GetAllPushConstantRanges();
-
-				PipelineBuilder builder{ m_pRenderContext.get() };
-				builder.SetDebugName("Geometry pipeline");
-				builder.SetShader(m_pGeometryShader.get());
-				builder.SetInputAssembly(vk::PrimitiveTopology::eTriangleList, false);
-				// builder.SetViewport(0.0f, 0.0f, static_cast<f32>(m_pRenderContext->imageExtent.width), static_cast<f32>(m_pRenderContext->imageExtent.height), 0.0f, 1.0f);
-				// builder.SetScissor(vk::Offset2D(0, 0), m_pRenderContext->imageExtent);
-				builder.SetRasterizer(vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone);
-				builder.SetMultisampling();
-				builder.SetDepthStencil(true, true, vk::CompareOp::eLess);
-				builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
-				builder.SetDescriptorSetLayout(descriptorSetLayouts, pushConstants);
-				builder.SetDynamicStates({ vk::DynamicState::eViewport, vk::DynamicState::eScissor });
-				std::vector colorFormats = {m_pGeometryRenderTarget->GetColorImage()->GetFormat()};
-				vk::Format depthFormat = m_pGeometryRenderTarget->GetDepthImage()->GetFormat();
-				builder.SetFormats(colorFormats, depthFormat);
-
-				m_pGeometryPipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
+				GraphicsPipelineSpecification geometryPipelineSpec{
+					.debugName = "Geometry pipeline",
+					.pShader = m_pGeometryShader,
+					.polygonMode = vk::PolygonMode::eFill,
+					.cullMode = vk::CullModeFlagBits::eNone,
+					.frontFace = vk::FrontFace::eCounterClockwise,
+					.depthTest = true,
+					.depthWrite = true,
+					.compareOp = vk::CompareOp::eLess,
+					.viewport = {},
+					.scissor = {},
+					.blendEnable = true,
+					.colorFormats = { m_pGeometryRenderTarget->GetColorImage()->GetFormat() },
+					.depthStencilFormat = m_pGeometryRenderTarget->GetDepthImage()->GetFormat(),
+					.dynamicStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor },
+					.flags = {}
+				};
+				m_pGeometryPipeline = std::make_unique<VulkanGraphicsPipeline>(m_pRenderContext.get(), geometryPipelineSpec);
 			}
 		}
 
@@ -186,7 +182,7 @@ namespace Hyper
 					.Build());
 
 				m_CompositeDescriptorSet = m_pCompositeDescriptorPool->Allocate({ *m_pCompositeSetLayout })[0];
-				
+
 				DescriptorWriter writer{ m_pRenderContext->device, m_CompositeDescriptorSet };
 
 				vk::DescriptorImageInfo geometryInfo = {};
@@ -207,30 +203,26 @@ namespace Hyper
 
 			// Create the composite pipeline
 			{
-				m_pCompositeShader = std::make_unique<VulkanShader>(
-					m_pRenderContext.get(),
-					std::unordered_map<ShaderStageType, std::filesystem::path>{
-						{ ShaderStageType::Vertex, "res/shaders/Composite.vert" },
-						{ ShaderStageType::Fragment, "res/shaders/Composite.frag" },
-					});
+				m_pCompositeShader = m_pShaderLibrary->GetShader("Composite");
 
-				const auto descriptorSetLayouts = m_pCompositeShader->GetAllDescriptorSetLayouts();
-				const auto pushConstants = m_pCompositeShader->GetAllPushConstantRanges();
-
-				PipelineBuilder builder{m_pRenderContext.get()};
-				builder.SetShader(m_pCompositeShader.get());
-				builder.SetInputAssembly(vk::PrimitiveTopology::eTriangleList, false);
-				builder.SetRasterizer(vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone);
-				builder.SetMultisampling();
-				builder.SetDepthStencil(false, false, vk::CompareOp::eLess);
-				builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
-				builder.SetDescriptorSetLayout(descriptorSetLayouts, pushConstants);
-				builder.SetDynamicStates({ vk::DynamicState::eViewport, vk::DynamicState::eScissor });
-				std::vector colorFormats = {m_pRenderContext->imageFormat};
-				vk::Format depthFormat = vk::Format::eD24UnormS8Uint; // temp.
-				builder.SetFormats(colorFormats, depthFormat);
-
-				m_pCompositePipeline = std::make_unique<VulkanPipeline>(builder.BuildGraphics());
+				GraphicsPipelineSpecification compositePipelineSpecification{
+					.debugName = "Composite pipeline",
+					.pShader = m_pCompositeShader,
+					.polygonMode = vk::PolygonMode::eFill,
+					.cullMode = vk::CullModeFlagBits::eNone,
+					.frontFace = vk::FrontFace::eCounterClockwise,
+					.depthTest = false,
+					.depthWrite = false,
+					.compareOp = vk::CompareOp::eNever,
+					.viewport = {},
+					.scissor = {},
+					.blendEnable = true,
+					.colorFormats = { m_pRenderContext->imageFormat },
+					.depthStencilFormat = vk::Format::eD24UnormS8Uint, // Temp.
+					.dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor},
+					.flags = {}
+				};
+				m_pCompositePipeline = std::make_unique<VulkanGraphicsPipeline>(m_pRenderContext.get(), compositePipelineSpecification);
 			}
 		}
 
@@ -314,7 +306,6 @@ namespace Hyper
 
 
 		m_pCamera->DrawImGui();
-		// ImGui::ShowDemoWindow();
 
 		// VMA memory stats
 		{
@@ -324,7 +315,7 @@ namespace Hyper
 				VmaBudget budgets[VK_MAX_MEMORY_HEAPS];
 				vmaGetHeapBudgets(m_pRenderContext->allocator, budgets);
 
-				const char* items[VK_MAX_MEMORY_HEAPS] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16"};
+				const char* items[VK_MAX_MEMORY_HEAPS] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16" };
 
 				static i32 selectedHeap = 0;
 				ImGui::Combo("Selected memory heap", &selectedHeap, items, VK_MAX_MEMORY_HEAPS);
@@ -346,6 +337,8 @@ namespace Hyper
 			}
 			ImGui::End();
 		}
+
+		m_pShaderLibrary->DrawImGui();
 
 
 		// Geometry pass.
@@ -436,7 +429,7 @@ namespace Hyper
 					vk::ImageAspectFlagBits::eColor,
 					0, 1,
 					0, 1
-				})
+					})
 			);
 
 			// Begin rendering
@@ -453,7 +446,7 @@ namespace Hyper
 
 			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pCompositePipeline->GetPipeline());
 
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pCompositePipeline->GetLayout(), 0, {m_CompositeDescriptorSet}, {}, {});
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pCompositePipeline->GetLayout(), 0, { m_CompositeDescriptorSet }, {}, {});
 			cmd.draw(3, 1, 0, 0);
 
 			// Render Dear ImGui frame data
@@ -519,14 +512,12 @@ namespace Hyper
 		m_pRenderContext->device.destroyDescriptorSetLayout(*m_pGeometryGlobalSetLayout);
 		m_pGeometryGlobalSetLayout.reset();
 		m_GeometryFrameDatas.clear();
-		m_pGeometryShader.reset();
 		m_pGeometryPipeline.reset();
 		m_pGeometryRenderTarget.reset();
 
 		m_pCompositeDescriptorPool.reset();
 		m_pRenderContext->device.destroyDescriptorSetLayout(*m_pCompositeSetLayout);
 		m_pCompositeSetLayout.reset();
-		m_pCompositeShader.reset();
 		m_pCompositePipeline.reset();
 
 		m_pSwapChain.reset();
@@ -536,6 +527,7 @@ namespace Hyper
 		m_pRenderContext->device.destroySampler(m_pRenderContext->defaultSampler);
 
 		m_pMaterialLibrary.reset();
+		m_pShaderLibrary.reset();
 		// TODO: automatically keep track of allocated command buffers and destroy them all.
 		m_pCommandPool->FreeCommandBuffers(m_CommandBuffers);
 		m_pCommandPool.reset();

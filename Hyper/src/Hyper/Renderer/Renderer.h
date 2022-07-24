@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "FlyCamera.h"
+#include "ShaderLibrary.h"
 #include "MaterialLibrary.h"
 #include "Mesh.h"
 #include "RenderContext.h"
@@ -58,6 +59,7 @@ namespace Hyper
 		std::unique_ptr<VulkanCommandPool> m_pCommandPool;
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
 		std::unique_ptr<ImGuiWrapper> m_pImGuiWrapper;
+		std::unique_ptr<ShaderLibrary> m_pShaderLibrary;
 		std::unique_ptr<MaterialLibrary> m_pMaterialLibrary;
 
 		std::unique_ptr<VulkanRaytracer> m_pRayTracer;
@@ -66,14 +68,14 @@ namespace Hyper
 		std::unique_ptr<RenderTarget> m_pGeometryRenderTarget{};
 		std::unique_ptr<DescriptorPool> m_pGeometryDescriptorPool{};
 		std::unique_ptr<vk::DescriptorSetLayout> m_pGeometryGlobalSetLayout{};
-		std::unique_ptr<VulkanShader> m_pGeometryShader;
-		std::unique_ptr<VulkanPipeline> m_pGeometryPipeline;
+		VulkanShader* m_pGeometryShader;
+		std::unique_ptr<VulkanGraphicsPipeline> m_pGeometryPipeline;
 
 		std::unique_ptr<DescriptorPool> m_pCompositeDescriptorPool{};
 		vk::DescriptorSet m_CompositeDescriptorSet{};
 		std::unique_ptr<vk::DescriptorSetLayout> m_pCompositeSetLayout{};
-		std::unique_ptr<VulkanShader> m_pCompositeShader;
-		std::unique_ptr<VulkanPipeline> m_pCompositePipeline;
+		VulkanShader* m_pCompositeShader;
+		std::unique_ptr<VulkanGraphicsPipeline> m_pCompositePipeline;
 
 		u32 m_FrameIdx = 0;
 		u64 m_FrameNumber = 0;

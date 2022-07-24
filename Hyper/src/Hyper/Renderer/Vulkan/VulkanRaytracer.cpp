@@ -10,6 +10,7 @@
 #include "Hyper/Renderer/FlyCamera.h"
 #include "Hyper/Renderer/RenderContext.h"
 #include "Hyper/Renderer/RenderTarget.h"
+#include "Hyper/Renderer/ShaderLibrary.h"
 #include "Hyper/Scene/Scene.h"
 
 namespace Hyper
@@ -30,7 +31,6 @@ namespace Hyper
 
 		m_SbtBuffer.reset();
 		m_RtPipeline.reset();
-		m_pShader.reset();
 		m_pOutputImage.reset();
 		m_pPool.reset();
 		m_pRenderCtx->device.destroyDescriptorSetLayout(m_DescLayout);
@@ -103,14 +103,7 @@ namespace Hyper
 
 	void VulkanRaytracer::CreatePipeline()
 	{
-		m_pShader = std::make_unique<VulkanShader>(
-			m_pRenderCtx,
-			std::unordered_map<ShaderStageType, std::filesystem::path>{
-				{ ShaderStageType::RayGen, "res/shaders/RTAO.rgen" },
-				{ ShaderStageType::Miss, "res/shaders/RTAO.rmiss" },
-				{ ShaderStageType::ClosestHit, "res/shaders/RTAO.rchit" },
-			},
-			false);
+		m_pShader = m_pRenderCtx->pShaderLibrary->GetShader("RTAO");
 
 		vk::RayTracingShaderGroupCreateInfoKHR group = {};
 		group.anyHitShader = VK_SHADER_UNUSED_KHR;
@@ -142,15 +135,19 @@ namespace Hyper
 
 		// Automatic shader reflection has issues with RT shaders, so we'll just use our custom one here.
 		const std::vector descriptorLayouts = { m_DescLayout };
-		const std::vector<vk::PushConstantRange> pushConstants = {pushConst};
+		const std::vector<vk::PushConstantRange> pushConstants = { pushConst };
 
-		PipelineBuilder builder(m_pRenderCtx);
-		builder.SetDebugName("Raytracing pipeline");
-		builder.SetShader(m_pShader.get());
-		builder.SetDescriptorSetLayout(descriptorLayouts, pushConstants);
-		builder.SetMaxRayRecursionDepth(2 < m_pRenderCtx->rtProperties.maxRayRecursionDepth ? 2 : m_pRenderCtx->rtProperties.maxRayRecursionDepth);
-		builder.SetRayTracingShaderGroups(m_ShaderGroups);
-		m_RtPipeline = std::make_unique<VulkanPipeline>(builder.BuildRaytracing());
+		const RayTracingPipelineSpecification rtPipelineSpecification{
+			.debugName = "Ray Tracing pipeline",
+			.pShader = m_pShader,
+			.layouts = descriptorLayouts,
+			.pushConstants = pushConstants,
+			.shaderGroupCreateInfos = m_ShaderGroups,
+			.rayRecursionDepth = 2 < m_pRenderCtx->rtProperties.maxRayRecursionDepth ? 2 : m_pRenderCtx->rtProperties.maxRayRecursionDepth,
+			.dynamicStates = {},
+			.flags = {}
+		};
+		m_RtPipeline = std::make_unique<VulkanRayTracingPipeline>(m_pRenderCtx, rtPipelineSpecification);
 
 		HPR_CORE_LOG_INFO("Created ray tracing pipeline!");
 	}

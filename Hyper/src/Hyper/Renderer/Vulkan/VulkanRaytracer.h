@@ -5,13 +5,13 @@
 
 namespace Hyper
 {
+	class VulkanRayTracingPipeline;
 	struct LightingSettings;
 	class FlyCamera;
 	class VulkanAccelerationStructure;
 	class DescriptorPool;
 	class RenderTarget;
 	class VulkanShader;
-	class VulkanPipeline;
 	struct RenderContext;
 
 	struct RTCameraData
@@ -98,8 +98,8 @@ namespace Hyper
 		u32 m_OutputHeight = 1080;
 		std::unique_ptr<RenderTarget> m_pOutputImage;
 		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_ShaderGroups;
-		std::unique_ptr<VulkanShader> m_pShader;
-		std::unique_ptr<VulkanPipeline> m_RtPipeline;
+		VulkanShader* m_pShader;
+		std::unique_ptr<VulkanRayTracingPipeline> m_RtPipeline;
 
 		std::unique_ptr<VulkanBuffer> m_SbtBuffer;
 		vk::StridedDeviceAddressRegionKHR m_RGenRegion{};

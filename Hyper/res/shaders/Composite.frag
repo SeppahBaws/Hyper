@@ -8,7 +8,8 @@ layout(set = 0, binding = 1) uniform sampler2D raytraceOutput;
 
 void main()
 {
-    vec3 geometry = texture(geometryOutput, inUV).rgb;
-    float raytrace = clamp(0.3 + texture(raytraceOutput, inUV).r, 0, 1);
-    fragColor = vec4(geometry * raytrace, 1.0);
+    // vec3 geometry = texture(geometryOutput, inUV).rgb;
+    // float raytrace = clamp(0.3 + texture(raytraceOutput, inUV).r, 0, 1);
+    // fragColor = vec4(geometry * raytrace, 1.0);
+    fragColor = vec4(texture(geometryOutput, inUV).rgb, 1);
 }

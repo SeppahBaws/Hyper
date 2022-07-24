@@ -34,7 +34,8 @@ namespace Hyper
 		Assimp::Importer importer;
 
 		HPR_CORE_LOG_INFO("Loading file '{}'", filePath.string());
-		const aiScene* scene = importer.ReadFile(filePath.string(), aiProcess_Triangulate | aiProcess_OptimizeMeshes | aiProcess_ImproveCacheLocality);
+		// aiProcess_FindDegenerates can cause issues in certain scenes, while building the AS.
+		const aiScene* scene = importer.ReadFile(filePath.string(), aiProcessPreset_TargetRealtime_MaxQuality & ~aiProcess_FindDegenerates);
 		if (!scene)
 		{
 			HPR_CORE_LOG_ERROR("Failed to import model '{}' : {}", filePath.string(), importer.GetErrorString());
@@ -192,12 +193,14 @@ namespace Hyper
 			.sunDir = {0.2f, 0.1f, 0.7f}
 		};
 
-		ImportModel("res/NewSponza/Main/NewSponza_Main_Blender_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
-		ImportModel("res/NewSponza/PKG_A_Curtains/NewSponza_Curtains_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
-		// ImportModel("res/models/Sponza/Sponza.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+		// ImportModel("res/NewSponza/Main/NewSponza_Main_Blender_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+		// ImportModel("res/NewSponza/PKG_A_Curtains/NewSponza_Curtains_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+		ImportModel("res/models/Sponza/Sponza.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
 		// ImportModel("res/Bistro/Exterior/exterior.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
 		// ImportModel("res/Bistro/Interior/interior.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
 		// ImportModel("res/TrainStation/TrainStation.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+		// ImportModel("res/models/NormalsTest/PlaneTest.gltf");
+		// ImportModel("res/models/Suzanne.fbx", glm::vec3{ 0.0f }, glm::vec3{ 0.0f }, glm::vec3{ 0.01f });
 
 		BuildAccelerationStructure();
 
@@ -264,6 +267,15 @@ namespace Hyper
 		node->m_Rotation = glm::degrees(glm::eulerAngles(orientation));
 		node->m_Scale = scale;
 
+		static auto aiVec2ToGlm = [](const aiVector2D& vec) -> glm::vec2
+		{
+			return { vec.x, vec.y };
+		};
+		static auto aiVec3ToGlm = [](const aiVector3D& vec) -> glm::vec3
+		{
+			return { vec.x, vec.y, vec.z };
+		};
+
 		for (u32 m = 0; m < pNode->mNumMeshes; m++)
 		{
 			std::vector<VertexPosNormTex> vertices{};
@@ -279,18 +291,25 @@ namespace Hyper
 				// Positions are guaranteed, the rest is uncertain
 				const glm::vec3 pos{ aiMesh->mVertices[v].x, aiMesh->mVertices[v].y, aiMesh->mVertices[v].z };
 				glm::vec3 norm{ 0.0f, 0.0f, 1.0f };
+				glm::vec3 tan{ 0.0f };
+				glm::vec3 binorm{ 0.0f };
 				glm::vec2 tex{ 0.0f, 0.0f };
 
 				if (aiMesh->HasNormals())
 				{
-					norm = { aiMesh->mNormals[v].x, aiMesh->mNormals[v].y, aiMesh->mNormals[v].z };
+					norm = aiVec3ToGlm(aiMesh->mNormals[v]);
+				}
+				if (aiMesh->HasTangentsAndBitangents())
+				{
+					tan = aiVec3ToGlm(aiMesh->mTangents[v]);
+					binorm = aiVec3ToGlm(aiMesh->mBitangents[v]);
 				}
 				if (aiMesh->HasTextureCoords(0))
 				{
-					tex = { aiMesh->mTextureCoords[0][v].x, aiMesh->mTextureCoords[0][v].y };
+					tex = aiVec3ToGlm(aiMesh->mTextureCoords[0][v]);
 				}
 
-				vertices.emplace_back(VertexPosNormTex{ pos, norm, tex });
+				vertices.emplace_back(VertexPosNormTex{ pos, norm, tan, binorm, tex });
 			}
 
 			// Load indices

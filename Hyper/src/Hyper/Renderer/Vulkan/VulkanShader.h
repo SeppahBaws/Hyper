@@ -37,8 +37,12 @@ namespace Hyper
 	class VulkanShader
 	{
 	public:
-		VulkanShader(RenderContext* pRenderCtx, std::unordered_map<ShaderStageType, std::filesystem::path> shaders, bool doReflection = true);
+		VulkanShader(RenderContext* pRenderCtx, std::unordered_map<ShaderStageType, std::filesystem::path> shaders);
 		~VulkanShader();
+
+		void Reload();
+
+		[[nodiscard]] const UUID& GetId() const { return m_Id; }
 
 		[[nodiscard]] std::vector<vk::PipelineShaderStageCreateInfo> GetAllShaderStages() const;
 
@@ -46,6 +50,9 @@ namespace Hyper
 		[[nodiscard]] const std::vector<vk::PushConstantRange>& GetAllPushConstantRanges() const { return m_PushConstRanges; }
 
 	private:
+		void Create();
+		void Destroy();
+
 		std::string PreProcessStage(ShaderStageType stage, const std::string& shaderCode, const std::string& shaderName);
 		std::pair<vk::ShaderModule, std::vector<u32>> CompileStage(ShaderStageType stage, const std::string& shaderCode, const std::string& shaderName);
 		void Reflect(ShaderStageType stage, const std::vector<u32>& spirvBytes, const std::string& moduleName);
@@ -53,7 +60,8 @@ namespace Hyper
 	private:
 		RenderContext* m_pRenderCtx;
 
-		const bool m_DoReflection;
+		UUID m_Id;
+
 		std::unordered_map<ShaderStageType, ShaderModule> m_ShaderModules;
 
 		std::vector<std::vector<ShaderDescriptorBinding>> m_DescriptorSetBindings;

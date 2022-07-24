@@ -133,13 +133,6 @@ namespace Hyper
 
 	void VulkanAccelerationStructure::CreateTlas()
 	{
-		// TODO: support model's transforms
-		// vk::TransformMatrixKHR transformMatrix = std::array{
-		// 	std::array{ 1.0f, 0.0f, 0.0f, 0.0f },
-		// 	std::array{ 0.0f, 1.0f, 0.0f, 0.0f },
-		// 	std::array{ 0.0f, 0.0f, 1.0f, 0.0f }
-		// };
-
 		std::vector<vk::AccelerationStructureInstanceKHR> tlas;
 		tlas.reserve(m_BLASes.size());
 

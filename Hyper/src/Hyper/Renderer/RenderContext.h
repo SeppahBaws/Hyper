@@ -7,6 +7,7 @@
 
 namespace Hyper
 {
+	class ShaderLibrary;
 	class MaterialLibrary;
 
 	struct RenderContext
@@ -25,6 +26,7 @@ namespace Hyper
 		vk::Format imageFormat;
 		vk::Extent2D imageExtent;
 
+		ShaderLibrary* pShaderLibrary;
 		MaterialLibrary* pMaterialLibrary;
 	};
 }

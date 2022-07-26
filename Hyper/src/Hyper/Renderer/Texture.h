@@ -6,7 +6,7 @@ namespace Hyper
 	class Texture
 	{
 	public:
-		Texture(RenderContext* pRenderCtx, const std::filesystem::path& filePath);
+		Texture(RenderContext* pRenderCtx, const std::filesystem::path& filePath, bool srgb);
 		~Texture();
 
 		Texture(Texture&& other) noexcept;

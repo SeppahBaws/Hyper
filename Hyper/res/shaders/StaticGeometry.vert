@@ -1,18 +1,18 @@
 #version 460 core
 
-layout(location = 0) in vec3 vPosition;
-layout(location = 1) in vec3 vNormal;
-layout(location = 2) in vec3 vTangent;
-layout(location = 3) in vec3 vBinormal;
-layout(location = 4) in vec2 vUV;
+layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec3 inNormal;
+layout(location = 2) in vec3 inTangent;
+layout(location = 3) in vec3 inBinormal;
+layout(location = 4) in vec2 inUV;
 
-layout(location = 0) out vec3 o_WorldPos;
-layout(location = 1) out vec3 o_Normal;
-layout(location = 2) out vec3 o_Color;
-layout(location = 3) out vec2 o_UV;
-layout(location = 4) out mat3 o_TBN;
-layout(location = 7) out vec3 o_Binormal;
-layout(location = 8) out vec3 o_Tangent;
+layout(location = 0) out vec3 outWorldPos;
+layout(location = 1) out vec3 outNormal;
+layout(location = 2) out vec3 outColor;
+layout(location = 3) out vec2 outUV;
+layout(location = 4) out vec3 outTangent;
+layout(location = 5) out vec3 outBinormal;
+layout(location = 6) out mat3 outTBN;
 
 layout(set = 0, binding = 0) uniform CameraData
 {
@@ -29,19 +29,19 @@ layout(push_constant) uniform constants
 void main()
 {
     mat4 transformMatrix = cameraData.viewProj * PushConstants.modelMatrix;
-    gl_Position = transformMatrix * vec4(vPosition, 1.0);
+    gl_Position = transformMatrix * vec4(inPosition, 1.0);
 
-    vec3 worldNormal = normalize(mat3(PushConstants.modelMatrix) * vNormal);
-    vec3 worldTangent = normalize(mat3(PushConstants.modelMatrix) * vTangent);
-    vec3 worldBinormal = normalize(mat3(PushConstants.modelMatrix) * vBinormal);
+    outColor = vec3(1.0);
+    outUV = inUV;
+    outWorldPos = vec3(PushConstants.modelMatrix * vec4(inPosition, 1.0));
 
-    o_WorldPos = mat3(PushConstants.modelMatrix) * vPosition;
-    o_Color = vec3(1.0);
-    o_UV = vUV;
+    mat3 M = mat3(PushConstants.modelMatrix);
+    vec3 N = inNormal;
+    vec3 T = inTangent;
+    vec3 B = inBinormal;
+    outTBN = M * mat3(T, B, N);
 
-    o_Normal = worldNormal;
-    o_Binormal = worldTangent;
-    o_Tangent = worldBinormal;
-
-    o_TBN = transpose(mat3(worldTangent, worldBinormal, worldNormal));
+    outTangent = M * T;
+    outBinormal = M * B;
+    outNormal = M * N;
 }

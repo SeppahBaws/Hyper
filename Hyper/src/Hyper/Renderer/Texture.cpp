@@ -7,7 +7,7 @@
 
 namespace Hyper
 {
-	Texture::Texture(RenderContext* pRenderCtx, const std::filesystem::path& filePath)
+	Texture::Texture(RenderContext* pRenderCtx, const std::filesystem::path& filePath, bool srgb)
 		: m_pRenderCtx(pRenderCtx)
 		, m_FilePath(filePath)
 	{
@@ -42,7 +42,7 @@ namespace Hyper
 			stbi_image_free(pixels);
 
 			// Create image
-			m_pImage = std::make_unique<VulkanImage>(m_pRenderCtx, vk::Format::eR8G8B8A8Srgb, vk::ImageType::e2D,
+			m_pImage = std::make_unique<VulkanImage>(m_pRenderCtx, srgb ? vk::Format::eR8G8B8A8Srgb : vk::Format::eR8G8B8A8Unorm, vk::ImageType::e2D,
 				vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageAspectFlagBits::eColor, m_FilePath.string(), static_cast<u32>(width),
 				static_cast<u32>(height));
 

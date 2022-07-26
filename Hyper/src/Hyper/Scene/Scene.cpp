@@ -408,11 +408,11 @@ namespace Hyper
 			if (AI_SUCCESS == pMat->GetTexture(aiTextureType_NORMALS, 0, &texturePath))
 			{
 				const auto absoluteTexturePath = filePath.parent_path().append(texturePath.C_Str());
-				material.LoadTexture(MaterialTextureType::Normal, absoluteTexturePath);
+				material.LoadTexture(MaterialTextureType::Normal, absoluteTexturePath, false);
 			}
 			else
 			{
-				material.LoadTexture(MaterialTextureType::Normal, "res/textures/default-normal.png");
+				material.LoadTexture(MaterialTextureType::Normal, "res/textures/default-normal.png", false);
 			}
 
 			material.PostLoadInititalize();

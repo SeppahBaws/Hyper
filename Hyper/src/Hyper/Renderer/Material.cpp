@@ -57,11 +57,11 @@ namespace Hyper
 		return *this;
 	}
 
-	void Material::LoadTexture(MaterialTextureType type, const std::filesystem::path& fileName)
+	void Material::LoadTexture(MaterialTextureType type, const std::filesystem::path& fileName, bool srgb)
 	{
 		if (!m_Textures.contains(type))
 		{
-			m_Textures[type] = std::make_unique<Texture>(m_pRenderCtx, fileName);
+			m_Textures[type] = std::make_unique<Texture>(m_pRenderCtx, fileName, srgb);
 		}
 		else
 		{

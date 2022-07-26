@@ -26,7 +26,7 @@ namespace Hyper
 
 		UUID GetId() const { return m_Id; }
 
-		void LoadTexture(MaterialTextureType type, const std::filesystem::path& fileName);
+		void LoadTexture(MaterialTextureType type, const std::filesystem::path& fileName, bool srgb = true);
 		void PostLoadInititalize();
 
 		void Bind(const vk::CommandBuffer& cmd, const vk::PipelineLayout& layout) const;

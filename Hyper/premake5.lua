@@ -111,15 +111,15 @@ project "Hyper"
         links
         {
             -- Shaderc debug libraries
-            "%{LibDir.Vulkan}/shaderc_sharedd.lib",
-            "%{LibDir.Vulkan}/shaderc_utild.lib",
+            "%{Library.shaderc_shared_debug}",
+            "%{Library.shaderc_utils_debug}",
             
             -- Spirv Cross for reflection
-            "%{LibDir.Vulkan}/spirv-cross-cored.lib",
-            "%{LibDir.Vulkan}/spirv-cross-reflectd.lib",
+            "%{Library.spirv_cross_core_debug}",
+            "%{Library.spirv_cross_reflect_debug}",
 
             -- Assimp debug libraries
-            "%{LibDir.assimp}/assimp-vc143-mtd.lib",
+            "%{Library.assimp_debug}",
         }
 
         postbuildcommands
@@ -139,15 +139,15 @@ project "Hyper"
         links
         {
             -- Shaderc release libraries
-            "%{LibDir.Vulkan}/shaderc_shared.lib",
-            "%{LibDir.Vulkan}/shaderc_util.lib",
+            "%{Library.shaderc_shared_release}",
+            "%{Library.shaderc_utils_release}",
             
             -- Spirv Cross for reflection
-            "%{LibDir.Vulkan}/spirv-cross-core.lib",
-            "%{LibDir.Vulkan}/spirv-cross-reflect.lib",
+            "%{Library.spirv_cross_core_release}",
+            "%{Library.spirv_cross_reflect_release}",
 
             -- Assimp release libraries
-            "%{LibDir.assimp}/assimp-vc143-mt.lib",
+            "%{Library.assimp_release}",
         }
 
         postbuildcommands

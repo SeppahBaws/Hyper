@@ -19,7 +19,8 @@ layout(location = 0) rayPayloadInEXT HitInfo payload;
 layout(push_constant) uniform constants
 {
     vec3 sunDir;
-} LightingSettings;
+    uint frameNr;
+} RTPushConstants;
 
 const float FLT_MAX = float(0x7F7FFFFF);
 

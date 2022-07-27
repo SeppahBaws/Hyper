@@ -23,6 +23,7 @@ namespace Hyper
 	struct RTPushConstants
 	{
 		glm::vec3 sunDirection;
+		u32 frameNr;
 	};
 
 	struct RTFrameData

@@ -21,6 +21,8 @@ namespace Hyper
 		VmaAllocator allocator;
 		u32 imagesInFlight;
 
+		u64 frameNumber = 0;
+
 		vk::Sampler defaultSampler;
 
 		vk::Format imageFormat;

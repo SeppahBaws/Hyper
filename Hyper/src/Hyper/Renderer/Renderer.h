@@ -78,9 +78,6 @@ namespace Hyper
 		std::unique_ptr<VulkanGraphicsPipeline> m_pCompositePipeline;
 
 		u32 m_FrameIdx = 0;
-		u64 m_FrameNumber = 0;
-
-		f32 m_Rot = 0;
 
 		std::vector<vk::CommandBuffer> m_CommandBuffers;
 		std::vector<vk::Semaphore> m_RenderFinishedSemaphores;

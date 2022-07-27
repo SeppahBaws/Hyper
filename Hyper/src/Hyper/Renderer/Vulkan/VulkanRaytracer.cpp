@@ -46,6 +46,7 @@ namespace Hyper
 			vk::PipelineStageFlagBits::eRayTracingShaderKHR);
 
 		m_RtPushConstants.sunDirection = lightingSettings.sunDir;
+		m_RtPushConstants.frameNr = m_pRenderCtx->frameNumber;
 
 		cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, m_RtPipeline->GetPipeline());
 		cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, m_RtPipeline->GetLayout(), 0, { m_FrameDatas[frameIdx].descriptorSet }, {});

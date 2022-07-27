@@ -23,5 +23,17 @@ Library = {}
 Library["Vulkan"] = "%{LibDir.Vulkan}/vulkan-1.lib"
 Library["NvidiaAftermath"] = "%{LibDir.NvidiaAftermath}/GFSDK_Aftermath_Lib.x64.lib"
 
+Library["assimp_debug"] = "%{LibDir.assimp}/assimp-vc143-mtd.lib"
+Library["shaderc_shared_debug"] = "%{LibDir.Vulkan}/shaderc_sharedd.lib"
+Library["shaderc_utils_debug"] = "%{LibDir.Vulkan}/shaderc_utild.lib"
+Library["spirv_cross_core_debug"] = "%{LibDir.Vulkan}/spirv-cross-cored.lib"
+Library["spirv_cross_reflect_debug"] = "%{LibDir.Vulkan}/spirv-cross-reflectd.lib"
+
+Library["assimp_release"] = "%{LibDir.assimp}/assimp-vc143-mt.lib"
+Library["shaderc_shared_release"] = "%{LibDir.Vulkan}/shaderc_shared.lib"
+Library["shaderc_utils_release"] = "%{LibDir.Vulkan}/shaderc_util.lib"
+Library["spirv_cross_core_release"] = "%{LibDir.Vulkan}/spirv-cross-core.lib"
+Library["spirv_cross_reflect_release"] = "%{LibDir.Vulkan}/spirv-cross-reflect.lib"
+
 BinDir = {}
 BinDir["assimp"] = "%{wks.location}/Hyper/dependencies/assimp/bin"

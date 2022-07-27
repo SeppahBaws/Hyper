@@ -492,7 +492,7 @@ namespace Hyper
 		m_pSwapChain->Present(m_RenderFinishedSemaphores[m_FrameIdx]);
 
 		m_FrameIdx = (m_FrameIdx + 1) % m_pRenderContext->imagesInFlight;
-		m_FrameNumber++;
+		m_pRenderContext->frameNumber++;
 	}
 
 	void Renderer::OnShutdown()

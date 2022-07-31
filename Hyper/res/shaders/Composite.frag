@@ -10,5 +10,14 @@ void main()
 {
     vec3 geometry = texture(geometryOutput, inUV).rgb;
     float raytrace = clamp(0.6 + texture(raytraceOutput, inUV).r, 0, 10);
-    fragColor = vec4(geometry * raytrace, 1.0);
+
+    // Gamma correction
+    float gamma = 2.2;
+    geometry = pow(geometry, vec3(1.0 / gamma));
+
+    vec3 color = geometry * raytrace;
+
+    // TODO: exposure etc.
+
+    fragColor = vec4(color, 1.0);
 }

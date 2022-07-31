@@ -30,7 +30,15 @@ vec3 CalculateWorldNormal()
 
 void main()
 {
-    vec3 albedo = texture(texAlbedo, inUV).xyz;
+    vec4 sampledAlbedo = texture(texAlbedo, inUV).rgba;
+    vec3 albedo = sampledAlbedo.rgb;
+    float alpha = sampledAlbedo.a;
+
+    if (alpha < 0.8)
+    {
+        discard;
+    }
+
     vec3 normal = CalculateWorldNormal();
     
     // Simple HalfLambert diffuse

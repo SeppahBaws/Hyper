@@ -104,7 +104,7 @@ namespace Hyper
 
 	void VulkanRaytracer::CreatePipeline()
 	{
-		m_pShader = m_pRenderCtx->pShaderLibrary->GetShader("RTAO");
+		m_pShader = m_pRenderCtx->pShaderLibrary->GetShader("RTShadows");
 
 		vk::RayTracingShaderGroupCreateInfoKHR group = {};
 		group.anyHitShader = VK_SHADER_UNUSED_KHR;

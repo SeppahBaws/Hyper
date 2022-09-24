@@ -21,10 +21,10 @@ namespace Hyper
 			{ ShaderStageType::Fragment, "res/shaders/Composite.frag" },
 		});
 
-		LoadShader("RTAO", std::unordered_map<ShaderStageType, std::filesystem::path>{
-			{ ShaderStageType::RayGen, "res/shaders/RTAO.rgen" },
-			{ ShaderStageType::Miss, "res/shaders/RTAO.rmiss" },
-			{ ShaderStageType::ClosestHit, "res/shaders/RTAO.rchit" },
+		LoadShader("RTShadows", std::unordered_map<ShaderStageType, std::filesystem::path>{
+			{ ShaderStageType::RayGen, "res/shaders/RTShadows.rgen" },
+			{ ShaderStageType::Miss, "res/shaders/RTShadows.rmiss" },
+			{ ShaderStageType::ClosestHit, "res/shaders/RTShadows.rchit" },
 		});
 	}
 

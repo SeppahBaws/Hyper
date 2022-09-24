@@ -7,6 +7,7 @@
 
 #include <imgui.h>
 
+#include "Renderer.h"
 #include "Hyper/Core/Context.h"
 #include "Hyper/Core/Window.h"
 
@@ -108,26 +109,29 @@ namespace Hyper
 	void FlyCamera::DrawImGui()
 	{
 		static bool projectionDirty = false;
-		if (ImGui::Begin("Camera"))
+		if (m_pContext->GetSubsystem<Renderer>()->GetRenderContext()->drawImGui)
 		{
-			ImGui::InputFloat3("position", (float*)&m_Position);
-			ImGui::InputFloat("Yaw", &m_Yaw);
-			ImGui::InputFloat("Pitch", &m_Pitch);
-			ImGui::InputFloat3("Forward", (float*)&m_Forward, "%.3f", ImGuiInputTextFlags_ReadOnly);
+			if (ImGui::Begin("Camera"))
+			{
+				ImGui::InputFloat3("position", (float*)&m_Position);
+				ImGui::InputFloat("Yaw", &m_Yaw);
+				ImGui::InputFloat("Pitch", &m_Pitch);
+				ImGui::InputFloat3("Forward", (float*)&m_Forward, "%.3f", ImGuiInputTextFlags_ReadOnly);
 
-			float fovRad = glm::radians(m_FovDegrees);
-			if (ImGui::SliderAngle("FOV", &fovRad, 30.0f, 150.0f))
-			{
-				projectionDirty = true;
-				m_FovDegrees = glm::degrees(fovRad);
+				float fovRad = glm::radians(m_FovDegrees);
+				if (ImGui::SliderAngle("FOV", &fovRad, 30.0f, 150.0f))
+				{
+					projectionDirty = true;
+					m_FovDegrees = glm::degrees(fovRad);
+				}
+				if (ImGui::SliderFloat("View distance", &m_ZFar, 1.0f, 10000.0f, "%.3f", ImGuiSliderFlags_Logarithmic))
+				{
+					projectionDirty = true;
+				}
+				ImGui::SliderFloat("Move speed", &m_MoveSpeed, 1.0f, 50.0f);
 			}
-			if (ImGui::SliderFloat("View distance", &m_ZFar, 1.0f, 10000.0f, "%.3f", ImGuiSliderFlags_Logarithmic))
-			{
-				projectionDirty = true;
-			}
-			ImGui::SliderFloat("Move speed", &m_MoveSpeed, 1.0f, 50.0f);
+			ImGui::End();
 		}
-		ImGui::End();
 
 		if (projectionDirty)
 		{

@@ -127,59 +127,62 @@ namespace Hyper
 			node->Draw(m_pRenderCtx, cmd, pipelineLayout);
 		}
 
-		if (ImGui::Begin("Scene hierarchy"))
+		if (m_pRenderCtx->drawImGui)
 		{
-			static std::function<void(Node*)> drawNode = [&](Node* pNode)
+			if (ImGui::Begin("Scene hierarchy"))
 			{
-				ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
-				if (selectedNode == pNode)
-					flags |= ImGuiTreeNodeFlags_Selected;
-
-				if (pNode->m_pChildren.empty())
+				static std::function<void(Node*)> drawNode = [&](Node* pNode)
 				{
-					flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+					ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
+					if (selectedNode == pNode)
+						flags |= ImGuiTreeNodeFlags_Selected;
 
-					ImGui::TreeNodeEx(pNode->m_Name.c_str(), flags);
-					if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
-						selectedNode = pNode;
-				}
-				else if (ImGui::TreeNodeEx(pNode->m_Name.c_str(), flags))
-				{
-					if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
-						selectedNode = pNode;
-
-					for (const auto& child : pNode->m_pChildren)
+					if (pNode->m_pChildren.empty())
 					{
-						drawNode(child.get());
+						flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+						ImGui::TreeNodeEx(pNode->m_Name.c_str(), flags);
+						if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+							selectedNode = pNode;
 					}
+					else if (ImGui::TreeNodeEx(pNode->m_Name.c_str(), flags))
+					{
+						if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+							selectedNode = pNode;
 
-					ImGui::TreePop();
+						for (const auto& child : pNode->m_pChildren)
+						{
+							drawNode(child.get());
+						}
+
+						ImGui::TreePop();
+					}
+				};
+
+				for (const auto& node : m_RootNodes)
+				{
+					drawNode(node.get());
 				}
-			};
-
-			for (const auto& node : m_RootNodes)
-			{
-				drawNode(node.get());
 			}
 			ImGui::End();
-		}
 
-		if (ImGui::Begin("Node inspector"))
-		{
-			if (selectedNode)
+			if (ImGui::Begin("Node inspector"))
 			{
-				selectedNode->DrawImGui();
-			}
-			else
-			{
-				ImGui::Text("Select a node first");
+				if (selectedNode)
+				{
+					selectedNode->DrawImGui();
+				}
+				else
+				{
+					ImGui::Text("Select a node first");
+				}
 			}
 			ImGui::End();
-		}
 
-		if (ImGui::Begin("Lighting Settings"))
-		{
-			ImGui::SliderFloat3("Sun direction", (float*)&m_LightingSettings.sunDir, -1.0f, 1.0f);
+			if (ImGui::Begin("Lighting Settings"))
+			{
+				ImGui::SliderFloat3("Sun direction", (float*)&m_LightingSettings.sunDir, -1.0f, 1.0f);
+			}
 			ImGui::End();
 		}
 	}
@@ -199,6 +202,7 @@ namespace Hyper
 		// ImportModel("res/Bistro/Exterior/exterior.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
 		// ImportModel("res/Bistro/Interior/interior.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
 		// ImportModel("res/TrainStation/TrainStation.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+		// ImportModel("res/San_Miguel/san-miguel.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 1.0f });
 		// ImportModel("res/models/NormalsTest/PlaneTest.gltf");
 		// ImportModel("res/models/Suzanne.fbx", glm::vec3{ 0.0f }, glm::vec3{ 0.0f }, glm::vec3{ 0.01f });
 

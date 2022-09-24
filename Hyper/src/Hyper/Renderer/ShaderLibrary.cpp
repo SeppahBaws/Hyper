@@ -4,6 +4,8 @@
 
 #include <imgui.h>
 
+#include "RenderContext.h"
+
 namespace Hyper
 {
 	ShaderLibrary::ShaderLibrary(RenderContext* pRenderCtx)
@@ -63,35 +65,38 @@ namespace Hyper
 
 	void ShaderLibrary::DrawImGui()
 	{
-		if (ImGui::Begin("Shader Library"))
+		if (m_pRenderCtx->drawImGui)
 		{
-			if (ImGui::BeginTable("Loaded shaders", 2))
+			if (ImGui::Begin("Shader Library"))
 			{
-				for (auto& [name, pShader] : m_LoadedShaders)
+				if (ImGui::BeginTable("Loaded shaders", 2))
 				{
-					ImGui::TableNextRow();
-
-					ImGui::TableSetColumnIndex(0);
-					ImGui::Text(name.c_str());
-
-					ImGui::TableSetColumnIndex(1);
-					if (ImGui::Button(fmt::format("Reload##{}", name).c_str()))
+					for (auto& [name, pShader] : m_LoadedShaders)
 					{
-						pShader->Reload();
-						for (VulkanGraphicsPipeline* graphicsPipeline : m_ShaderDependencies[pShader->GetId()].graphicsPipelines)
+						ImGui::TableNextRow();
+
+						ImGui::TableSetColumnIndex(0);
+						ImGui::Text(name.c_str());
+
+						ImGui::TableSetColumnIndex(1);
+						if (ImGui::Button(fmt::format("Reload##{}", name).c_str()))
 						{
-							graphicsPipeline->Recreate();
-						}
-						for (VulkanRayTracingPipeline* rtPipeline : m_ShaderDependencies[pShader->GetId()].rayTracingPipelines)
-						{
-							rtPipeline->Recreate();
+							pShader->Reload();
+							for (VulkanGraphicsPipeline* graphicsPipeline : m_ShaderDependencies[pShader->GetId()].graphicsPipelines)
+							{
+								graphicsPipeline->Recreate();
+							}
+							for (VulkanRayTracingPipeline* rtPipeline : m_ShaderDependencies[pShader->GetId()].rayTracingPipelines)
+							{
+								rtPipeline->Recreate();
+							}
 						}
 					}
 				}
+				ImGui::EndTable();
 			}
-			ImGui::EndTable();
+			ImGui::End();
 		}
-		ImGui::End();
 	}
 
 	void ShaderLibrary::LoadShader(const std::string& name, const std::unordered_map<ShaderStageType, std::filesystem::path>& stages)

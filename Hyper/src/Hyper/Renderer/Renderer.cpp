@@ -229,9 +229,26 @@ namespace Hyper
 		return true;
 	}
 
+	bool isKeyDown{false};
 	void Renderer::OnTick(f32 dt)
 	{
 		HPR_PROFILE_SCOPE();
+
+		{
+			Input* input = m_pContext->GetSubsystem<Input>();
+			if (input->GetKey(Key::F1))
+			{
+				if (!isKeyDown)
+				{
+					m_pRenderContext->drawImGui = !m_pRenderContext->drawImGui;
+				}
+				isKeyDown = true;
+			}
+			else
+			{
+				isKeyDown = false;
+			}
+		} 
 
 		vk::Result result;
 
@@ -308,6 +325,7 @@ namespace Hyper
 		m_pCamera->DrawImGui();
 
 		// VMA memory stats
+		if (m_pRenderContext->drawImGui)
 		{
 			if (ImGui::Begin("GPU memory stats"))
 			{

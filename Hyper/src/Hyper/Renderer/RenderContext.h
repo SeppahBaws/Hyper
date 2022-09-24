@@ -30,5 +30,7 @@ namespace Hyper
 
 		ShaderLibrary* pShaderLibrary;
 		MaterialLibrary* pMaterialLibrary;
+
+		bool drawImGui{ true };
 	};
 }

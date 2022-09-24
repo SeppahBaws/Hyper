@@ -25,7 +25,7 @@ def UseAftermath():
 os.chdir("../")
 
 parser = argparse.ArgumentParser(prog="Hyper Setup", description="Setup script for Hyper")
-parser.add_argument("--minimal", help="Quickly setup a project with minimal features (no VLD, no Nsight Aftermat, ...)", action="store_true")
+parser.add_argument("--minimal", help="Quickly setup a project with minimal features (no VLD, no Nsight Aftermath, ...)", action="store_true")
 args = parser.parse_args()
 
 options = []

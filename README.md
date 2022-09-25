@@ -82,8 +82,10 @@ Hyper uses [Assimp](https://github.com/assimp/assimp) to load models, so almost 
 
 ## Prerequisites
 
+- Vulkan 1.3 SDK
 - git LFS
 - python
+- a GPU that is able to run ray tracing workloads.
 
 ## Setting it up
 

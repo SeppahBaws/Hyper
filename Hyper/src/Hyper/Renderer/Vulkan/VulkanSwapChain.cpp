@@ -76,7 +76,7 @@ namespace Hyper
 		}
 
 		// Wait for all commands to be finished (in case there are any still running)
-		m_pRenderCtx->graphicsQueue.queue.waitIdle();
+		VulkanUtils::CheckResult(m_pRenderCtx->graphicsQueue.queue.waitIdle());
 
 		DestroySwapChain();
 		CreateSwapChain(width, height);
@@ -115,7 +115,7 @@ namespace Hyper
 		}
 
 		// Get surface capabilities
-		vk::SurfaceCapabilitiesKHR surfaceCapabilities = m_pRenderCtx->physicalDevice.getSurfaceCapabilitiesKHR(m_Surface);
+		vk::SurfaceCapabilitiesKHR surfaceCapabilities = VulkanUtils::Check(m_pRenderCtx->physicalDevice.getSurfaceCapabilitiesKHR(m_Surface));
 
 		// Detect surface format and color space
 		{
@@ -125,15 +125,17 @@ namespace Hyper
 				if (availableFormat.format == vk::Format::eR8G8B8A8Unorm &&
 					availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
 				{
-					m_ImageFormat = availableFormat.format;
+					m_ImageColorFormat = availableFormat.format;
 					m_ColorSpace = availableFormat.colorSpace;
 				}
 			}
 
-			m_ImageFormat = availableFormats[0].format;
+			m_ImageColorFormat = availableFormats[0].format;
+			m_ImageDepthFormat = vk::Format::eD24UnormS8Uint;
 			m_ColorSpace = availableFormats[0].colorSpace;
 
-			m_pRenderCtx->imageFormat = m_ImageFormat;
+			m_pRenderCtx->imageColorFormat = m_ImageColorFormat;
+			m_pRenderCtx->imageDepthFormat = m_ImageDepthFormat;
 		}
 
 		m_Width = std::clamp(width, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
@@ -149,7 +151,7 @@ namespace Hyper
 			vk::SwapchainCreateInfoKHR createInfo = {};
 			createInfo.surface = m_Surface;
 			createInfo.minImageCount = imageCount;
-			createInfo.imageFormat = m_ImageFormat;
+			createInfo.imageFormat = m_ImageColorFormat;
 			createInfo.imageColorSpace = m_ColorSpace;
 			createInfo.imageExtent = m_pRenderCtx->imageExtent;
 			createInfo.imageArrayLayers = 1;
@@ -184,7 +186,7 @@ namespace Hyper
 				vk::ImageViewCreateInfo viewInfo{};
 				viewInfo.image = image;
 				viewInfo.viewType = vk::ImageViewType::e2D;
-				viewInfo.format = m_ImageFormat;
+				viewInfo.format = m_ImageColorFormat;
 				viewInfo.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
 
 				const vk::ImageView imageView = VulkanUtils::Check(m_pRenderCtx->device.createImageView(viewInfo));
@@ -197,7 +199,7 @@ namespace Hyper
 		// Create the depth buffer
 		{
 			m_pDepthBuffer = std::make_unique<VulkanImage>(
-				m_pRenderCtx, vk::Format::eD24UnormS8Uint, vk::ImageType::e2D, vk::ImageUsageFlagBits::eDepthStencilAttachment,
+				m_pRenderCtx, m_ImageDepthFormat, vk::ImageType::e2D, vk::ImageUsageFlagBits::eDepthStencilAttachment,
 				vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, "Depth Buffer", m_Width, m_Height);
 
 			HPR_VKLOG_INFO("Created depth buffer");

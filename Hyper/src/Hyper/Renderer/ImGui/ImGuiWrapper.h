@@ -9,7 +9,7 @@ namespace Hyper
 	class ImGuiWrapper
 	{
 	public:
-		ImGuiWrapper(RenderContext* pRenderCtx, GLFWwindow* window, vk::Format colorFormat);
+		ImGuiWrapper(RenderContext* pRenderCtx, GLFWwindow* window, vk::Format colorFormat, vk::Format depthFormat);
 		~ImGuiWrapper();
 
 		void NewFrame();

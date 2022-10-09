@@ -9,15 +9,15 @@ layout(set = 0, binding = 1) uniform sampler2D raytraceOutput;
 void main()
 {
     vec3 geometry = texture(geometryOutput, inUV).rgb;
-    float raytrace = clamp(0.6 + texture(raytraceOutput, inUV).r, 0, 10);
-
-    // Gamma correction
-    float gamma = 2.2;
-    geometry = pow(geometry, vec3(1.0 / gamma));
+    float raytrace = clamp(0.15 + texture(raytraceOutput, inUV).r, 0, 1);
 
     vec3 color = geometry * raytrace;
 
     // TODO: exposure etc.
+
+    // Gamma correction
+    float gamma = 2.2;
+    color = pow(color, vec3(1.0 / gamma));
 
     fragColor = vec4(color, 1.0);
 }

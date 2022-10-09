@@ -54,7 +54,8 @@ namespace Hyper
 
 		std::unique_ptr<VulkanImage> m_pDepthBuffer{};
 
-		vk::Format m_ImageFormat;
+		vk::Format m_ImageColorFormat;
+		vk::Format m_ImageDepthFormat;
 		vk::ColorSpaceKHR m_ColorSpace;
 		// vk::Extent2D m_Extent;
 

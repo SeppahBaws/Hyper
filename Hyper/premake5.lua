@@ -44,6 +44,7 @@ project "Hyper"
         "GLFW",
         "Optick",
         "%{Library.Vulkan}",
+        "%{Library.dxcompiler}",
         "stb",
         "imgui"
     }
@@ -51,6 +52,11 @@ project "Hyper"
     defines
     {
         "VULKAN_HPP_NO_EXCEPTIONS"
+    }
+    
+    postbuildcommands
+    {
+        "{COPY} %{Binary.dxcompiler} %{cfg.targetdir}"
     }
 
     if (_OPTIONS["use-vld"]) then

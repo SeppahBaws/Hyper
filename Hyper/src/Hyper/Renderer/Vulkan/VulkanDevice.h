@@ -32,10 +32,12 @@ namespace Hyper
 		std::vector<const char*> m_RequiredDeviceLayerNames = {};
 		std::vector<const char*> m_RequiredDeviceExtensionNames = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+			VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME,
 
 			// Ray tracing extensions
 			VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
 			VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+			VK_KHR_RAY_QUERY_EXTENSION_NAME,
 
 			// Required by VK_KHR_acceleration_structure
 			VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,

@@ -64,6 +64,7 @@ struct ImGui_ImplVulkan_InitInfo
     void                            (*CheckVkResultFn)(VkResult err);
     bool                            UseDynamicRendering;
     VkFormat                        ColorAttachmentFormat;
+    VkFormat                        DepthAttachmentFormat;
 };
 
 // Called by user code

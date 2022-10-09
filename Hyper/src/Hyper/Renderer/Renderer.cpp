@@ -68,7 +68,7 @@ namespace Hyper
 		m_pCamera->Setup();
 
 		// Setup Dear ImGui
-		m_pImGuiWrapper = std::make_unique<ImGuiWrapper>(m_pRenderContext.get(), pWindow->GetHandle(), m_pRenderContext->imageFormat);
+		m_pImGuiWrapper = std::make_unique<ImGuiWrapper>(m_pRenderContext.get(), pWindow->GetHandle(), m_pRenderContext->imageColorFormat, m_pRenderContext->imageDepthFormat);
 
 		// Get command buffers. 1 for each frame in flight.
 		m_CommandBuffers = m_pCommandPool->GetCommandBuffers(m_pSwapChain->GetNumFrames());
@@ -217,7 +217,7 @@ namespace Hyper
 					.viewport = {},
 					.scissor = {},
 					.blendEnable = true,
-					.colorFormats = { m_pRenderContext->imageFormat },
+					.colorFormats = { m_pRenderContext->imageColorFormat },
 					.depthStencilFormat = vk::Format::eD24UnormS8Uint, // Temp.
 					.dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor},
 					.flags = {}

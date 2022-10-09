@@ -25,7 +25,8 @@ namespace Hyper
 
 		vk::Sampler defaultSampler;
 
-		vk::Format imageFormat;
+		vk::Format imageColorFormat;
+		vk::Format imageDepthFormat;
 		vk::Extent2D imageExtent;
 
 		ShaderLibrary* pShaderLibrary;

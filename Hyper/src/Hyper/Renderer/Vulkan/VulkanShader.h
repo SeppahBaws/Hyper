@@ -23,7 +23,6 @@ namespace Hyper
 	struct ShaderDescriptorBinding
 	{
 		vk::DescriptorType descType;
-		u32 binding;
 		vk::ShaderStageFlags stageFlags;
 	};
 
@@ -53,8 +52,10 @@ namespace Hyper
 		void Create();
 		void Destroy();
 
+#if 0
 		std::string PreProcessStage(ShaderStageType stage, const std::string& shaderCode, const std::string& shaderName);
 		std::pair<vk::ShaderModule, std::vector<u32>> CompileStage(ShaderStageType stage, const std::string& shaderCode, const std::string& shaderName);
+#endif
 		void Reflect(ShaderStageType stage, const std::vector<u32>& spirvBytes, const std::string& moduleName);
 
 	private:
@@ -63,8 +64,8 @@ namespace Hyper
 		UUID m_Id;
 
 		std::unordered_map<ShaderStageType, ShaderModule> m_ShaderModules;
-
-		std::vector<std::vector<ShaderDescriptorBinding>> m_DescriptorSetBindings;
+		
+		std::vector<std::map<u32, ShaderDescriptorBinding>> m_DescriptorSetBindings;
 		std::vector<ShaderPushConstant> m_PushConstants;
 
 		std::vector<vk::DescriptorSetLayout> m_DescriptorLayouts;

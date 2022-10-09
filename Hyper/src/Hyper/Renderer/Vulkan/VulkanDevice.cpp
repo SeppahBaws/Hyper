@@ -119,18 +119,21 @@ namespace Hyper
 				// Dynamic rendering
 				vk::PhysicalDeviceDynamicRenderingFeatures,
 				// Ray-tracing features
+				vk::PhysicalDeviceRayQueryFeaturesKHR,
 				vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
 				vk::PhysicalDeviceBufferDeviceAddressFeatures,
 				vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
 				// Device diagnostics for Nvidia Aftermath
 				// TODO: make this an optional feature
-				vk::DeviceDiagnosticsConfigCreateInfoNV
+				vk::DeviceDiagnosticsConfigCreateInfoNV,
+				vk::PhysicalDeviceShaderDemoteToHelperInvocationFeatures
 			>();
 
 			// Enable dynamic rendering
 			deviceCreateInfoChain.get<vk::PhysicalDeviceDynamicRenderingFeatures>().dynamicRendering = true;
 
 			// Enable ray tracing features
+			deviceCreateInfoChain.get<vk::PhysicalDeviceRayQueryFeaturesKHR>().rayQuery = true;
 			deviceCreateInfoChain.get<vk::PhysicalDeviceRayTracingPipelineFeaturesKHR>().rayTracingPipeline = true;
 			deviceCreateInfoChain.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress = true;
 			deviceCreateInfoChain.get<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>().accelerationStructure = true;
@@ -141,6 +144,7 @@ namespace Hyper
 				vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableAutomaticCheckpoints |
 				vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableShaderDebugInfo;
 			deviceCreateInfoChain.get<vk::DeviceDiagnosticsConfigCreateInfoNV>().flags = aftermathFlags;
+			deviceCreateInfoChain.get<vk::PhysicalDeviceShaderDemoteToHelperInvocationFeatures>().shaderDemoteToHelperInvocation = true;
 
 			if (HYPER_VALIDATE)
 			{

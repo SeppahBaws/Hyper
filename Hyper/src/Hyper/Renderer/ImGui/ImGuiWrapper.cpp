@@ -11,7 +11,7 @@
 
 namespace Hyper
 {
-	ImGuiWrapper::ImGuiWrapper(RenderContext* pRenderCtx, GLFWwindow* window, vk::Format colorFormat)
+	ImGuiWrapper::ImGuiWrapper(RenderContext* pRenderCtx, GLFWwindow* window, vk::Format colorFormat, vk::Format depthFormat)
 		: m_pRenderCtx(pRenderCtx)
 	{
 		m_pDescriptorPool = std::make_unique<DescriptorPool>(DescriptorPool::Builder(m_pRenderCtx->device)
@@ -58,6 +58,7 @@ namespace Hyper
 		initInfo.CheckVkResultFn = [](VkResult result) { VulkanUtils::Check(result); };
 		initInfo.UseDynamicRendering = true;
 		initInfo.ColorAttachmentFormat = static_cast<VkFormat>(colorFormat);
+		initInfo.DepthAttachmentFormat = static_cast<VkFormat>(depthFormat);
 		ImGui_ImplVulkan_Init(&initInfo, nullptr);
 
 		// Upload font

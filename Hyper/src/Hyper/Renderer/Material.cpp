@@ -75,7 +75,6 @@ namespace Hyper
 		// 1. Create descriptors etc
 		m_DescriptorPool = std::make_unique<DescriptorPool>(
 			DescriptorPool::Builder(m_pRenderCtx->device)
-			.AddSize(vk::DescriptorType::eUniformBuffer, 10)
 			.AddSize(vk::DescriptorType::eCombinedImageSampler, 10)
 			.SetMaxSets(10)
 			.SetFlags({})

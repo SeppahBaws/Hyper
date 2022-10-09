@@ -12,19 +12,19 @@ namespace Hyper
 		: m_pRenderCtx(pRenderCtx)
 	{
 		LoadShader("StaticGeometry", std::unordered_map<ShaderStageType, std::filesystem::path>{
-			{ ShaderStageType::Vertex, "res/shaders/StaticGeometry.vert" },
-			{ ShaderStageType::Fragment, "res/shaders/StaticGeometry.frag" }
+			{ ShaderStageType::Vertex, "res/shaders/StaticGeometry.vert.hlsl" },
+			{ ShaderStageType::Fragment, "res/shaders/StaticGeometry.frag.hlsl" }
 		});
 
 		LoadShader("Composite", std::unordered_map<ShaderStageType, std::filesystem::path>{
-			{ ShaderStageType::Vertex, "res/shaders/Composite.vert" },
-			{ ShaderStageType::Fragment, "res/shaders/Composite.frag" },
+			{ ShaderStageType::Vertex, "res/shaders/Composite.vert.hlsl" },
+			{ ShaderStageType::Fragment, "res/shaders/Composite.frag.hlsl" },
 		});
 
 		LoadShader("RTShadows", std::unordered_map<ShaderStageType, std::filesystem::path>{
-			{ ShaderStageType::RayGen, "res/shaders/RTShadows.rgen" },
-			{ ShaderStageType::Miss, "res/shaders/RTShadows.rmiss" },
-			{ ShaderStageType::ClosestHit, "res/shaders/RTShadows.rchit" },
+			{ ShaderStageType::RayGen, "res/shaders/RTShadows.rgen.hlsl" },
+			{ ShaderStageType::Miss, "res/shaders/RTShadows.rmiss.hlsl" },
+			{ ShaderStageType::ClosestHit, "res/shaders/RTShadows.rchit.hlsl" },
 		});
 	}
 

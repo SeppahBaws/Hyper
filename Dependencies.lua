@@ -22,6 +22,7 @@ LibDir["NvidiaAftermath"] = "%{wks.location}/Hyper/dependencies/NvidiaAftermath/
 Library = {}
 Library["Vulkan"] = "%{LibDir.Vulkan}/vulkan-1.lib"
 Library["NvidiaAftermath"] = "%{LibDir.NvidiaAftermath}/GFSDK_Aftermath_Lib.x64.lib"
+Library["dxcompiler"] = "%{LibDir.Vulkan}/dxcompiler.lib"
 
 Library["assimp_debug"] = "%{LibDir.assimp}/assimp-vc143-mtd.lib"
 Library["shaderc_shared_debug"] = "%{LibDir.Vulkan}/shaderc_sharedd.lib"
@@ -37,3 +38,6 @@ Library["spirv_cross_reflect_release"] = "%{LibDir.Vulkan}/spirv-cross-reflect.l
 
 BinDir = {}
 BinDir["assimp"] = "%{wks.location}/Hyper/dependencies/assimp/bin"
+
+Binary = {}
+Binary["dxcompiler"] = "%{IncludeDir.Vulkan}/Bin/dxcompiler.dll"

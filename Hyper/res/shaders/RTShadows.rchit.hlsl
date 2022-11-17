@@ -10,7 +10,7 @@ cbuffer camera : register(b2) { CameraProperties camera; };
 
 struct HitInfo
 {
-	float rayT;
+	bool hitAnything;
 	bool isSecondaryRay;
 };
 
@@ -67,7 +67,7 @@ void main(inout Payload payload)
 {
 	if (payload.hitInfo.isSecondaryRay)
 	{
-		payload.hitInfo.rayT = RayTCurrent();
+		payload.hitInfo.hitAnything = true;
 		return;
 	}
 
@@ -76,11 +76,11 @@ void main(inout Payload payload)
 
 	uint randSeed = InitRand(DispatchRaysIndex().x + DispatchRaysIndex().y * DispatchRaysDimensions().x, pushConstants.frameNr);
 
-	float3 origin = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
-	float3 randomOffset = GetRandomOnUnitSphere(randSeed);
+	const float3 origin = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();
+	const float3 randomOffset = GetRandomOnUnitSphere(randSeed);
 	// float sphereOffset = 1.0;
 	// float3 direction = normalize(normalize(pushConstants.sunDir) * sphereOffset + randomOffset);
-	float3 direction = normalize(normalize(pushConstants.sunDir) * 10.0 + randomOffset * 0.1);
+	const float3 direction = normalize(normalize(pushConstants.sunDir) * 10.0 + randomOffset * 0.1);
 
 	RayDesc rayDesc;
 	rayDesc.Origin = origin;

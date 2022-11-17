@@ -10,7 +10,7 @@ cbuffer camera : register(b2) { CameraProperties camera; };
 
 struct HitInfo
 {
-	float rayT;
+	bool hitAnything;
 	bool isSecondaryRay;
 };
 
@@ -29,20 +29,19 @@ struct RTPushConstants
 [shader("raygeneration")]
 void main()
 {
-	const float FLT_MAX = float(0x7F7FFFFF);
+	const uint3 launchId = DispatchRaysIndex();
+	const uint3 launchSize = DispatchRaysDimensions();
 
-	uint3 launchId = DispatchRaysIndex();
-	uint3 launchSize = DispatchRaysDimensions();
-
-	const float2 pixelCenter = DispatchRaysIndex().xy + float2(0.5, 0.5);
-	const float2 inUV = pixelCenter / DispatchRaysDimensions().xy;
+	const float2 pixelCenter = launchId.xy + float2(0.5, 0.5);
+	const float2 inUV = pixelCenter / launchSize.xy;
 	const float2 d = inUV * 2.0 - 1.0;
 
-	float4 origin = mul(camera.viewInverse, float4(0, 0, 0, 1));
-	float4 target = mul(camera.projInverse, float4(d.x, d.y, 1, 1));
-	float4 direction = mul(camera.viewInverse, float4(normalize(target.xyz), 0));
+	const float4 origin = mul(camera.viewInverse, float4(0, 0, 0, 1));
+	const float4 target = mul(camera.projInverse, float4(d.x, d.y, 1, 1));
+	const float4 direction = mul(camera.viewInverse, float4(normalize(target.xyz), 0));
 
 	Payload payload = (Payload)0;
+	payload.hitInfo.hitAnything = false;
 	payload.hitInfo.isSecondaryRay = false;
 
 	RayDesc rayDesc;
@@ -52,5 +51,5 @@ void main()
 	rayDesc.TMax = 10000.0;
 	TraceRay(accel, RAY_FLAG_FORCE_OPAQUE, 0xFF, 0, 0, 0, rayDesc, payload);
 
-	image[int2(launchId.xy)] = float(payload.hitInfo.rayT == FLT_MAX) * 1.0;
+	image[int2(launchId.xy)] = float(!payload.hitInfo.hitAnything) * 1.0;
 }

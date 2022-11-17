@@ -15,6 +15,7 @@ project "Hyper"
     {
         "src/**.h",
         "src/**.cpp",
+        "res/shaders/**.hlsl" -- add HLSL files to the solution, for intellisense.
     }
 
     includedirs
@@ -95,6 +96,9 @@ project "Hyper"
             "{COPY} %{LibDir.NvidiaAftermath}/llvm_7_0_1.dll %{cfg.targetdir}",
         }
     end
+    
+    filter "files:**.hlsl"
+        buildaction "None"
 
     filter "system:windows"
         systemversion "latest"

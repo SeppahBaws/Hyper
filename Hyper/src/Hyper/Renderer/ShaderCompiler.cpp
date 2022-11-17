@@ -272,7 +272,9 @@ namespace Hyper
 			// Compile to SPIRV
 			L"-spirv", L"-fspv-target-env=vulkan1.3",
 			// Don't optimize (atm optimizing would break reflection)
-			L"-O0"
+			L"-O0",
+			// Set the HLSL version to HLSL 2021
+			L"-HV", L"2021"
 		};
 
 		// Compile shader

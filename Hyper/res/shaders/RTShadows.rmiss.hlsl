@@ -10,7 +10,7 @@ cbuffer camera : register(b2) { CameraProperties camera; };
 
 struct HitInfo
 {
-	float rayT;
+	bool hitAnything;
 	bool isSecondaryRay;
 };
 
@@ -29,7 +29,5 @@ struct RTPushConstants
 [shader("miss")]
 void main(inout Payload payload)
 {
-	const float FLT_MAX = float(0x7F7FFFFF);
-
-	payload.hitInfo.rayT = FLT_MAX;
+	payload.hitInfo.hitAnything = false;
 }

@@ -99,15 +99,13 @@ namespace Hyper
 
 		// Initialize the geometry pass
 		{
+			m_pGeometryShader = m_pShaderLibrary->GetShader("StaticGeometry");
+
 			// Render target
 			m_pGeometryRenderTarget = std::make_unique<RenderTarget>(m_pRenderContext.get(), vk::Format::eR8G8B8A8Unorm, "Geometry pass render target", m_pRenderContext->imageExtent.width, m_pRenderContext->imageExtent.height);
 
 			// Create the frame data
 			{
-				m_pGeometryGlobalSetLayout = std::make_unique<vk::DescriptorSetLayout>(
-					DescriptorSetLayoutBuilder(m_pRenderContext->device)
-					.AddBinding(vk::DescriptorType::eUniformBuffer, 0, 1, vk::ShaderStageFlagBits::eVertex)
-					.Build());
 				// TODO: this pool should be centralized somewhere.
 				m_pGeometryDescriptorPool = std::make_unique<DescriptorPool>(
 					DescriptorPool::Builder(m_pRenderContext->device)
@@ -118,7 +116,7 @@ namespace Hyper
 
 				for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
 				{
-					std::vector<vk::DescriptorSet> descriptorSets = m_pGeometryDescriptorPool->Allocate({ *m_pGeometryGlobalSetLayout });
+					std::vector<vk::DescriptorSet> descriptorSets = m_pGeometryDescriptorPool->Allocate(m_pGeometryShader->GetAllDescriptorSetLayouts());
 					m_GeometryFrameDatas.emplace_back<FrameData>(FrameData{
 						VulkanBuffer(m_pRenderContext.get(), sizeof(CameraData), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU,
 							fmt::format("Camera buffer {}", i)),
@@ -141,39 +139,32 @@ namespace Hyper
 			}
 
 			// Create the pipeline
-			{
-				m_pGeometryShader = m_pShaderLibrary->GetShader("StaticGeometry");
-
-				GraphicsPipelineSpecification geometryPipelineSpec{
-					.debugName = "Geometry pipeline",
-					.pShader = m_pGeometryShader,
-					.polygonMode = vk::PolygonMode::eFill,
-					.cullMode = vk::CullModeFlagBits::eNone,
-					.frontFace = vk::FrontFace::eCounterClockwise,
-					.depthTest = true,
-					.depthWrite = true,
-					.compareOp = vk::CompareOp::eLess,
-					.viewport = {},
-					.scissor = {},
-					.blendEnable = true,
-					.colorFormats = { m_pGeometryRenderTarget->GetColorImage()->GetFormat() },
-					.depthStencilFormat = m_pGeometryRenderTarget->GetDepthImage()->GetFormat(),
-					.dynamicStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor },
-					.flags = {}
-				};
-				m_pGeometryPipeline = std::make_unique<VulkanGraphicsPipeline>(m_pRenderContext.get(), geometryPipelineSpec);
-			}
+			GraphicsPipelineSpecification geometryPipelineSpec{
+				.debugName = "Geometry pipeline",
+				.pShader = m_pGeometryShader,
+				.polygonMode = vk::PolygonMode::eFill,
+				.cullMode = vk::CullModeFlagBits::eNone,
+				.frontFace = vk::FrontFace::eCounterClockwise,
+				.depthTest = true,
+				.depthWrite = true,
+				.compareOp = vk::CompareOp::eLess,
+				.viewport = {},
+				.scissor = {},
+				.blendEnable = true,
+				.colorFormats = { m_pGeometryRenderTarget->GetColorImage()->GetFormat() },
+				.depthStencilFormat = m_pGeometryRenderTarget->GetDepthImage()->GetFormat(),
+				.dynamicStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor },
+				.flags = {}
+			};
+			m_pGeometryPipeline = std::make_unique<VulkanGraphicsPipeline>(m_pRenderContext.get(), geometryPipelineSpec);
 		}
 
 		// Initialize the composite pass
 		{
+			m_pCompositeShader = m_pShaderLibrary->GetShader("Composite");
+
 			// Create the composite descriptors
 			{
-				m_pCompositeSetLayout = std::make_unique<vk::DescriptorSetLayout>(
-					DescriptorSetLayoutBuilder(m_pRenderContext->device)
-					.AddBinding(vk::DescriptorType::eCombinedImageSampler, 0, 1, vk::ShaderStageFlagBits::eFragment)
-					.AddBinding(vk::DescriptorType::eCombinedImageSampler, 1, 1, vk::ShaderStageFlagBits::eFragment)
-					.Build());
 				// TODO: this pool should be centralized somewhere.
 				m_pCompositeDescriptorPool = std::make_unique<DescriptorPool>(
 					DescriptorPool::Builder(m_pRenderContext->device)
@@ -181,7 +172,7 @@ namespace Hyper
 					.SetMaxSets(10 * m_pSwapChain->GetNumFrames())
 					.Build());
 
-				m_CompositeDescriptorSet = m_pCompositeDescriptorPool->Allocate({ *m_pCompositeSetLayout })[0];
+				m_CompositeDescriptorSet = m_pCompositeDescriptorPool->Allocate(m_pCompositeShader->GetAllDescriptorSetLayouts())[0];
 
 				DescriptorWriter writer{ m_pRenderContext->device, m_CompositeDescriptorSet };
 
@@ -202,28 +193,24 @@ namespace Hyper
 			}
 
 			// Create the composite pipeline
-			{
-				m_pCompositeShader = m_pShaderLibrary->GetShader("Composite");
-
-				GraphicsPipelineSpecification compositePipelineSpecification{
-					.debugName = "Composite pipeline",
-					.pShader = m_pCompositeShader,
-					.polygonMode = vk::PolygonMode::eFill,
-					.cullMode = vk::CullModeFlagBits::eNone,
-					.frontFace = vk::FrontFace::eCounterClockwise,
-					.depthTest = false,
-					.depthWrite = false,
-					.compareOp = vk::CompareOp::eNever,
-					.viewport = {},
-					.scissor = {},
-					.blendEnable = true,
-					.colorFormats = { m_pRenderContext->imageColorFormat },
-					.depthStencilFormat = vk::Format::eD24UnormS8Uint, // Temp.
-					.dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor},
-					.flags = {}
-				};
-				m_pCompositePipeline = std::make_unique<VulkanGraphicsPipeline>(m_pRenderContext.get(), compositePipelineSpecification);
-			}
+			GraphicsPipelineSpecification compositePipelineSpecification{
+				.debugName = "Composite pipeline",
+				.pShader = m_pCompositeShader,
+				.polygonMode = vk::PolygonMode::eFill,
+				.cullMode = vk::CullModeFlagBits::eNone,
+				.frontFace = vk::FrontFace::eCounterClockwise,
+				.depthTest = false,
+				.depthWrite = false,
+				.compareOp = vk::CompareOp::eNever,
+				.viewport = {},
+				.scissor = {},
+				.blendEnable = true,
+				.colorFormats = { m_pRenderContext->imageColorFormat },
+				.depthStencilFormat = vk::Format::eD24UnormS8Uint, // Temp.
+				.dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor},
+				.flags = {}
+			};
+			m_pCompositePipeline = std::make_unique<VulkanGraphicsPipeline>(m_pRenderContext.get(), compositePipelineSpecification);
 		}
 
 		return true;
@@ -527,15 +514,11 @@ namespace Hyper
 		m_pRayTracer.reset();
 
 		m_pGeometryDescriptorPool.reset();
-		m_pRenderContext->device.destroyDescriptorSetLayout(*m_pGeometryGlobalSetLayout);
-		m_pGeometryGlobalSetLayout.reset();
 		m_GeometryFrameDatas.clear();
 		m_pGeometryPipeline.reset();
 		m_pGeometryRenderTarget.reset();
 
 		m_pCompositeDescriptorPool.reset();
-		m_pRenderContext->device.destroyDescriptorSetLayout(*m_pCompositeSetLayout);
-		m_pCompositeSetLayout.reset();
 		m_pCompositePipeline.reset();
 
 		m_pSwapChain.reset();

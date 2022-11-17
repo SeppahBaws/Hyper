@@ -67,13 +67,11 @@ namespace Hyper
 		std::vector<FrameData> m_GeometryFrameDatas;
 		std::unique_ptr<RenderTarget> m_pGeometryRenderTarget{};
 		std::unique_ptr<DescriptorPool> m_pGeometryDescriptorPool{};
-		std::unique_ptr<vk::DescriptorSetLayout> m_pGeometryGlobalSetLayout{};
 		VulkanShader* m_pGeometryShader;
 		std::unique_ptr<VulkanGraphicsPipeline> m_pGeometryPipeline;
 
 		std::unique_ptr<DescriptorPool> m_pCompositeDescriptorPool{};
 		vk::DescriptorSet m_CompositeDescriptorSet{};
-		std::unique_ptr<vk::DescriptorSetLayout> m_pCompositeSetLayout{};
 		VulkanShader* m_pCompositeShader;
 		std::unique_ptr<VulkanGraphicsPipeline> m_pCompositePipeline;
 

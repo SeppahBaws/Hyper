@@ -10,6 +10,7 @@ bin-int/
 
 # Don't exclude premake
 !vendor/bin
+!Hyper/dependencies/**/bin
 
 # Log files
 *.log

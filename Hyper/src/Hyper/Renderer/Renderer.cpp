@@ -3,8 +3,9 @@
 
 #include <imgui.h>
 
-#include "ShaderLibrary.h"
 #include "MaterialLibrary.h"
+#include "ShaderLibrary.h"
+#include "Hyper/Asset/TextureManager.h"
 #include "Hyper/Core/Context.h"
 #include "Hyper/Core/Window.h"
 #include "Hyper/Debug/Profiler.h"
@@ -43,10 +44,46 @@ namespace Hyper
 
 		m_pRenderContext = std::make_unique<RenderContext>();
 		m_pDevice = std::make_unique<VulkanDevice>(m_pRenderContext.get());
+
+		// Initialize bindless rendering
+		{
+			// Update this to reflect the amount of pool sizes passed to the builder.
+			const u32 poolSizesCount = 2;
+			m_pRenderContext->bindlessDescriptorPool = std::make_unique<DescriptorPool>(
+				DescriptorPool::Builder(m_pRenderContext->device)
+				.AddSize(vk::DescriptorType::eCombinedImageSampler, m_pRenderContext->maxBindlessResources)
+				.AddSize(vk::DescriptorType::eStorageImage, m_pRenderContext->maxBindlessResources)
+				.SetMaxSets(m_pRenderContext->maxBindlessResources * poolSizesCount)
+				.SetFlags(vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind)
+				.Build());
+
+			vk::DescriptorBindingFlags bindlessFlags = vk::DescriptorBindingFlagBits::ePartiallyBound | vk::DescriptorBindingFlagBits::eUpdateAfterBind;
+			auto allFlags = std::vector{ bindlessFlags, bindlessFlags };
+			vk::DescriptorSetLayoutBindingFlagsCreateInfoEXT extendedInfo{};
+			extendedInfo.bindingCount = poolSizesCount;
+			extendedInfo.setBindingFlags(allFlags);
+
+			m_pRenderContext->bindlessDescriptorLayout = DescriptorSetLayoutBuilder(m_pRenderContext->device)
+				.AddBinding(vk::DescriptorType::eCombinedImageSampler, m_pRenderContext->bindlessTextureBinding, m_pRenderContext->maxBindlessResources,
+					vk::ShaderStageFlagBits::eAll)
+				.AddBinding(vk::DescriptorType::eStorageImage, m_pRenderContext->bindlessTextureBinding + 1, m_pRenderContext->maxBindlessResources,
+					vk::ShaderStageFlagBits::eAll)
+				.SetFlags(vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool)
+				.Build(&extendedInfo);
+
+			m_pRenderContext->bindlessDescriptorSet = m_pRenderContext->bindlessDescriptorPool->Allocate(m_pRenderContext->bindlessDescriptorLayout);
+
+			m_pRenderContext->bindlessDescriptorWriter = std::make_unique<DescriptorWriter>(m_pRenderContext->device, m_pRenderContext->bindlessDescriptorSet);
+		}
+
 		m_pCommandPool = std::make_unique<VulkanCommandPool>(m_pRenderContext.get());
+		m_pTextureManager = std::make_unique<TextureManager>(m_pRenderContext.get());
+		m_pRenderContext->pTextureManager = m_pTextureManager.get();
+
 		m_pShaderLibrary = std::make_unique<ShaderLibrary>(m_pRenderContext.get());
-		m_pMaterialLibrary = std::make_unique<MaterialLibrary>(m_pRenderContext.get());
 		m_pRenderContext->pShaderLibrary = m_pShaderLibrary.get();
+
+		m_pMaterialLibrary = std::make_unique<MaterialLibrary>(m_pRenderContext.get());
 		m_pRenderContext->pMaterialLibrary = m_pMaterialLibrary.get();
 
 		// Create the default sampler
@@ -68,7 +105,8 @@ namespace Hyper
 		m_pCamera->Setup();
 
 		// Setup Dear ImGui
-		m_pImGuiWrapper = std::make_unique<ImGuiWrapper>(m_pRenderContext.get(), pWindow->GetHandle(), m_pRenderContext->imageColorFormat, m_pRenderContext->imageDepthFormat);
+		m_pImGuiWrapper = std::make_unique<ImGuiWrapper>(m_pRenderContext.get(), pWindow->GetHandle(), m_pRenderContext->imageColorFormat,
+			m_pRenderContext->imageDepthFormat);
 
 		// Get command buffers. 1 for each frame in flight.
 		m_CommandBuffers = m_pCommandPool->GetCommandBuffers(m_pSwapChain->GetNumFrames());
@@ -95,14 +133,16 @@ namespace Hyper
 	{
 		Window* pWindow = m_pContext->GetSubsystem<Window>();
 
-		m_pRayTracer = std::make_unique<VulkanRaytracer>(m_pRenderContext.get(), m_pScene->GetAccelerationStructure(), m_pSwapChain->GetNumFrames(), pWindow->GetWidth(), pWindow->GetHeight());
+		m_pRayTracer = std::make_unique<VulkanRaytracer>(m_pRenderContext.get(), m_pScene->GetAccelerationStructure(), m_pSwapChain->GetNumFrames(), pWindow->GetWidth(),
+			pWindow->GetHeight());
 
 		// Initialize the geometry pass
 		{
 			m_pGeometryShader = m_pShaderLibrary->GetShader("StaticGeometry");
 
 			// Render target
-			m_pGeometryRenderTarget = std::make_unique<RenderTarget>(m_pRenderContext.get(), vk::Format::eR8G8B8A8Unorm, "Geometry pass render target", m_pRenderContext->imageExtent.width, m_pRenderContext->imageExtent.height);
+			m_pGeometryRenderTarget = std::make_unique<RenderTarget>(m_pRenderContext.get(), vk::Format::eR8G8B8A8Unorm, "Geometry pass render target",
+				m_pRenderContext->imageExtent.width, m_pRenderContext->imageExtent.height);
 
 			// Create the frame data
 			{
@@ -121,7 +161,7 @@ namespace Hyper
 						VulkanBuffer(m_pRenderContext.get(), sizeof(CameraData), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU,
 							fmt::format("Camera buffer {}", i)),
 						descriptorSets[0]
-						});
+					});
 				}
 
 				for (u32 i = 0; i < m_pSwapChain->GetNumFrames(); i++)
@@ -207,7 +247,7 @@ namespace Hyper
 				.blendEnable = true,
 				.colorFormats = { m_pRenderContext->imageColorFormat },
 				.depthStencilFormat = vk::Format::eD24UnormS8Uint, // Temp.
-				.dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor},
+				.dynamicStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor },
 				.flags = {}
 			};
 			m_pCompositePipeline = std::make_unique<VulkanGraphicsPipeline>(m_pRenderContext.get(), compositePipelineSpecification);
@@ -216,7 +256,8 @@ namespace Hyper
 		return true;
 	}
 
-	bool isKeyDown{false};
+	bool isKeyDown{ false };
+
 	void Renderer::OnTick(f32 dt)
 	{
 		HPR_PROFILE_SCOPE();
@@ -235,7 +276,7 @@ namespace Hyper
 			{
 				isKeyDown = false;
 			}
-		} 
+		}
 
 		vk::Result result;
 
@@ -316,7 +357,6 @@ namespace Hyper
 		{
 			if (ImGui::Begin("GPU memory stats"))
 			{
-
 				VmaBudget budgets[VK_MAX_MEMORY_HEAPS];
 				vmaGetHeapBudgets(m_pRenderContext->allocator, budgets);
 
@@ -333,8 +373,10 @@ namespace Hyper
 				ImGui::Text("total available: %.2f MB", budgetMB);
 				ImGui::ProgressBar(usageMB / budgetMB);
 				ImGui::Separator();
-				ImGui::Text("VmaAllocation objects: %d - occupying %.2f MB", budgets[selectedHeap].statistics.allocationCount, budgets[selectedHeap].statistics.allocationBytes / 1000000.0f);
-				ImGui::Text("VkDeviceMemory objects: %d - occupying %.2f MB", budgets[selectedHeap].statistics.blockCount, budgets[selectedHeap].statistics.blockBytes / 1000000.0f);
+				ImGui::Text("VmaAllocation objects: %d - occupying %.2f MB", budgets[selectedHeap].statistics.allocationCount,
+					budgets[selectedHeap].statistics.allocationBytes / 1000000.0f);
+				ImGui::Text("VkDeviceMemory objects: %d - occupying %.2f MB", budgets[selectedHeap].statistics.blockCount,
+					budgets[selectedHeap].statistics.blockBytes / 1000000.0f);
 
 				// ImGui::Text("Current memory usage:");
 				// ImGui::Text("%u allocations (%llu B)", budgets[0].statistics.allocationCount, budgets[0].statistics.allocationBytes);
@@ -393,8 +435,11 @@ namespace Hyper
 				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pGeometryPipeline->GetLayout(), 0, { currentFrameData.descriptor }, {});
 			}
 
+			// Bind the bindless buffer
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pGeometryPipeline->GetLayout(), 1, { m_pRenderContext->bindlessDescriptorSet }, {});
+
 			// TEMP pushconst garbage
-			const u32 offset = m_pGeometryShader->GetAllPushConstantRanges()[1].offset;
+			const u32 offset = m_pGeometryShader->GetAllPushConstantRanges()[0].offset;
 			cmd.pushConstants<LightingSettings>(m_pGeometryPipeline->GetLayout(), vk::ShaderStageFlagBits::eFragment, offset, m_pScene->GetLightingSettings());
 
 			// Draw the model to the screen
@@ -434,7 +479,7 @@ namespace Hyper
 					vk::ImageAspectFlagBits::eColor,
 					0, 1,
 					0, 1
-					})
+				})
 			);
 
 			// Begin rendering
@@ -498,6 +543,11 @@ namespace Hyper
 
 		m_FrameIdx = (m_FrameIdx + 1) % m_pRenderContext->imagesInFlight;
 		m_pRenderContext->frameNumber++;
+
+
+		// Update bindless textures
+		m_pRenderContext->bindlessDescriptorWriter->Write();
+		m_pRenderContext->bindlessDescriptorWriter->ClearWrites();
 	}
 
 	void Renderer::OnShutdown()
@@ -513,7 +563,7 @@ namespace Hyper
 
 		m_pRayTracer.reset();
 
-		m_pGeometryDescriptorPool.reset();
+		// m_pGeometryDescriptorPool.reset();
 		m_GeometryFrameDatas.clear();
 		m_pGeometryPipeline.reset();
 		m_pGeometryRenderTarget.reset();

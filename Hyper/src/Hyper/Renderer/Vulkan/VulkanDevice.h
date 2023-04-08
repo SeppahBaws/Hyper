@@ -19,6 +19,7 @@ namespace Hyper
 
 	private:
 		[[nodiscard]] bool CheckExtensionsAndLayersSupport() const;
+		[[nodiscard]] static bool CheckPhysicalDeviceSupport(const vk::PhysicalDevice& physicalDevice);
 
 	private:
 #ifdef HYPER_DISTRIBUTE
@@ -33,6 +34,9 @@ namespace Hyper
 		std::vector<const char*> m_RequiredDeviceExtensionNames = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
 			VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME,
+
+			// Bindless rendering
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 
 			// Ray tracing extensions
 			VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,

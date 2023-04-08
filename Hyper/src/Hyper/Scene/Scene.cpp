@@ -198,6 +198,10 @@ namespace Hyper
 		};
 
 		ImportModel("res/models/Sponza/Sponza.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+		// ImportModel("D:/GameDevModels/Bistro/Exterior/exterior.obj", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f }, glm::vec3{ 0.01f });
+		// ImportModel("D:/GameDevModels/NewSponza/Main/NewSponza_Main_Blender_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+		// ImportModel("D:/GameDevModels/NewSponza/PKG_A_Curtains/NewSponza_Curtains_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
+		// ImportModel("D:/GameDevModels/NewSponza/PKG_B_Ivy/NewSponza_IvyGrowth_glTF.gltf", glm::vec3{ 0.0f }, glm::vec3{ 90.0f, 0.0f, 0.0f });
 
 		BuildAccelerationStructure();
 
@@ -413,7 +417,7 @@ namespace Hyper
 				material.LoadTexture(MaterialTextureType::Normal, "res/textures/default-normal.png", false);
 			}
 
-			material.PostLoadInititalize();
+			material.PostLoadInitialize();
 		}
 	}
 }

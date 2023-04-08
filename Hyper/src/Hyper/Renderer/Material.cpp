@@ -4,7 +4,7 @@
 #include "RenderContext.h"
 #include "Renderer.h"
 #include "Texture.h"
-#include "Vulkan/VulkanDebug.h"
+#include "Hyper/Asset/TextureManager.h"
 #include "Vulkan/VulkanDescriptors.h"
 
 namespace Hyper
@@ -19,26 +19,15 @@ namespace Hyper
 	{
 		for (auto& texture : m_Textures | std::views::values)
 		{
-			texture.reset();
-		}
-
-		m_DescriptorPool.reset();
-		if (m_pLayout != nullptr)
-		{
-			m_pRenderCtx->device.destroyDescriptorSetLayout(*m_pLayout);
-			m_pLayout = nullptr;
+			m_pRenderCtx->pTextureManager->UnloadTexture(texture);
 		}
 	}
 
 	Material::Material(Material&& other) noexcept: m_pRenderCtx(other.m_pRenderCtx),
 		m_Id(other.m_Id),
 		m_Name(std::move(other.m_Name)),
-		m_Textures(std::move(other.m_Textures)),
-		m_pLayout(std::move(other.m_pLayout)),
-		m_DescriptorPool(std::move(other.m_DescriptorPool)),
-		m_DescriptorSet(std::move(other.m_DescriptorSet))
+		m_Textures(std::move(other.m_Textures))
 	{
-		other.m_pLayout = nullptr;
 	}
 
 	Material& Material::operator=(Material&& other) noexcept
@@ -49,11 +38,7 @@ namespace Hyper
 		m_Id = other.m_Id;
 		m_Name = std::move(other.m_Name);
 		m_Textures = std::move(other.m_Textures);
-		m_pLayout = std::move(other.m_pLayout);
-		m_DescriptorSet = std::move(other.m_DescriptorSet);
-		m_DescriptorPool = std::move(other.m_DescriptorPool);
 
-		other.m_pLayout = nullptr;
 		return *this;
 	}
 
@@ -61,7 +46,7 @@ namespace Hyper
 	{
 		if (!m_Textures.contains(type))
 		{
-			m_Textures[type] = std::make_unique<Texture>(m_pRenderCtx, fileName, srgb);
+			m_Textures[type] = m_pRenderCtx->pTextureManager->LoadTexture(fileName, srgb);
 		}
 		else
 		{
@@ -70,41 +55,26 @@ namespace Hyper
 		}
 	}
 
-	void Material::PostLoadInititalize()
+	void Material::PostLoadInitialize()
 	{
-		// 1. Create descriptors etc
-		m_DescriptorPool = std::make_unique<DescriptorPool>(
-			DescriptorPool::Builder(m_pRenderCtx->device)
-			.AddSize(vk::DescriptorType::eCombinedImageSampler, 10)
-			.SetMaxSets(10)
-			.SetFlags({})
-			.Build());
-		VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::eDescriptorPool, m_DescriptorPool->GetPool(), fmt::format("'{}' Descriptor Pool", m_Name));
+		const TextureHandle albedoTexture = m_Textures.at(MaterialTextureType::Albedo);
+		const auto albedoImageInfo = m_pRenderCtx->pTextureManager->GetTexture(albedoTexture)->GetDescriptorImageInfo();
 
-		m_pLayout = std::make_unique<vk::DescriptorSetLayout>(
-			DescriptorSetLayoutBuilder(m_pRenderCtx->device)
-			.AddBinding(vk::DescriptorType::eCombinedImageSampler, 0, 1, vk::ShaderStageFlagBits::eFragment)
-			.AddBinding(vk::DescriptorType::eCombinedImageSampler, 1, 1, vk::ShaderStageFlagBits::eFragment)
-			.Build());
-		VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::eDescriptorSetLayout, *m_pLayout, fmt::format("'{}' Descriptor Set Layout", m_Name));
+		const TextureHandle normalTexture = m_Textures.at(MaterialTextureType::Normal);
+		const auto normalImageInfo = m_pRenderCtx->pTextureManager->GetTexture(normalTexture)->GetDescriptorImageInfo();
 
-		m_DescriptorSet = m_DescriptorPool->Allocate({ *m_pLayout })[0];
-		VkDebug::SetObjectName(m_pRenderCtx->device, vk::ObjectType::eDescriptorSet, m_DescriptorSet, fmt::format("'{}' Descriptor Set", m_Name));
-
-		// 2. Write descriptors
-		DescriptorWriter writer{ m_pRenderCtx->device, m_DescriptorSet };
-		const auto& albedoTexture = m_Textures.at(MaterialTextureType::Albedo);
-		const auto albedoImageInfo = albedoTexture->GetDescriptorImageInfo();
-
-		const auto& normalTexture = m_Textures.at(MaterialTextureType::Normal);
-		const auto normalImageInfo = normalTexture->GetDescriptorImageInfo();
-		writer.WriteImage(albedoImageInfo, 0, vk::DescriptorType::eCombinedImageSampler);
-		writer.WriteImage(normalImageInfo, 1, vk::DescriptorType::eCombinedImageSampler);
-		writer.Write();
+		m_pRenderCtx->bindlessDescriptorWriter->WriteImageBindless(albedoImageInfo, RenderContext::bindlessTextureBinding, albedoTexture.idx,
+			vk::DescriptorType::eCombinedImageSampler);
+		m_pRenderCtx->bindlessDescriptorWriter->WriteImageBindless(normalImageInfo, RenderContext::bindlessTextureBinding, normalTexture.idx,
+			vk::DescriptorType::eCombinedImageSampler);
 	}
 
-	void Material::Bind(const vk::CommandBuffer& cmd, const vk::PipelineLayout& layout) const
+	glm::uvec4 Material::GetTextureIndices() const
 	{
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 1, m_DescriptorSet, {});
+		glm::uvec4 vec{};
+		vec.x = m_Textures.at(MaterialTextureType::Albedo).idx;
+		vec.y = m_Textures.at(MaterialTextureType::Normal).idx;
+
+		return vec;
 	}
 }

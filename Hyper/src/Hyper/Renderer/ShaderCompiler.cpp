@@ -271,6 +271,10 @@ namespace Hyper
 			L"-T", targetProfile,
 			// Compile to SPIRV
 			L"-spirv", L"-fspv-target-env=vulkan1.3",
+			L"-fspv-extension=SPV_KHR_ray_query",
+			L"-fspv-extension=SPV_KHR_ray_tracing",
+			// Enable Descriptor indexing extension for bindless rendering
+			L"-fspv-extension=SPV_EXT_descriptor_indexing",
 			// Don't optimize (atm optimizing would break reflection)
 			L"-O0",
 			// Set the HLSL version to HLSL 2021

@@ -89,11 +89,11 @@ namespace Hyper
 		// Allocate descriptor set
 		for (u32 i = 0; i < m_NumFrames; i++)
 		{
-			auto descriptorSets = m_pPool->Allocate({ m_DescLayout });
+			const vk::DescriptorSet descriptorSet = m_pPool->Allocate({ m_DescLayout });
 			m_FrameDatas.emplace_back(VulkanBuffer{
 				m_pRenderCtx, sizeof(RTCameraData), vk::BufferUsageFlagBits::eUniformBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU, "RT Camera buffer"
 				},
-				descriptorSets[0]
+				descriptorSet
 			);
 
 			UpdateDescriptors(i);

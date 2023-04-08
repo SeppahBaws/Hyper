@@ -25,14 +25,14 @@ namespace Hyper
 
 		MaterialLibrary* materialLibrary = pRenderCtx->pMaterialLibrary;
 
-		ModelMatrixPushConst pushConst{};
-		pushConst.modelMatrix = m_WorldTransform;
-		cmd.pushConstants<ModelMatrixPushConst>(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, pushConst);
-
 		for (const auto& mesh : m_Meshes)
 		{
 			const Material& material = materialLibrary->GetMaterial(mesh->GetMaterialId());
-			material.Bind(cmd, pipelineLayout);
+
+			MeshPushConst pushConst{};
+			pushConst.modelMatrix = m_WorldTransform;
+			pushConst.textureIndices = material.GetTextureIndices();
+			cmd.pushConstants<MeshPushConst>(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, pushConst);
 
 			mesh->Draw(cmd);
 		}

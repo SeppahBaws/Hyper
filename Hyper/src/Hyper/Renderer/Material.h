@@ -1,10 +1,11 @@
 ﻿#pragma once
-#include "Vulkan/VulkanDescriptors.h"
+#include <glm/vec4.hpp>
 
 namespace Hyper
 {
 	struct RenderContext;
-
+	struct TextureHandle;
+	struct MaterialPushConst;
 	class Texture;
 
 	enum class MaterialTextureType
@@ -27,19 +28,15 @@ namespace Hyper
 		UUID GetId() const { return m_Id; }
 
 		void LoadTexture(MaterialTextureType type, const std::filesystem::path& fileName, bool srgb = true);
-		void PostLoadInititalize();
+		void PostLoadInitialize();
 
-		void Bind(const vk::CommandBuffer& cmd, const vk::PipelineLayout& layout) const;
+		glm::uvec4 GetTextureIndices() const;
 
 	private:
 		RenderContext* m_pRenderCtx;
 
 		UUID m_Id;
 		std::string m_Name;
-		std::unordered_map<MaterialTextureType, std::unique_ptr<Texture>> m_Textures;
-
-		std::unique_ptr<vk::DescriptorSetLayout> m_pLayout;
-		std::unique_ptr<DescriptorPool> m_DescriptorPool;
-		vk::DescriptorSet m_DescriptorSet;
+		std::unordered_map<MaterialTextureType, TextureHandle> m_Textures;
 	};
 }

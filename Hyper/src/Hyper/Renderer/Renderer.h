@@ -2,11 +2,12 @@
 #include <vulkan/vulkan.hpp>
 
 #include "FlyCamera.h"
-#include "ShaderLibrary.h"
 #include "MaterialLibrary.h"
 #include "Mesh.h"
 #include "RenderContext.h"
 #include "RenderTarget.h"
+#include "ShaderLibrary.h"
+#include "Hyper/Asset/TextureManager.h"
 #include "Hyper/Core/Subsystem.h"
 #include "ImGui/ImGuiWrapper.h"
 #include "Vulkan/VulkanCommands.h"
@@ -20,9 +21,10 @@ namespace Hyper
 {
 	class Scene;
 
-	struct ModelMatrixPushConst
+	struct MeshPushConst
 	{
 		glm::mat4 modelMatrix;
+		glm::uvec4 textureIndices;
 	};
 
 	struct CameraData
@@ -59,6 +61,7 @@ namespace Hyper
 		std::unique_ptr<VulkanCommandPool> m_pCommandPool;
 		std::unique_ptr<VulkanSwapChain> m_pSwapChain;
 		std::unique_ptr<ImGuiWrapper> m_pImGuiWrapper;
+		std::unique_ptr<TextureManager> m_pTextureManager;
 		std::unique_ptr<ShaderLibrary> m_pShaderLibrary;
 		std::unique_ptr<MaterialLibrary> m_pMaterialLibrary;
 

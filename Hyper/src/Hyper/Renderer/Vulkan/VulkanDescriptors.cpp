@@ -10,7 +10,7 @@ namespace Hyper
 	{
 	}
 
-	DescriptorSetLayoutBuilder DescriptorSetLayoutBuilder::AddBinding(vk::DescriptorType descriptorType, u32 binding, u32 count, vk::ShaderStageFlags stageFlags)
+	DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::AddBinding(vk::DescriptorType descriptorType, u32 binding, u32 count, vk::ShaderStageFlags stageFlags)
 	{
 		m_Bindings.emplace_back(vk::DescriptorSetLayoutBinding{
 			binding,
@@ -21,10 +21,18 @@ namespace Hyper
 		return *this;
 	}
 
-	vk::DescriptorSetLayout DescriptorSetLayoutBuilder::Build()
+	DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::SetFlags(vk::DescriptorSetLayoutCreateFlags flags)
+	{
+		m_Flags = flags;
+		return *this;
+	}
+
+	vk::DescriptorSetLayout DescriptorSetLayoutBuilder::Build(const void* pNext)
 	{
 		vk::DescriptorSetLayoutCreateInfo info = {};
 		info.setBindings(m_Bindings);
+		info.flags = m_Flags;
+		info.pNext = pNext;
 
 		const vk::DescriptorSetLayout layout = VulkanUtils::Check(m_Device.createDescriptorSetLayout(info));
 
@@ -36,19 +44,19 @@ namespace Hyper
 	{
 	}
 
-	DescriptorPool::Builder DescriptorPool::Builder::AddSize(vk::DescriptorType type, u32 count)
+	DescriptorPool::Builder& DescriptorPool::Builder::AddSize(vk::DescriptorType type, u32 count)
 	{
 		m_Sizes.emplace_back(vk::DescriptorPoolSize{ type, count });
 		return *this;
 	}
 
-	DescriptorPool::Builder DescriptorPool::Builder::SetMaxSets(u32 maxSets)
+	DescriptorPool::Builder& DescriptorPool::Builder::SetMaxSets(u32 maxSets)
 	{
 		m_MaxSets = maxSets;
 		return *this;
 	}
 
-	DescriptorPool::Builder DescriptorPool::Builder::SetFlags(vk::DescriptorPoolCreateFlags flags)
+	DescriptorPool::Builder& DescriptorPool::Builder::SetFlags(vk::DescriptorPoolCreateFlags flags)
 	{
 		m_Flags = flags;
 		return *this;
@@ -108,6 +116,19 @@ namespace Hyper
 		return sets;
 	}
 
+	vk::DescriptorSet DescriptorPool::Allocate(const vk::DescriptorSetLayout& layout) const
+	{
+		vk::DescriptorSetAllocateInfo info = {};
+		info.descriptorPool = m_Pool;
+		info.descriptorSetCount = 1;
+		info.pSetLayouts= &layout;
+
+		const std::vector<vk::DescriptorSet> sets = VulkanUtils::Check(m_Device.allocateDescriptorSets(info));
+		ASSERT(sets.size() == 1);
+
+		return sets[0];
+	}
+
 	DescriptorWriter::DescriptorWriter(vk::Device device, vk::DescriptorSet descriptorSet)
 		: m_Device(device), m_DescriptorSet(descriptorSet)
 	{
@@ -124,12 +145,25 @@ namespace Hyper
 
 		m_DescriptorWrites.push_back(setWrite);
 	}
-	
+
 	void DescriptorWriter::WriteImage(const vk::DescriptorImageInfo& imageInfo, u32 dstBinding, vk::DescriptorType type)
 	{
 		vk::WriteDescriptorSet setWrite = {};
 		setWrite.dstBinding = dstBinding;
 		setWrite.dstSet = m_DescriptorSet;
+		setWrite.descriptorCount = 1;
+		setWrite.descriptorType = type;
+		setWrite.setImageInfo(imageInfo);
+
+		m_DescriptorWrites.push_back(setWrite);
+	}
+
+	void DescriptorWriter::WriteImageBindless(const vk::DescriptorImageInfo& imageInfo, u32 dstBinding, u32 arrayElement, vk::DescriptorType type)
+	{
+		vk::WriteDescriptorSet setWrite = {};
+		setWrite.dstBinding = dstBinding;
+		setWrite.dstSet = m_DescriptorSet;
+		setWrite.dstArrayElement = arrayElement;
 		setWrite.descriptorCount = 1;
 		setWrite.descriptorType = type;
 		setWrite.setImageInfo(imageInfo);
@@ -152,6 +186,14 @@ namespace Hyper
 
 	void DescriptorWriter::Write()
 	{
+		if (m_DescriptorWrites.empty())
+			return;
+
 		m_Device.updateDescriptorSets(m_DescriptorWrites, {});
+	}
+
+	void DescriptorWriter::ClearWrites()
+	{
+		m_DescriptorWrites.clear();
 	}
 }

@@ -16,6 +16,7 @@ struct VSOutput
 	[[vk::location(3)]] float2 uv : TEXCOORD0;
 	[[vk::location(4)]] float3 tangent : TANGENT0;
 	[[vk::location(5)]] float3 binormal : BINORMAL0;
+	[[vk::location(6)]] uint4 textureIndices : COLOR1;
 };
 
 struct CameraData
@@ -29,8 +30,8 @@ cbuffer cameraData : register(b0, space0) { CameraData cameraData; }
 struct PushConstants
 {
 	float4x4 modelMatrix;
+	uint4 textureIndices;
 };
-
 [[vk::push_constant]] PushConstants pushConstants;
 
 VSOutput main(VSInput input)

@@ -10,12 +10,14 @@ namespace Hyper
 	public:
 		DescriptorSetLayoutBuilder(vk::Device device);
 
-		DescriptorSetLayoutBuilder AddBinding(vk::DescriptorType descriptorType, u32 binding, u32 count, vk::ShaderStageFlags stageFlags);
-		vk::DescriptorSetLayout Build();
+		DescriptorSetLayoutBuilder& AddBinding(vk::DescriptorType descriptorType, u32 binding, u32 count, vk::ShaderStageFlags stageFlags);
+		DescriptorSetLayoutBuilder& SetFlags(vk::DescriptorSetLayoutCreateFlags flags);
+		vk::DescriptorSetLayout Build(const void* pNext = nullptr);
 
 	private:
 		vk::Device m_Device;
 		std::vector<vk::DescriptorSetLayoutBinding> m_Bindings{};
+		vk::DescriptorSetLayoutCreateFlags m_Flags{};
 	};
 
 	class DescriptorPool
@@ -26,9 +28,9 @@ namespace Hyper
 		public:
 			Builder(vk::Device device);
 
-			Builder AddSize(vk::DescriptorType type, u32 count);
-			Builder SetMaxSets(u32 maxSets);
-			Builder SetFlags(vk::DescriptorPoolCreateFlags flags);
+			Builder& AddSize(vk::DescriptorType type, u32 count);
+			Builder& SetMaxSets(u32 maxSets);
+			Builder& SetFlags(vk::DescriptorPoolCreateFlags flags);
 			DescriptorPool Build();
 
 		private:
@@ -47,6 +49,7 @@ namespace Hyper
 		DescriptorPool& operator=(DescriptorPool&& other) noexcept;
 
 		std::vector<vk::DescriptorSet> Allocate(const std::vector<vk::DescriptorSetLayout>& layouts) const;
+		vk::DescriptorSet Allocate(const vk::DescriptorSetLayout& layout) const;
 
 		[[nodiscard]] vk::DescriptorPool GetPool() const { return m_Pool; }
 
@@ -62,8 +65,11 @@ namespace Hyper
 
 		void WriteBuffer(const vk::DescriptorBufferInfo& bufferInfo, u32 dstBinding, vk::DescriptorType type);
 		void WriteImage(const vk::DescriptorImageInfo& imageInfo, u32 dstBinding, vk::DescriptorType type);
+		void WriteImageBindless(const vk::DescriptorImageInfo& imageInfo, u32 dstBinding, u32 arrayElement, vk::DescriptorType type);
 		void WriteAccelStructure(const vk::WriteDescriptorSetAccelerationStructureKHR* accelInfo, u32 dstBinding);
 		void Write();
+
+		void ClearWrites();
 
 	private:
 		vk::Device m_Device;

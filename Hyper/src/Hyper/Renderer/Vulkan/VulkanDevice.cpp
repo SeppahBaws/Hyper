@@ -12,7 +12,7 @@ namespace Hyper
 		: m_pRenderCtx(pRenderCtx)
 #ifdef HYPER_USE_AFTERMATH
 		, m_MarkerMap{}
-		, m_GpuCrashTracker{m_MarkerMap}
+		, m_GpuCrashTracker{ m_MarkerMap }
 #endif
 	{
 		if (HYPER_VALIDATE)
@@ -52,7 +52,6 @@ namespace Hyper
 
 			if (HYPER_VALIDATE)
 			{
-				
 				createInfo.setPEnabledLayerNames(m_RequiredInstanceLayerNames);
 			}
 
@@ -76,15 +75,11 @@ namespace Hyper
 		{
 			// Find physical device
 			auto availableDevices = VulkanUtils::Check(pRenderCtx->instance.enumeratePhysicalDevices());
-			const auto foundDevice = std::ranges::find_if(availableDevices, [](const vk::PhysicalDevice& device)
-				{
-					const vk::PhysicalDeviceProperties properties = device.getProperties();
-					return properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
-				});
+			const auto foundDevice = std::ranges::find_if(availableDevices, CheckPhysicalDeviceSupport);
 
 			if (foundDevice == availableDevices.end())
 			{
-				HPR_VKLOG_ERROR("Could not find a discrete pysical device!");
+				HPR_VKLOG_ERROR("Could not find a discrete pysical device which matches the requirements!");
 				return;
 			}
 
@@ -112,10 +107,12 @@ namespace Hyper
 			constexpr f32 queuePriority = 0.0f;
 			std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos{};
 			// Graphics queue
-			queueCreateInfos.emplace_back(vk::DeviceQueueCreateInfo{{}, graphicsQueueFamilyIndex, 1, &queuePriority});
+			queueCreateInfos.emplace_back(vk::DeviceQueueCreateInfo{ {}, graphicsQueueFamilyIndex, 1, &queuePriority });
 
 			auto deviceCreateInfoChain = vk::StructureChain<
 				vk::DeviceCreateInfo,
+				// Bindless rendering
+				vk::PhysicalDeviceDescriptorIndexingFeatures,
 				// Dynamic rendering
 				vk::PhysicalDeviceDynamicRenderingFeatures,
 				// Ray-tracing features
@@ -128,6 +125,10 @@ namespace Hyper
 				vk::DeviceDiagnosticsConfigCreateInfoNV,
 				vk::PhysicalDeviceShaderDemoteToHelperInvocationFeatures
 			>();
+
+			// Enable bindless rendering
+			deviceCreateInfoChain.get<vk::PhysicalDeviceDescriptorIndexingFeatures>().descriptorBindingPartiallyBound = true;
+			deviceCreateInfoChain.get<vk::PhysicalDeviceDescriptorIndexingFeatures>().runtimeDescriptorArray = true;
 
 			// Enable dynamic rendering
 			deviceCreateInfoChain.get<vk::PhysicalDeviceDynamicRenderingFeatures>().dynamicRendering = true;
@@ -179,7 +180,7 @@ namespace Hyper
 			createInfo.device = pRenderCtx->device;
 			createInfo.instance = pRenderCtx->instance;
 			createInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-			
+
 			VulkanUtils::Check(vmaCreateAllocator(&createInfo, &m_Allocator));
 			m_pRenderCtx->allocator = m_Allocator;
 		}
@@ -213,9 +214,9 @@ namespace Hyper
 			[&availableExtensions](const char* name)
 			{
 				return std::ranges::find_if(availableExtensions, [&name](const vk::ExtensionProperties& property)
-					{
-						return strcmp(property.extensionName, name) == 0;
-					}) != availableExtensions.end();
+				{
+					return strcmp(property.extensionName, name) == 0;
+				}) != availableExtensions.end();
 			});
 		if (!hasRequiredExtensions)
 		{
@@ -227,9 +228,9 @@ namespace Hyper
 			[&availableLayers](const char* name)
 			{
 				return std::ranges::find_if(availableLayers, [&name](const vk::LayerProperties& property)
-					{
-						return strcmp(property.layerName, name) == 0;
-					}) != availableLayers.end();
+				{
+					return strcmp(property.layerName, name) == 0;
+				}) != availableLayers.end();
 			});
 
 		if (!hasRequiredLayers)
@@ -238,5 +239,21 @@ namespace Hyper
 		}
 
 		return hasRequiredExtensions && hasRequiredLayers;
+	}
+
+	bool VulkanDevice::CheckPhysicalDeviceSupport(const vk::PhysicalDevice& physicalDevice)
+	{
+		const vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
+		const bool isDiscreteGpu = properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+
+		vk::PhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
+		vk::PhysicalDeviceFeatures2 deviceFeatures{};
+		deviceFeatures.pNext = &indexingFeatures;
+
+		physicalDevice.getFeatures2(&deviceFeatures);
+
+		const bool supportsBindless = indexingFeatures.descriptorBindingPartiallyBound && indexingFeatures.runtimeDescriptorArray;
+
+		return isDiscreteGpu && supportsBindless;
 	}
 }

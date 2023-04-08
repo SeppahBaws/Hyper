@@ -6,17 +6,18 @@ struct PSInput
 	[[vk::location(3)]] float2 uv : TEXCOORD0;
 	[[vk::location(4)]] float3 tangent : TANGENT0;
 	[[vk::location(5)]] float3 binormal : BINORMAL0;
+
+	// x = albedo, y = normal
+	[[vk::location(6)]] uint4 textureIndices : COLOR1;
 };
 
-Texture2D textureAlbedo : register(t0, space1);
-SamplerState samplerAlbedo : register(s0, space1);
-Texture2D textureNormal : register(t1, space1);
-SamplerState samplerNormal : register(s1, space1);
+Texture2D globalTextures[] : register(t10, space1);
+SamplerState globalSamplers[] : register(s10, space1);
 
 struct LightingSettings
 {
 	// Explicit offset to leave room for vertex shader push constant.
-	[[vk::offset(64)]] float3 sunDir;
+	[[vk::offset(80)]] float3 sunDir;
 };
 
 [[vk::push_constant]] LightingSettings lightingSettings;
@@ -24,6 +25,8 @@ struct LightingSettings
 
 float3 CalculateWorldNormal(PSInput input)
 {
+	Texture2D textureNormal = globalTextures[input.textureIndices.y];
+	SamplerState samplerNormal = globalSamplers[input.textureIndices.y];
 	float3 tangentNormal = normalize(textureNormal.Sample(samplerNormal, input.uv).rgb * 2.0 - 1.0);
 
 	float3 T = normalize(input.tangent);
@@ -36,6 +39,8 @@ float3 CalculateWorldNormal(PSInput input)
 
 float4 main(PSInput input) : SV_TARGET
 {
+	Texture2D textureAlbedo = globalTextures[input.textureIndices.x];
+	SamplerState samplerAlbedo = globalSamplers[input.textureIndices.x];
 	float4 sampledAlbedo = textureAlbedo.Sample(samplerAlbedo, input.uv);
 	float3 albedo = sampledAlbedo.rgb;
 	float alpha = sampledAlbedo.a;

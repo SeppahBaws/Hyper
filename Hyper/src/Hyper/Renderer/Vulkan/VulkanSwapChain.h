@@ -52,7 +52,7 @@ namespace Hyper
 		std::vector<vk::Image> m_Images{};
 		std::vector<vk::ImageView> m_ImageViews{};
 
-		std::unique_ptr<VulkanImage> m_pDepthBuffer{};
+		std::vector<std::unique_ptr<VulkanImage>> m_pDepthBuffers{};
 
 		vk::Format m_ImageColorFormat;
 		vk::Format m_ImageDepthFormat;

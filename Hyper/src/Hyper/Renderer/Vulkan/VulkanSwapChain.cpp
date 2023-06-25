@@ -93,7 +93,7 @@ namespace Hyper
 		attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
 		attachments[0].clearValue = vk::ClearColorValue(std::array{ 0.0f, 0.0f, 0.0f, 1.0f });
 
-		attachments[1].imageView = m_pDepthBuffer->GetImageView();
+		attachments[1].imageView = m_pDepthBuffers[m_ImageIdx]->GetImageView();
 		attachments[1].imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		attachments[1].resolveMode = vk::ResolveModeFlagBits::eNone;
 		attachments[1].loadOp = vk::AttachmentLoadOp::eClear;
@@ -196,11 +196,16 @@ namespace Hyper
 			HPR_VKLOG_INFO("Created swap chain image views ({})", m_ImageViews.size());
 		}
 
-		// Create the depth buffer
+		// Create the depth buffers
 		{
-			m_pDepthBuffer = std::make_unique<VulkanImage>(
-				m_pRenderCtx, m_ImageDepthFormat, vk::ImageType::e2D, vk::ImageUsageFlagBits::eDepthStencilAttachment,
-				vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, "Depth Buffer", m_Width, m_Height);
+			m_pDepthBuffers.reserve(m_Images.size());
+
+			for (u32 i = 0; i < m_Images.size(); ++i)
+			{
+				m_pDepthBuffers.push_back(std::make_unique<VulkanImage>(
+					m_pRenderCtx, m_ImageDepthFormat, vk::ImageType::e2D, vk::ImageUsageFlagBits::eDepthStencilAttachment,
+					vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, fmt::format("Depth Buffer {}", i), m_Width, m_Height));
+			}
 
 			HPR_VKLOG_INFO("Created depth buffer");
 		}
@@ -227,7 +232,12 @@ namespace Hyper
 		}
 		m_ImageAcquiredSemaphores.clear();
 
-		m_pDepthBuffer.reset();
+		for (u32 i = 0; i < m_pDepthBuffers.size(); i++)
+		{
+			m_pDepthBuffers[i].reset();
+		}
+		m_pDepthBuffers.clear();
+
 		for (const auto& imageView : m_ImageViews)
 		{
 			m_pRenderCtx->device.destroyImageView(imageView);
